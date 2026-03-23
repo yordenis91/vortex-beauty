@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ================= Enums =================
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+  OVERDUE // Añadido: útil para facturas vencidas
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+}
+
+// ================= Models =================
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String    // Hash de la contraseña (e.g., bcrypt)
+  name      String
+  
+  // Relaciones
+  projects  Project[] 
+  clients   Client[]
+  invoices  Invoice[]
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Client {
+  id        String    @id @default(uuid())
+  name      String
+  email     String    @unique
+  phone     String?
+  company   String?
+  address   String?   @db.Text
+  taxId     String?   // CIF/NIF/RUT para la facturación
+  
+  // Claves foráneas
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Relaciones
+  projects  Project[]
+  invoices  Invoice[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  name        String
+  description String?       @db.Text
+  status      ProjectStatus @default(ACTIVE)
+  
+  // Claves foráneas
+  clientId    String
+  client      Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+
+  // Relaciones
+  invoices    Invoice[]
+  
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([clientId])
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique
+  issueDate     DateTime      @default(now())
+  dueDate       DateTime
+  status        InvoiceStatus @default(PENDING)
+  
+  // Usamos Decimal para evitar errores de coma flotante en dinero
+  subtotal      Decimal       @db.Decimal(10, 2)
+  taxRate       Decimal       @default(0) @db.Decimal(5, 2) // Porcentaje de impuestos (ej. 21.00)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  notes         String?       @db.Text
+
+  // Claves foráneas
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  // Relaciones
+  items         InvoiceItem[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([clientId])
+  @@index([invoiceNumber])
+  @@index([userId])
+}
+
+model InvoiceItem {
+  id          String  @id @default(uuid())
+  description String
+  quantity    Int     @default(1)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  // Clave foránea
+  invoiceId   String
+  // Si se borra la factura, se borran sus items (Cascade)
+  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+}
