@@ -33,10 +33,18 @@ model User {
   password  String    // Hash de la contraseña (e.g., bcrypt)
   name      String
   
-  // Relaciones
+  // Relaciones existentes
   projects  Project[] 
   clients   Client[]
   invoices  Invoice[]
+  
+  // Nuevas relaciones para HostBilling
+  products      Product[]
+  subscriptions Subscription[]
+  tickets       Ticket[]       @relation("TicketAssignee")
+  ticketCreators Ticket[]      @relation("TicketCreator")
+  ticketMessages TicketMessage[]
+  knowledgeBase KnowledgeBase[]
   
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -55,9 +63,13 @@ model Client {
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Relaciones
+  // Relaciones existentes
   projects  Project[]
   invoices  Invoice[]
+
+  // Nuevas relaciones para HostBilling
+  subscriptions Subscription[]
+  tickets       Ticket[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -112,6 +124,7 @@ model Invoice {
 
   // Relaciones
   items         InvoiceItem[]
+  orderItems    OrderItem[]
 
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -134,4 +147,273 @@ model InvoiceItem {
   invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
+}
+
+// ================= Nuevas entidades para HostBilling =================
+
+// Categorías para organizar productos y tickets
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  type        CategoryType // PRODUCT, TICKET, KNOWLEDGE_BASE
+  color       String?  // Para UI (hex color)
+  icon        String?  // Nombre del icono
+  order       Int      @default(0) // Para ordenar categorías
+
+  // Relaciones
+  products    Product[]
+  tickets     Ticket[]
+  articles    KnowledgeBase[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, type])
+}
+
+// Productos y Servicios
+model Product {
+  id          String        @id @default(uuid())
+  name        String
+  description String?       @db.Text
+  type        ProductType   // SAAS, WEB_DEVELOPMENT, SUPPORT, MAINTENANCE, CUSTOM_DEVELOPMENT
+
+  // Precios
+  price       Decimal       @db.Decimal(10, 2)
+  currency    String        @default("USD")
+  billingCycle BillingCycle // MONTHLY, YEARLY, ONE_TIME, QUARTERLY
+
+  // Estado y configuración
+  status      ProductStatus @default(ACTIVE)
+  isPublic    Boolean       @default(true)  // Visible en portal de cliente
+  stock       Int?          // Para productos limitados (null = unlimited)
+
+  // Categorización
+  categoryId  String
+  category    Category      @relation(fields: [categoryId], references: [id])
+
+  // Usuario que creó el producto
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+
+  // Relaciones
+  subscriptions Subscription[]
+  orderItems   OrderItem[]
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([categoryId])
+  @@index([userId])
+  @@index([type])
+}
+
+// Órdenes/Suscripciones
+model Subscription {
+  id            String            @id @default(uuid())
+  subscriptionNumber String       @unique
+  status        SubscriptionStatus @default(ACTIVE)
+
+  // Fechas importantes
+  startDate     DateTime          @default(now())
+  endDate       DateTime?
+  nextBilling   DateTime?
+  cancelledAt   DateTime?
+
+  // Producto suscrito
+  productId     String
+  product       Product           @relation(fields: [productId], references: [id])
+
+  // Cliente suscriptor
+  clientId      String
+  client        Client            @relation(fields: [clientId], references: [id])
+
+  // Usuario que gestiona
+  userId        String
+  user          User              @relation(fields: [userId], references: [id])
+
+  // Configuración de facturación
+  autoRenew     Boolean           @default(true)
+  notes         String?           @db.Text
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([clientId])
+  @@index([productId])
+  @@index([userId])
+  @@index([status])
+}
+
+// Items de órdenes (para compras únicas)
+model OrderItem {
+  id        String  @id @default(uuid())
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity  Int     @default(1)
+  unitPrice Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
+
+  // Relación con invoice (opcional, para compras que generan factura)
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+  @@index([invoiceId])
+}
+
+// Sistema de Tickets de Soporte
+model Ticket {
+  id          String       @id @default(uuid())
+  ticketNumber String      @unique
+  subject     String
+  description String       @db.Text
+  status      TicketStatus @default(OPEN)
+  priority    Priority     @default(MEDIUM)
+
+  // Categorización
+  categoryId  String?
+  category    Category?    @relation(fields: [categoryId], references: [id])
+
+  // Cliente que creó el ticket
+  clientId    String?
+  client      Client?      @relation(fields: [clientId], references: [id])
+
+  // Usuario asignado (agente de soporte)
+  assignedToId String?
+  assignedTo   User?       @relation("TicketAssignee", fields: [assignedToId], references: [id])
+
+  // Usuario que creó el ticket
+  userId      String
+  user        User         @relation("TicketCreator", fields: [userId], references: [id])
+
+  // Relaciones
+  messages    TicketMessage[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([clientId])
+  @@index([categoryId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+// Mensajes en tickets
+model TicketMessage {
+  id        String   @id @default(uuid())
+  message   String   @db.Text
+  isInternal Boolean @default(false) // Solo visible para agentes
+
+  // Usuario que envió el mensaje
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Ticket al que pertenece
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([userId])
+}
+
+// Knowledge Base (Base de Conocimiento)
+model KnowledgeBase {
+  id          String   @id @default(uuid())
+  title       String
+  content     String   @db.Text
+  excerpt     String?  @db.Text // Resumen corto
+  slug        String   @unique // Para URLs amigables
+
+  // Categorización
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+
+  // Estado
+  status      KBStatus @default(PUBLISHED)
+  isPublic    Boolean  @default(true) // Visible para clientes
+
+  // Usuario que creó el artículo
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  // Metadata
+  views       Int      @default(0)
+  helpful     Int      @default(0) // Votos positivos
+  notHelpful  Int      @default(0) // Votos negativos
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([userId])
+  @@index([slug])
+  @@index([status])
+}
+
+// ================= Enums adicionales =================
+
+enum CategoryType {
+  PRODUCT
+  TICKET
+  KNOWLEDGE_BASE
+}
+
+enum ProductType {
+  SAAS
+  WEB_DEVELOPMENT
+  SUPPORT
+  MAINTENANCE
+  CUSTOM_DEVELOPMENT
+  CONSULTING
+}
+
+enum BillingCycle {
+  ONE_TIME
+  MONTHLY
+  QUARTERLY
+  SEMI_ANNUAL
+  YEARLY
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PENDING
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_CLIENT
+  RESOLVED
+  CLOSED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum KBStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import type { Client, Project, Invoice } from '../types';
 import api from '../lib/api';
 import {
@@ -6,7 +7,11 @@ import {
   FolderOpen,
   FileText,
   DollarSign,
-  Calendar
+  Calendar,
+  Package,
+  Zap,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
@@ -148,6 +153,69 @@ const Dashboard: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* Quick Access */}
+      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">
+            Gestión Rápida
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Acceso directo a las funciones principales de tu plataforma SaaS
+          </p>
+        </div>
+        <div className="px-4 py-5 sm:p-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Link
+              to="/products"
+              className="relative block w-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <Package className="h-8 w-8 mb-2 opacity-90" />
+                  <h3 className="text-lg font-semibold">Productos</h3>
+                  <p className="text-blue-100 text-sm mt-1">
+                    Gestiona tus productos y servicios SaaS
+                  </p>
+                </div>
+                <ArrowRight className="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
+              </div>
+            </Link>
+
+            <Link
+              to="/subscriptions"
+              className="relative block w-full bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white hover:from-green-600 hover:to-green-700 transition-all duration-200 group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <Zap className="h-8 w-8 mb-2 opacity-90" />
+                  <h3 className="text-lg font-semibold">Suscripciones</h3>
+                  <p className="text-green-100 text-sm mt-1">
+                    Administra las suscripciones de clientes
+                  </p>
+                </div>
+                <ArrowRight className="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
+              </div>
+            </Link>
+
+            <Link
+              to="/knowledge-base"
+              className="relative block w-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white hover:from-purple-600 hover:to-purple-700 transition-all duration-200 group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <BookOpen className="h-8 w-8 mb-2 opacity-90" />
+                  <h3 className="text-lg font-semibold">Knowledge Base</h3>
+                  <p className="text-purple-100 text-sm mt-1">
+                    Gestiona artículos de ayuda y soporte
+                  </p>
+                </div>
+                <ArrowRight className="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
+              </div>
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Recent Invoices */}

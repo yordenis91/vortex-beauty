@@ -82,7 +82,10 @@ router.post('/', authenticateToken, async (req, res) => {
 // PUT /api/invoices/:id - Update invoice
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
+    console.log('PUT /api/invoices/:id - Request body:', req.body);
     const { items, ...invoiceData } = invoiceSchema.parse(req.body);
+    console.log('Parsed invoice data:', invoiceData);
+    console.log('Parsed items:', items);
 
     // Calculate totals
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);

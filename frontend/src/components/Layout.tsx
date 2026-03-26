@@ -8,7 +8,12 @@ import {
   FileText,
   LogOut,
   Menu,
-  X
+  X,
+  Package,
+  Zap,
+  AlertCircle,
+  BookOpen,
+  Folder
 } from 'lucide-react';
 
 const Layout: React.FC = () => {
@@ -24,9 +29,17 @@ const Layout: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { section: 'Business' },
     { name: 'Clients', href: '/clients', icon: Users },
     { name: 'Projects', href: '/projects', icon: FolderOpen },
     { name: 'Invoices', href: '/invoices', icon: FileText },
+    { section: '🚀 SaaS Platform', highlight: true },
+    { name: '📦 Products', href: '/products', icon: Package, highlight: true },
+    { name: '⚡ Subscriptions', href: '/subscriptions', icon: Zap, highlight: true },
+    { name: '📁 Categories', href: '/categories', icon: Folder },
+    { section: '🎧 Support & Learning', highlight: true },
+    { name: '🎫 Tickets', href: '/tickets', icon: AlertCircle, highlight: true },
+    { name: '📚 Knowledge Base', href: '/knowledge-base', icon: BookOpen, highlight: true },
   ];
 
   return (
@@ -46,7 +59,18 @@ const Layout: React.FC = () => {
               </button>
             </div>
             <nav className="mt-4">
-              {navigation.map((item) => {
+              {navigation.map((item, idx) => {
+                if ('section' in item) {
+                  return (
+                    <div key={idx} className="px-4 py-3">
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${
+                        item.highlight ? 'text-blue-600 font-bold' : 'text-gray-500'
+                      }`}>
+                        {item.section}
+                      </p>
+                    </div>
+                  );
+                }
                 const Icon = item.icon;
                 return (
                   <Link
@@ -55,6 +79,8 @@ const Layout: React.FC = () => {
                     className={`flex items-center px-4 py-3 text-sm font-medium ${
                       location.pathname === item.href
                         ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                        : item.highlight
+                        ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-800 font-semibold'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                     onClick={() => setIsMobileMenuOpen(false)}
@@ -75,8 +101,19 @@ const Layout: React.FC = () => {
           <div className="flex items-center flex-shrink-0 px-4 py-6 border-b border-gray-200">
             <h1 className="text-xl font-bold text-gray-900">Vortex</h1>
           </div>
-          <nav className="mt-8 flex-1 px-2 space-y-1">
-            {navigation.map((item) => {
+          <nav className="mt-8 flex-1 px-2 space-y-8">
+            {navigation.map((item, idx) => {
+              if ('section' in item) {
+                return (
+                  <div key={idx}>
+                    <p className={`px-2 text-xs font-semibold uppercase tracking-wider ${
+                      item.highlight ? 'text-blue-600 font-bold' : 'text-gray-500'
+                    }`}>
+                      {item.section}
+                    </p>
+                  </div>
+                );
+              }
               const Icon = item.icon;
               return (
                 <Link
@@ -85,6 +122,8 @@ const Layout: React.FC = () => {
                   className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
                     location.pathname === item.href
                       ? 'bg-blue-50 text-blue-700'
+                      : item.highlight
+                      ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-800 font-semibold'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                   }`}
                 >

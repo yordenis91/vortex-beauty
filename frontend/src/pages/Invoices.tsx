@@ -31,7 +31,7 @@ const Invoices: React.FC = () => {
     projectId: string;
     issueDate: string;
     dueDate: string;
-    status: 'DRAFT' | 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
+    status: 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
     notes: string;
     items: InvoiceItem[];
   }>({
@@ -40,7 +40,7 @@ const Invoices: React.FC = () => {
     projectId: '',
     issueDate: '',
     dueDate: '',
-    status: 'DRAFT',
+    status: 'PENDING',
     notes: '',
     items: [],
   });
@@ -84,7 +84,7 @@ const Invoices: React.FC = () => {
       projectId: '',
       issueDate: '',
       dueDate: '',
-      status: 'DRAFT',
+      status: 'PENDING',
       notes: '',
       items: [],
     });
@@ -133,34 +133,94 @@ const Invoices: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar que haya al menos un item
+    if (formData.items.length === 0) {
+      alert('Please add at least one item to the invoice');
+      return;
+    }
+
+    // Validar campos requeridos
+    if (!formData.invoiceNumber || !formData.clientId || !formData.issueDate || !formData.dueDate) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
+      const subtotal = calculateTotal(formData.items);
       const dataToSend = {
         ...formData,
-        totalAmount: calculateTotal(formData.items).toString(),
+        subtotal: Number(subtotal),
+        totalAmount: Number(subtotal), // La API calcula el total incluyendo tax, pero por ahora usamos subtotal
+        taxRate: 0, // Por defecto sin tax
+        // Asegurar que los items no tengan IDs para nuevos items
+        items: formData.items.map(item => ({
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+        })),
       };
+      
+      // Filtrar campos vacíos
+      if (!dataToSend.projectId) {
+        delete dataToSend.projectId;
+      }
+      
+      console.log('Sending data:', dataToSend);
       await api.post('/invoices', dataToSend);
       setShowCreateModal(false);
       resetForm();
       fetchData();
     } catch (error) {
       console.error('Error creating invoice:', error);
+      alert('Error creating invoice. Please try again.');
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingInvoice) return;
+
+    // Validar que haya al menos un item
+    if (formData.items.length === 0) {
+      alert('Please add at least one item to the invoice');
+      return;
+    }
+
+    // Validar campos requeridos
+    if (!formData.invoiceNumber || !formData.clientId || !formData.issueDate || !formData.dueDate) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
     try {
+      const subtotal = calculateTotal(formData.items);
       const dataToSend = {
         ...formData,
-        totalAmount: calculateTotal(formData.items).toString(),
+        subtotal: Number(subtotal),
+        totalAmount: Number(subtotal), // La API calcula el total incluyendo tax, pero por ahora usamos subtotal
+        taxRate: 0, // Por defecto sin tax
+        // Limpiar items para que no incluyan IDs (el backend los recrea)
+        items: formData.items.map(item => ({
+          description: item.description,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+        })),
       };
+      
+      // Filtrar campos vacíos
+      if (!dataToSend.projectId) {
+        delete dataToSend.projectId;
+      }
+      
+      console.log('Sending update data:', dataToSend);
       await api.put(`/invoices/${editingInvoice.id}`, dataToSend);
       setEditingInvoice(null);
       resetForm();
       fetchData();
     } catch (error) {
       console.error('Error updating invoice:', error);
+      alert('Error updating invoice. Please try again.');
     }
   };
 
@@ -477,7 +537,6 @@ const Invoices: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="DRAFT">Draft</option>
                       <option value="PENDING">Pending</option>
                       <option value="PAID">Paid</option>
                       <option value="OVERDUE">Overdue</option>

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import prisma from '../prismaClient';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -75,6 +76,25 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: error.errors });
     }
     
+    console.error(error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// Get current user info
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: (req as any).userId },
+      select: { id: true, email: true, name: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ user });
+  } catch (error) {
     console.error(error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }

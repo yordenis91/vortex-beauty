@@ -23,8 +23,10 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Clear token but don't redirect - let the ProtectedRoute handle it
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Optionally dispatch an event to notify the app
+      window.dispatchEvent(new Event('auth-error'));
     }
     return Promise.reject(error);
   }
