@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import type { Invoice, Client, Project, InvoiceItem } from '../types';
-import api from '../lib/api';
+import React, { useState } from 'react';
+import { useInvoices, useClients, useProjects, useCreateInvoice, useUpdateInvoice, useDeleteInvoice } from '../hooks/useQueries';
+import type { Invoice, InvoiceItem } from '../types';
 import {
   FileText,
   Plus,
@@ -17,14 +17,10 @@ import {
 } from 'lucide-react';
 
 const Invoices: React.FC = () => {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [editingInvoice, setEditingInvoice] = useState<any | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
   const [formData, setFormData] = useState<{
     invoiceNumber: string;
     clientId: string;
@@ -50,26 +46,15 @@ const Invoices: React.FC = () => {
     unitPrice: 0,
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Use React Query hooks
+  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const createInvoice = useCreateInvoice();
+  const updateInvoice = useUpdateInvoice();
+  const deleteInvoice = useDeleteInvoice();
 
-  const fetchData = async () => {
-    try {
-      const [invoicesRes, clientsRes, projectsRes] = await Promise.all([
-        api.get<Invoice[]>('/invoices'),
-        api.get<Client[]>('/clients'),
-        api.get<Project[]>('/projects'),
-      ]);
-      setInvoices(invoicesRes.data);
-      setClients(clientsRes.data);
-      setProjects(projectsRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = invoicesLoading || clientsLoading || projectsLoading;
 
   const filteredInvoices = invoices.filter(invoice =>
     invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -148,11 +133,12 @@ const Invoices: React.FC = () => {
 
     try {
       const subtotal = calculateTotal(formData.items);
-      const dataToSend = {
+      const dataToSend: any = {
         ...formData,
         subtotal: Number(subtotal),
         totalAmount: Number(subtotal), // La API calcula el total incluyendo tax, pero por ahora usamos subtotal
         taxRate: 0, // Por defecto sin tax
+        projectId: formData.projectId || undefined,
         // Asegurar que los items no tengan IDs para nuevos items
         items: formData.items.map(item => ({
           description: item.description,
@@ -161,16 +147,14 @@ const Invoices: React.FC = () => {
         })),
       };
       
-      // Filtrar campos vacíos
       if (!dataToSend.projectId) {
         delete dataToSend.projectId;
       }
       
       console.log('Sending data:', dataToSend);
-      await api.post('/invoices', dataToSend);
+      await createInvoice.mutateAsync(dataToSend);
       setShowCreateModal(false);
       resetForm();
-      fetchData();
     } catch (error) {
       console.error('Error creating invoice:', error);
       alert('Error creating invoice. Please try again.');
@@ -195,11 +179,12 @@ const Invoices: React.FC = () => {
 
     try {
       const subtotal = calculateTotal(formData.items);
-      const dataToSend = {
+      const dataToSend: any = {
         ...formData,
         subtotal: Number(subtotal),
         totalAmount: Number(subtotal), // La API calcula el total incluyendo tax, pero por ahora usamos subtotal
         taxRate: 0, // Por defecto sin tax
+        projectId: formData.projectId || undefined,
         // Limpiar items para que no incluyan IDs (el backend los recrea)
         items: formData.items.map(item => ({
           description: item.description,
@@ -208,16 +193,14 @@ const Invoices: React.FC = () => {
         })),
       };
       
-      // Filtrar campos vacíos
       if (!dataToSend.projectId) {
         delete dataToSend.projectId;
       }
       
       console.log('Sending update data:', dataToSend);
-      await api.put(`/invoices/${editingInvoice.id}`, dataToSend);
+      await updateInvoice.mutateAsync({ id: editingInvoice.id, invoiceData: dataToSend });
       setEditingInvoice(null);
       resetForm();
-      fetchData();
     } catch (error) {
       console.error('Error updating invoice:', error);
       alert('Error updating invoice. Please try again.');
@@ -227,8 +210,7 @@ const Invoices: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this invoice?')) return;
     try {
-      await api.delete(`/invoices/${id}`);
-      fetchData();
+      await deleteInvoice.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting invoice:', error);
     }
@@ -372,7 +354,7 @@ const Invoices: React.FC = () => {
                         </div>
                         <div className="flex items-center">
                           <DollarSign className="h-4 w-4 mr-1" />
-                          ${parseFloat(invoice.totalAmount).toLocaleString()}
+                          ${Number(invoice.totalAmount).toLocaleString()}
                         </div>
                       </div>
                     </div>
@@ -468,7 +450,7 @@ const Invoices: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {selectedInvoice.items?.map((item, index) => (
+                      {selectedInvoice.items?.map((item: InvoiceItem, index: number) => (
                         <tr key={index}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {item.description}
@@ -491,7 +473,7 @@ const Invoices: React.FC = () => {
                           Total:
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ${parseFloat(selectedInvoice.totalAmount).toFixed(2)}
+                          ${Number(selectedInvoice.totalAmount).toFixed(2)}
                         </td>
                       </tr>
                     </tfoot>

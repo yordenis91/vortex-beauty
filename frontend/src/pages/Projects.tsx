@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import type { Project, Client } from '../types';
-import api from '../lib/api';
+import React, { useState } from 'react';
+import type { Project } from '../types';
+import { useProjects, useClients, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useQueries';
 import {
   FolderOpen,
   Plus,
@@ -15,12 +15,9 @@ import {
 } from 'lucide-react';
 
 const Projects: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editingProject, setEditingProject] = useState<any | null>(null);
   const [formData, setFormData] = useState<{
     name: string;
     description: string;
@@ -39,24 +36,14 @@ const Projects: React.FC = () => {
     endDate: '',
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Use React Query hooks
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
+  const deleteProject = useDeleteProject();
 
-  const fetchData = async () => {
-    try {
-      const [projectsRes, clientsRes] = await Promise.all([
-        api.get<Project[]>('/projects'),
-        api.get<Client[]>('/clients'),
-      ]);
-      setProjects(projectsRes.data);
-      setClients(clientsRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = projectsLoading || clientsLoading;
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -79,14 +66,13 @@ const Projects: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const dataToSend = {
+      const projectData = {
         ...formData,
         budget: formData.budget ? parseFloat(formData.budget) : null,
       };
-      await api.post('/projects', dataToSend);
+      await createProject.mutateAsync(projectData);
       setShowCreateModal(false);
       resetForm();
-      fetchData();
     } catch (error) {
       console.error('Error creating project:', error);
     }
@@ -96,14 +82,13 @@ const Projects: React.FC = () => {
     e.preventDefault();
     if (!editingProject) return;
     try {
-      const dataToSend = {
+      const projectData = {
         ...formData,
         budget: formData.budget ? parseFloat(formData.budget) : null,
       };
-      await api.put(`/projects/${editingProject.id}`, dataToSend);
+      await updateProject.mutateAsync({ id: editingProject.id, projectData });
       setEditingProject(null);
       resetForm();
-      fetchData();
     } catch (error) {
       console.error('Error updating project:', error);
     }
@@ -112,8 +97,7 @@ const Projects: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
     try {
-      await api.delete(`/projects/${id}`);
-      fetchData();
+      await deleteProject.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting project:', error);
     }
@@ -326,7 +310,7 @@ const Projects: React.FC = () => {
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Select a client</option>
-                    {clients.map((client) => (
+                    {clients.map((client: any) => (
                       <option key={client.id} value={client.id}>
                         {client.name}
                       </option>

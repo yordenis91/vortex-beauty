@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import type { Subscription, Product, Client } from '../types';
-import api from '../lib/api';
+import React, { useState } from 'react';
+import { useSubscriptions, useCreateSubscription, useDeleteSubscription, useRenewSubscription, useProducts, useClients } from '../hooks/useQueries';
 import {
   Zap,
   Plus,
@@ -15,10 +14,13 @@ import {
 } from 'lucide-react';
 
 const Subscriptions: React.FC = () => {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: subscriptions = [], isLoading: subscriptionsLoading } = useSubscriptions();
+  const { data: products = [] } = useProducts();
+  const { data: clients = [] } = useClients();
+  const createSubscription = useCreateSubscription();
+  const deleteSubscription = useDeleteSubscription();
+  const renewSubscription = useRenewSubscription();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -29,27 +31,6 @@ const Subscriptions: React.FC = () => {
     notes: '',
     autoRenew: true,
   });
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const [subsRes, productsRes, clientsRes] = await Promise.all([
-        api.get<Subscription[]>('/subscriptions'),
-        api.get<Product[]>('/products'),
-        api.get<Client[]>('/clients'),
-      ]);
-      setSubscriptions(subsRes.data);
-      setProducts(productsRes.data);
-      setClients(clientsRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredSubscriptions = subscriptions.filter(sub => {
     const matchesSearch =
@@ -75,10 +56,9 @@ const Subscriptions: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/subscriptions', formData);
+      await createSubscription.mutateAsync(formData);
       setShowCreateModal(false);
       resetForm();
-      fetchData();
     } catch (error) {
       console.error('Error creating subscription:', error);
     }
@@ -87,8 +67,7 @@ const Subscriptions: React.FC = () => {
   const handleCancel = async (id: string) => {
     if (!confirm('Are you sure you want to cancel this subscription?')) return;
     try {
-      await api.delete(`/subscriptions/${id}`);
-      fetchData();
+      await deleteSubscription.mutateAsync(id);
     } catch (error) {
       console.error('Error cancelling subscription:', error);
     }
@@ -96,8 +75,7 @@ const Subscriptions: React.FC = () => {
 
   const handleRenew = async (id: string) => {
     try {
-      await api.post(`/subscriptions/${id}/renew`, {});
-      fetchData();
+      await renewSubscription.mutateAsync(id);
     } catch (error) {
       console.error('Error renewing subscription:', error);
     }
@@ -137,7 +115,7 @@ const Subscriptions: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (subscriptionsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

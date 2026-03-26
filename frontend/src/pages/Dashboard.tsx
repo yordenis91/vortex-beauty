@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import type { Client, Project, Invoice } from '../types';
-import api from '../lib/api';
+import { useClients, useProjects, useInvoices } from '../hooks/useQueries';
 import {
   Users,
   FolderOpen,
@@ -15,51 +14,25 @@ import {
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState({
-    clients: 0,
-    projects: 0,
-    invoices: 0,
-    totalRevenue: 0,
-  });
-  const [recentInvoices, setRecentInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const [clientsRes, projectsRes, invoicesRes] = await Promise.all([
-          api.get<Client[]>('/clients'),
-          api.get<Project[]>('/projects'),
-          api.get<Invoice[]>('/invoices'),
-        ]);
+  // Calculate stats
+  const totalRevenue = invoices
+    .filter(inv => inv.status === 'PAID')
+    .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
 
-        const clients = clientsRes.data;
-        const projects = projectsRes.data;
-        const invoices = invoicesRes.data;
+  const stats = {
+    clients: clients.length,
+    projects: projects.length,
+    invoices: invoices.length,
+    totalRevenue,
+  };
 
-        // Calculate stats
-        const totalRevenue = invoices
-          .filter(inv => inv.status === 'PAID')
-          .reduce((sum, inv) => sum + parseFloat(inv.totalAmount), 0);
+  const recentInvoices = invoices.slice(0, 5);
 
-        setStats({
-          clients: clients.length,
-          projects: projects.length,
-          invoices: invoices.length,
-          totalRevenue,
-        });
-
-        // Get recent invoices (last 5)
-        setRecentInvoices(invoices.slice(0, 5));
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, []);
+  const loading = clientsLoading || projectsLoading || invoicesLoading;
 
   const statCards = [
     {
@@ -257,7 +230,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-sm font-medium text-gray-900">
-                      ${parseFloat(invoice.totalAmount).toLocaleString()}
+                      ${Number(invoice.totalAmount).toLocaleString()}
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
                       {invoice.status}

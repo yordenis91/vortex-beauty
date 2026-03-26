@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../hooks/useQueries';
 import type { Category } from '../types';
-import api from '../lib/api';
 import {
   Folder,
   Plus,
@@ -10,35 +10,24 @@ import {
 } from 'lucide-react';
 
 const Categories: React.FC = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'PRODUCT' as Category['type'],
+    type: 'PRODUCT' as any,
     color: '#3B82F6',
     icon: 'folder',
     order: 0,
   });
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get<Category[]>('/categories');
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use React Query hooks
+  const { data: categories = [], isLoading: loading } = useCategories();
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
 
   const filteredCategories = categories.filter(category => {
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,10 +50,9 @@ const Categories: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/categories', formData);
+      await createCategory.mutateAsync(formData);
       setShowCreateModal(false);
       resetForm();
-      fetchCategories();
     } catch (error) {
       console.error('Error creating category:', error);
     }
@@ -74,10 +62,9 @@ const Categories: React.FC = () => {
     e.preventDefault();
     if (!editingCategory) return;
     try {
-      await api.put(`/categories/${editingCategory.id}`, formData);
+      await updateCategory.mutateAsync({ id: editingCategory.id, categoryData: formData });
       setEditingCategory(null);
       resetForm();
-      fetchCategories();
     } catch (error) {
       console.error('Error updating category:', error);
     }
@@ -86,8 +73,7 @@ const Categories: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
     try {
-      await api.delete(`/categories/${id}`);
-      fetchCategories();
+      await deleteCategory.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting category:', error);
     }

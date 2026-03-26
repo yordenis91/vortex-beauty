@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import type { Product, Category } from '../types';
-import api from '../lib/api';
+import React, { useState } from 'react';
+import type { Product } from '../types';
+import { useProducts, useCategories, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../hooks/useQueries';
 import {
   Package,
   Plus,
@@ -14,43 +14,29 @@ import {
 } from 'lucide-react';
 
 const Products: React.FC = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'SAAS' as Product['type'],
+    type: 'SAAS' as any,
     price: '',
     currency: 'USD',
-    billingCycle: 'MONTHLY' as Product['billingCycle'],
+    billingCycle: 'MONTHLY' as any,
     categoryId: '',
     isPublic: true,
     stock: '',
   });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // Use React Query hooks
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const createProduct = useCreateProduct();
+  const updateProduct = useUpdateProduct();
+  const deleteProduct = useDeleteProduct();
 
-  const fetchData = async () => {
-    try {
-      const [productsRes, categoriesRes] = await Promise.all([
-        api.get<Product[]>('/products'),
-        api.get<Category[]>('/categories'),
-      ]);
-      setProducts(productsRes.data);
-      setCategories(categoriesRes.data);
-      console.log('Loaded categories:', categoriesRes.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = productsLoading || categoriesLoading;
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,15 +61,15 @@ const Products: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const dataToSend = {
+      const productData = {
         ...formData,
         price: parseFloat(formData.price),
         stock: formData.stock ? parseInt(formData.stock) : undefined,
       };
-      await api.post('/products', dataToSend);
+
+      await createProduct.mutateAsync(productData);
       setShowCreateModal(false);
       resetForm();
-      fetchData();
     } catch (error) {
       console.error('Error creating product:', error);
     }
@@ -93,15 +79,15 @@ const Products: React.FC = () => {
     e.preventDefault();
     if (!editingProduct) return;
     try {
-      const dataToSend = {
+      const productData = {
         ...formData,
         price: parseFloat(formData.price),
         stock: formData.stock ? parseInt(formData.stock) : undefined,
       };
-      await api.put(`/products/${editingProduct.id}`, dataToSend);
+
+      await updateProduct.mutateAsync({ id: editingProduct.id, productData });
       setEditingProduct(null);
       resetForm();
-      fetchData();
     } catch (error) {
       console.error('Error updating product:', error);
     }
@@ -110,8 +96,7 @@ const Products: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
-      await api.delete(`/products/${id}`);
-      fetchData();
+      await deleteProduct.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting product:', error);
     }

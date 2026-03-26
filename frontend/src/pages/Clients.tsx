@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { Client } from '../types';
-import api from '../lib/api';
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
 import {
   Users,
   Plus,
@@ -13,11 +13,9 @@ import {
 } from 'lucide-react';
 
 const Clients: React.FC = () => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [editingClient, setEditingClient] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,20 +27,11 @@ const Clients: React.FC = () => {
     country: '',
   });
 
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      const response = await api.get<Client[]>('/clients');
-      setClients(response.data);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use React Query hooks
+  const { data: clients = [], isLoading: loading } = useClients();
+  const createClient = useCreateClient();
+  const updateClient = useUpdateClient();
+  const deleteClient = useDeleteClient();
 
   const filteredClients = clients.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,10 +54,9 @@ const Clients: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/clients', formData);
+      await createClient.mutateAsync(formData);
       setShowCreateModal(false);
       resetForm();
-      fetchClients();
     } catch (error) {
       console.error('Error creating client:', error);
     }
@@ -78,10 +66,9 @@ const Clients: React.FC = () => {
     e.preventDefault();
     if (!editingClient) return;
     try {
-      await api.put(`/clients/${editingClient.id}`, formData);
+      await updateClient.mutateAsync({ id: editingClient.id, clientData: formData });
       setEditingClient(null);
       resetForm();
-      fetchClients();
     } catch (error) {
       console.error('Error updating client:', error);
     }
@@ -90,8 +77,7 @@ const Clients: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this client?')) return;
     try {
-      await api.delete(`/clients/${id}`);
-      fetchClients();
+      await deleteClient.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting client:', error);
     }

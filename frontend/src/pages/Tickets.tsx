@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Ticket, TicketMessage, User } from '../types';
+import type { Ticket, TicketMessage } from '../types';
 import api from '../lib/api';
 import {
   AlertCircle,
@@ -21,7 +21,6 @@ const Tickets: React.FC = () => {
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [messageText, setMessageText] = useState('');
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
