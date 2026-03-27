@@ -70,7 +70,7 @@ router.get('/public', async (req, res) => {
 // GET /api/products/:id - Get a specific product
 router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const userId = (req as any).user.id;
 
     const product = await prisma.product.findFirst({
@@ -156,7 +156,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 // PUT /api/products/:id - Update a product
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const userId = (req as any).userId;
     const validatedData = updateProductSchema.parse(req.body);
 
@@ -202,7 +202,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 // DELETE /api/products/:id - Delete a product
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const userId = (req as any).userId;
 
     // Verify product exists and belongs to user

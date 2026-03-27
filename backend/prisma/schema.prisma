@@ -30,11 +30,17 @@ enum ProjectStatus {
   ON_HOLD
 }
 
+enum ClientType {
+  CUSTOMER
+  SUPPLIER
+}
+
 // ================= Models =================
 
 model User {
   id        String    @id @default(uuid())
   email     String    @unique
+  username  String?   @unique
   password  String    // Hash de la contraseña (e.g., bcrypt)
   name      String
   role      Role      @default(CLIENT) // ADMIN o CLIENT
@@ -63,13 +69,25 @@ model User {
 }
 
 model Client {
-  id        String    @id @default(uuid())
-  name      String
-  email     String    @unique
-  phone     String?
-  company   String?
-  address   String?   @db.Text
-  taxId     String?   // CIF/NIF/RUT para la facturación
+  id             String      @id @default(uuid())
+  name           String
+  email          String      @unique
+  code           String?
+  displayName    String?
+  businessNumber String?
+  type           ClientType  @default(CUSTOMER)
+  phone          String?
+  company        String?
+  address        String?     @db.Text
+  city           String?
+  state          String?
+  zipCode        String?
+  country        String?
+  secondaryEmail String?
+  currency       String      @default("USD")
+  groupId        String?
+  ownerId        String?
+  taxId          String?     // CIF/NIF/RUT para la facturación
   
   // Claves foráneas
   userId    String

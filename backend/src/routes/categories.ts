@@ -48,7 +48,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 // GET /api/categories/:id - Get a specific category
 router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const category = await prisma.category.findUnique({
       where: { id },
@@ -120,7 +120,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 // PUT /api/categories/:id - Update a category
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const validatedData = updateCategorySchema.parse(req.body);
 
     // Verify category exists
@@ -177,7 +177,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 // DELETE /api/categories/:id - Delete a category
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     // Verify category exists
     const category = await prisma.category.findUnique({

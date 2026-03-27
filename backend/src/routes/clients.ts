@@ -1,5 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import prisma from '../prismaClient';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
@@ -8,11 +9,31 @@ const router = express.Router();
 const clientSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
-  phone: z.string().optional(),
+  code: z.string().optional(),
+  displayName: z.string().optional(),
   company: z.string().optional(),
+  businessNumber: z.string().optional(),
+  type: z.enum(['CUSTOMER', 'SUPPLIER']).optional(),
+  phone: z.string().optional(),
   address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zipCode: z.string().optional(),
+  country: z.string().optional(),
+  secondaryEmail: z.string().email().optional(),
+  currency: z.string().optional(),
+  groupId: z.string().optional(),
+  ownerId: z.string().optional(),
   taxId: z.string().optional(),
 });
+
+const createClientSchema = clientSchema.extend({
+  username: z.string().min(1).optional(),
+  password: z.string().min(6).optional(),
+  sendWelcomeEmail: z.boolean().optional(),
+});
+
+const updateClientSchema = clientSchema.partial();
 
 // GET /api/clients - List all clients
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
@@ -48,13 +69,47 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 // POST /api/clients - Create new client
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const data = clientSchema.parse(req.body);
+    const parsed = createClientSchema.parse(req.body);
+    const {
+      username,
+      password,
+      sendWelcomeEmail,
+      ...clientData
+    } = parsed;
 
-    const client = await prisma.client.create({
-      data: { ...data, userId: (req as any).userId },
+    const result = await prisma.$transaction(async (tx) => {
+      const newClient = await tx.client.create({
+        data: {
+          ...clientData,
+          type: clientData.type || 'CUSTOMER',
+          currency: clientData.currency || 'USD',
+          userId: (req as any).userId,
+        },
+      });
+
+      let newUser = null;
+      if (username && password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        newUser = await tx.user.create({
+          data: {
+            email: clientData.email,
+            username,
+            password: hashedPassword,
+            name: clientData.displayName || clientData.name,
+            role: 'CLIENT',
+            clientId: newClient.id,
+          },
+        });
+
+        if (sendWelcomeEmail) {
+          console.log('Sending welcome email to...', clientData.email);
+        }
+      }
+
+      return { newClient, newUser };
     });
 
-    res.status(201).json(client);
+    res.status(201).json(result.newClient);
   } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
     // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
     if (error?.name === 'ZodError') {
@@ -69,11 +124,15 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 // PUT /api/clients/:id - Update client
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const data = clientSchema.parse(req.body);
+    const data = updateClientSchema.parse(req.body);
 
     const client = await prisma.client.updateMany({
       where: { id: req.params.id as string, userId: (req as any).userId },
-      data,
+      data: {
+        ...data,
+        type: data.type || undefined,
+        currency: data.currency || undefined,
+      },
     });
 
     if (client.count === 0) {

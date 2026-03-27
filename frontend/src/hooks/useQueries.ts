@@ -355,3 +355,92 @@ export const useMyProfile = () => {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
+
+// Knowledge Base
+export const useKnowledgeBase = () => {
+  return useQuery({
+    queryKey: ['knowledge-base'],
+    queryFn: async () => {
+      const response = await api.get<any[]>('/knowledge-base');
+      return response.data;
+    },
+  });
+};
+
+export const useCreateKnowledgeBase = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (articleData: any) => {
+      const response = await api.post('/knowledge-base', articleData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
+    },
+  });
+};
+
+export const useUpdateKnowledgeBase = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, articleData }: { id: string; articleData: any }) => {
+      const response = await api.put(`/knowledge-base/${id}`, articleData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
+    },
+  });
+};
+
+export const useDeleteKnowledgeBase = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/knowledge-base/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
+    },
+  });
+};
+
+// Ticket Messages
+export const useTicketMessages = (ticketId: string) => {
+  return useQuery({
+    queryKey: ['ticket-messages', ticketId],
+    queryFn: async () => {
+      const response = await api.get<any[]>(`/tickets/${ticketId}/messages`);
+      return response.data;
+    },
+    enabled: !!ticketId,
+  });
+};
+
+export const useCreateTicketMessage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticketId, messageData }: { ticketId: string; messageData: any }) => {
+      const response = await api.post(`/tickets/${ticketId}/messages`, messageData);
+      return response.data;
+    },
+    onSuccess: (_, { ticketId }) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket-messages', ticketId] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+  });
+};
+
+// Ticket Updates
+export const useUpdateTicket = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ticketData }: { id: string; ticketData: any }) => {
+      const response = await api.patch(`/tickets/${id}`, ticketData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+  });
+};

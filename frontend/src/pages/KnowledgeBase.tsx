@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { KnowledgeBase } from '../types';
-import api from '../lib/api';
+import {
+  useKnowledgeBase,
+  useCategories,
+  useCreateKnowledgeBase,
+  useUpdateKnowledgeBase,
+  useDeleteKnowledgeBase
+} from '../hooks/useQueries';
 import {
   BookOpen,
   Plus,
@@ -12,15 +18,12 @@ import {
 } from 'lucide-react';
 
 const KnowledgeBasePage: React.FC = () => {
-  const [articles, setArticles] = useState<KnowledgeBase[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<KnowledgeBase | null>(null);
-  const [categories, setCategories] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -28,30 +31,13 @@ const KnowledgeBasePage: React.FC = () => {
     categoryId: '',
   });
 
-  useEffect(() => {
-    fetchArticles();
-    fetchCategories();
-  }, []);
+  // React Query hooks
+  const { data: articles = [], isLoading: loading } = useKnowledgeBase();
+  const { data: categories = [] } = useCategories('KNOWLEDGE_BASE');
 
-  const fetchArticles = async () => {
-    try {
-      const response = await api.get<KnowledgeBase[]>('/knowledge-base');
-      setArticles(response.data);
-    } catch (error) {
-      console.error('Error fetching articles:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get<any[]>('/categories?type=KNOWLEDGE_BASE');
-      setCategories(response.data);
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    }
-  };
+  const createArticleMutation = useCreateKnowledgeBase();
+  const updateArticleMutation = useUpdateKnowledgeBase();
+  const deleteArticleMutation = useDeleteKnowledgeBase();
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,10 +59,9 @@ const KnowledgeBasePage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/knowledge-base', formData);
+      await createArticleMutation.mutateAsync(formData);
       setShowCreateModal(false);
       resetForm();
-      fetchArticles();
     } catch (error) {
       console.error('Error creating article:', error);
     }
@@ -86,10 +71,12 @@ const KnowledgeBasePage: React.FC = () => {
     e.preventDefault();
     if (!selectedArticle) return;
     try {
-      await api.put(`/knowledge-base/${selectedArticle.id}`, formData);
+      await updateArticleMutation.mutateAsync({
+        id: selectedArticle.id,
+        articleData: formData
+      });
       setShowDetailModal(false);
       resetForm();
-      fetchArticles();
     } catch (error) {
       console.error('Error updating article:', error);
     }
@@ -98,8 +85,7 @@ const KnowledgeBasePage: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this article?')) return;
     try {
-      await api.delete(`/knowledge-base/${id}`);
-      fetchArticles();
+      await deleteArticleMutation.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting article:', error);
     }
@@ -308,8 +294,9 @@ const KnowledgeBasePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <label className="block text-sm font-medium text-gray-700">Category *</label>
                   <select
+                    required
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"

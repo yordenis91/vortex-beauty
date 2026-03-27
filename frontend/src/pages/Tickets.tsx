@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import type { Ticket, TicketMessage } from '../types';
-import api from '../lib/api';
+import React, { useState } from 'react';
+import type { Ticket } from '../types';
+import {
+  useTickets,
+  useCreateTicket,
+  useTicketMessages,
+  useCreateTicketMessage,
+  useUpdateTicket,
+} from '../hooks/useQueries';
 import {
   AlertCircle,
   Plus,
@@ -11,16 +17,12 @@ import {
 } from 'lucide-react';
 
 const Tickets: React.FC = () => {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [priorityFilter, setPriorityFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [messageText, setMessageText] = useState('');
-  const [loadingMessages, setLoadingMessages] = useState(false);
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
@@ -30,32 +32,13 @@ const Tickets: React.FC = () => {
     clientId: '',
   });
 
-  useEffect(() => {
-    fetchTickets();
-  }, []);
+  // React Query hooks
+  const { data: tickets = [], isLoading: loading } = useTickets();
+  const { data: messages = [], isLoading: loadingMessages } = useTicketMessages(selectedTicket?.id || '');
 
-  const fetchTickets = async () => {
-    try {
-      const response = await api.get<Ticket[]>('/tickets');
-      setTickets(response.data);
-    } catch (error) {
-      console.error('Error fetching tickets:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = async (ticketId: string) => {
-    setLoadingMessages(true);
-    try {
-      const response = await api.get<TicketMessage[]>(`/tickets/${ticketId}/messages`);
-      setMessages(response.data);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoadingMessages(false);
-    }
-  };
+  const createTicketMutation = useCreateTicket();
+  const createMessageMutation = useCreateTicketMessage();
+  const updateTicketMutation = useUpdateTicket();
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -85,10 +68,9 @@ const Tickets: React.FC = () => {
         priority: formData.priority,
         ...(formData.categoryId && { categoryId: formData.categoryId }),
       };
-      await api.post('/tickets', ticketData);
+      await createTicketMutation.mutateAsync(ticketData);
       setShowCreateModal(false);
       resetForm();
-      fetchTickets();
     } catch (error) {
       console.error('Error creating ticket:', error);
     }
@@ -99,11 +81,11 @@ const Tickets: React.FC = () => {
     if (!selectedTicket || !messageText.trim()) return;
 
     try {
-      await api.post(`/tickets/${selectedTicket.id}/messages`, {
-        message: messageText,
+      await createMessageMutation.mutateAsync({
+        ticketId: selectedTicket.id,
+        messageData: { message: messageText }
       });
       setMessageText('');
-      fetchMessages(selectedTicket.id);
     } catch (error) {
       console.error('Error adding message:', error);
     }
@@ -111,8 +93,10 @@ const Tickets: React.FC = () => {
 
   const handleStatusChange = async (ticketId: string, newStatus: string) => {
     try {
-      await api.patch(`/tickets/${ticketId}`, { status: newStatus });
-      fetchTickets();
+      await updateTicketMutation.mutateAsync({
+        id: ticketId,
+        ticketData: { status: newStatus }
+      });
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket({ ...selectedTicket, status: newStatus as any });
       }
@@ -123,8 +107,10 @@ const Tickets: React.FC = () => {
 
   const handlePriorityChange = async (ticketId: string, newPriority: string) => {
     try {
-      await api.patch(`/tickets/${ticketId}`, { priority: newPriority });
-      fetchTickets();
+      await updateTicketMutation.mutateAsync({
+        id: ticketId,
+        ticketData: { priority: newPriority }
+      });
       if (selectedTicket?.id === ticketId) {
         setSelectedTicket({ ...selectedTicket, priority: newPriority as any });
       }
@@ -135,7 +121,6 @@ const Tickets: React.FC = () => {
 
   const openTicketDetail = (ticket: Ticket) => {
     setSelectedTicket(ticket);
-    fetchMessages(ticket.id);
   };
 
   const getPriorityColor = (priority: string) => {

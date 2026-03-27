@@ -94,7 +94,7 @@ router.get('/public', async (req, res) => {
 // GET /api/knowledge-base/:id - Get a specific article
 router.get('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     const article = await prisma.knowledgeBase.findUnique({
       where: { id },
@@ -177,7 +177,7 @@ router.get('/slug/:slug', async (req, res) => {
 // POST /api/knowledge-base - Create a new article
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     const validatedData = createArticleSchema.parse(req.body);
 
     // Verify category exists and is for knowledge base
@@ -236,8 +236,8 @@ router.post('/', authenticateToken, async (req, res) => {
 // PUT /api/knowledge-base/:id - Update an article
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = (req as any).user.id;
+    const { id } = req.params as { id: string };
+    const userId = (req as any).userId;
     const validatedData = updateArticleSchema.parse(req.body);
 
     // Verify article exists and belongs to user
@@ -308,7 +308,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 // POST /api/knowledge-base/:id/vote - Vote on article helpfulness
 router.post('/:id/vote', async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
     const { helpful } = req.body;
 
     if (typeof helpful !== 'boolean') {
@@ -345,8 +345,8 @@ router.post('/:id/vote', async (req, res) => {
 // DELETE /api/knowledge-base/:id - Delete an article
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = (req as any).user.id;
+    const { id } = req.params as { id: string };
+    const userId = (req as any).userId;
 
     // Verify article exists and belongs to user
     const article = await prisma.knowledgeBase.findFirst({
