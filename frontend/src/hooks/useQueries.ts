@@ -70,205 +70,253 @@ export const useTickets = () => {
 };
 
 // Mutations
-export const useUpdateClient = () => {
+export const useUpdateClient = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ id, clientData }: { id: string; clientData: any }) => {
       const response = await api.put(`/clients/${id}`, clientData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteClient = () => {
+export const useDeleteClient = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/clients/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useCreateClient = () => {
+export const useCreateClient = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (clientData: any) => {
       const response = await api.post('/clients', clientData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useUpdateProject = () => {
+export const useUpdateProject = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ id, projectData }: { id: string; projectData: any }) => {
       const response = await api.put(`/projects/${id}`, projectData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteProject = () => {
+export const useDeleteProject = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/projects/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useCreateProject = () => {
+export const useCreateProject = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (projectData: any) => {
       const response = await api.post('/projects', projectData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useCreateInvoice = () => {
+export const useCreateInvoice = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (invoiceData: any) => {
       const response = await api.post('/invoices', invoiceData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useUpdateInvoice = () => {
+export const useUpdateInvoice = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ id, invoiceData }: { id: string; invoiceData: any }) => {
       const response = await api.put(`/invoices/${id}`, invoiceData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteInvoice = () => {
+export const useDeleteInvoice = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/invoices/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useUpdateProduct = () => {
+export const useUpdateProduct = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ id, productData }: { id: string; productData: any }) => {
       const response = await api.put(`/products/${id}`, productData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteProduct = () => {
+export const useDeleteProduct = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/products/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useCreateProduct = () => {
+export const useCreateProduct = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (productData: any) => {
       const response = await api.post('/products', productData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useCreateCategory = () => {
+export const useCreateCategory = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (categoryData: any) => {
       const response = await api.post('/categories', categoryData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useUpdateCategory = () => {
+export const useUpdateCategory = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ id, categoryData }: { id: string; categoryData: any }) => {
       const response = await api.put(`/categories/${id}`, categoryData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteCategory = () => {
+export const useDeleteCategory = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/categories/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useCreateTicket = () => {
+export const useCreateTicket = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (ticketData: any) => {
       const response = await api.post('/tickets', ticketData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
@@ -284,40 +332,49 @@ export const useSubscriptions = () => {
   });
 };
 
-export const useCreateSubscription = () => {
+export const useCreateSubscription = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (subscriptionData: any) => {
       const response = await api.post('/subscriptions', subscriptionData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteSubscription = () => {
+export const useDeleteSubscription = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/subscriptions/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useRenewSubscription = () => {
+export const useRenewSubscription = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       const response = await api.post(`/subscriptions/${id}/renew`, {});
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
@@ -367,40 +424,49 @@ export const useKnowledgeBase = () => {
   });
 };
 
-export const useCreateKnowledgeBase = () => {
+export const useCreateKnowledgeBase = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (articleData: any) => {
       const response = await api.post('/knowledge-base', articleData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useUpdateKnowledgeBase = () => {
+export const useUpdateKnowledgeBase = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ id, articleData }: { id: string; articleData: any }) => {
       const response = await api.put(`/knowledge-base/${id}`, articleData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteKnowledgeBase = () => {
+export const useDeleteKnowledgeBase = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/knowledge-base/${id}`);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
@@ -417,30 +483,37 @@ export const useTicketMessages = (ticketId: string) => {
   });
 };
 
-export const useCreateTicketMessage = () => {
+export const useCreateTicketMessage = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ ticketId, messageData }: { ticketId: string; messageData: any }) => {
       const response = await api.post(`/tickets/${ticketId}/messages`, messageData);
       return response.data;
     },
-    onSuccess: (_, { ticketId }) => {
+    onSuccess: (data, variables, context) => {
+      const { ticketId } = variables;
       queryClient.invalidateQueries({ queryKey: ['ticket-messages', ticketId] });
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
 // Ticket Updates
-export const useUpdateTicket = () => {
+export const useUpdateTicket = (options?: any) => {
   const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
+    ...otherOptions,
     mutationFn: async ({ id, ticketData }: { id: string; ticketData: any }) => {
       const response = await api.patch(`/tickets/${id}`, ticketData);
       return response.data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };

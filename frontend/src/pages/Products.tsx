@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { Product } from '../types';
 import { useProducts, useCategories, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../hooks/useQueries';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Package,
   Plus,
@@ -17,6 +19,7 @@ const Products: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -32,9 +35,15 @@ const Products: React.FC = () => {
   // Use React Query hooks
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
-  const createProduct = useCreateProduct();
-  const updateProduct = useUpdateProduct();
-  const deleteProduct = useDeleteProduct();
+  const createProduct = useCreateProduct({
+    onSuccess: () => toast.success('Producto creado correctamente'),
+  });
+  const updateProduct = useUpdateProduct({
+    onSuccess: () => toast.success('Producto actualizado correctamente'),
+  });
+  const deleteProduct = useDeleteProduct({
+    onSuccess: () => toast.success('Producto eliminado correctamente'),
+  });
 
   const loading = productsLoading || categoriesLoading;
 
@@ -61,7 +70,7 @@ const Products: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.categoryId || formData.categoryId === '') {
-      alert('Please select a category');
+      toast.error('Por favor selecciona una categoría');
       return;
     }
     try {
@@ -76,6 +85,7 @@ const Products: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error creating product:', error);
+      toast.error('Error creando el producto');
     }
   };
 
@@ -83,7 +93,7 @@ const Products: React.FC = () => {
     e.preventDefault();
     if (!editingProduct) return;
     if (!formData.categoryId || formData.categoryId === '') {
-      alert('Please select a category');
+      toast.error('Por favor selecciona una categoría');
       return;
     }
     try {
@@ -98,16 +108,23 @@ const Products: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error updating product:', error);
+      toast.error('Error actualizando el producto');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    try {
-      await deleteProduct.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting product:', error);
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteProduct.mutate(itemToDelete);
+      setItemToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setItemToDelete(null);
   };
 
   const openEditModal = (product: Product) => {
@@ -455,6 +472,14 @@ const Products: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar Producto"
+        message="¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

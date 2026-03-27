@@ -7,6 +7,7 @@ import {
   useCreateTicketMessage,
   useUpdateTicket,
 } from '../hooks/useQueries';
+import toast from 'react-hot-toast';
 import {
   AlertCircle,
   Plus,
@@ -36,9 +37,15 @@ const Tickets: React.FC = () => {
   const { data: tickets = [], isLoading: loading } = useTickets();
   const { data: messages = [], isLoading: loadingMessages } = useTicketMessages(selectedTicket?.id || '');
 
-  const createTicketMutation = useCreateTicket();
-  const createMessageMutation = useCreateTicketMessage();
-  const updateTicketMutation = useUpdateTicket();
+  const createTicketMutation = useCreateTicket({
+    onSuccess: () => toast.success('Ticket creado correctamente'),
+  });
+  const createMessageMutation = useCreateTicketMessage({
+    onSuccess: () => toast.success('Mensaje agregado correctamente'),
+  });
+  const updateTicketMutation = useUpdateTicket({
+    onSuccess: () => toast.success('Ticket actualizado correctamente'),
+  });
 
   const filteredTickets = tickets.filter(ticket => {
     const matchesSearch = ticket.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,6 +80,7 @@ const Tickets: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error creating ticket:', error);
+      toast.error('Error creando el ticket');
     }
   };
 
@@ -88,6 +96,7 @@ const Tickets: React.FC = () => {
       setMessageText('');
     } catch (error) {
       console.error('Error adding message:', error);
+      toast.error('Error agregando el mensaje');
     }
   };
 
@@ -102,6 +111,7 @@ const Tickets: React.FC = () => {
       }
     } catch (error) {
       console.error('Error updating ticket status:', error);
+      toast.error('Error actualizando el estado del ticket');
     }
   };
 
@@ -116,6 +126,7 @@ const Tickets: React.FC = () => {
       }
     } catch (error) {
       console.error('Error updating ticket priority:', error);
+      toast.error('Error actualizando la prioridad del ticket');
     }
   };
 

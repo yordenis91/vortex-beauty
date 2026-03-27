@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
 import { Users, Plus, Edit, Trash2, Search, Mail, Building } from 'lucide-react';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 
 // Tipado rápido para el componente
 interface Client {
@@ -54,6 +56,7 @@ const Clients: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -82,9 +85,15 @@ const Clients: React.FC = () => {
 
   // Usar hooks centralizados
   const { data: clients = [], isLoading } = useClients();
-  const createMutation = useCreateClient();
-  const updateMutation = useUpdateClient();
-  const deleteMutation = useDeleteClient();
+  const createMutation = useCreateClient({
+    onSuccess: () => toast.success('Cliente creado correctamente'),
+  });
+  const updateMutation = useUpdateClient({
+    onSuccess: () => toast.success('Cliente actualizado correctamente'),
+  });
+  const deleteMutation = useDeleteClient({
+    onSuccess: () => toast.success('Cliente eliminado correctamente'),
+  });
 
   // Funciones de UI
   const filteredClients = clients.filter(c => 
@@ -160,7 +169,7 @@ const Clients: React.FC = () => {
     // Validación básica para contraseña (solo crea, no edit)
     if (!editingClient && formData.password) {
       if (formData.password !== formData.confirmPassword) {
-        alert('Password y Confirm Password deben coincidir');
+        toast.error('Password y Confirm Password deben coincidir');
         return;
       }
     }
@@ -198,6 +207,21 @@ const Clients: React.FC = () => {
     }
 
     closeModal();
+  };
+
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutate(itemToDelete);
+      setItemToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setItemToDelete(null);
   };
 
   if (isLoading) {
@@ -266,7 +290,7 @@ const Clients: React.FC = () => {
                   <button onClick={() => openEdit(client)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50">
                     <Edit className="h-5 w-5" />
                   </button>
-                  <button onClick={() => deleteMutation.mutate(client.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50">
+                  <button onClick={() => handleDelete(client.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50">
                     <Trash2 className="h-5 w-5" />
                   </button>
                 </div>
@@ -402,6 +426,14 @@ const Clients: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar Cliente"
+        message="¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

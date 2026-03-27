@@ -101,7 +101,7 @@ const Layout: React.FC = () => {
           <div className="flex items-center flex-shrink-0 px-4 py-6 border-b border-gray-200">
             <h1 className="text-xl font-bold text-gray-900">Vortex</h1>
           </div>
-          <nav className="mt-8 flex-1 px-2 space-y-8">
+          <nav className="mt-8 flex-1 px-2 space-y-8 overflow-y-auto">
             {navigation.map((item, idx) => {
               if ('section' in item) {
                 return (

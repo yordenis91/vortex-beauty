@@ -165,7 +165,7 @@ router.get('/slug/:slug', async (req, res) => {
 // POST /api/knowledge-base - Create a new article
 router.post('/', auth_1.authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.userId;
         const validatedData = createArticleSchema.parse(req.body);
         // Verify category exists and is for knowledge base
         const category = await prismaClient_1.default.category.findFirst({
@@ -218,7 +218,7 @@ router.post('/', auth_1.authenticateToken, async (req, res) => {
 router.put('/:id', auth_1.authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.id;
+        const userId = req.userId;
         const validatedData = updateArticleSchema.parse(req.body);
         // Verify article exists and belongs to user
         const existingArticle = await prismaClient_1.default.knowledgeBase.findFirst({
@@ -309,7 +309,7 @@ router.post('/:id/vote', async (req, res) => {
 router.delete('/:id', auth_1.authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user.id;
+        const userId = req.userId;
         // Verify article exists and belongs to user
         const article = await prismaClient_1.default.knowledgeBase.findFirst({
             where: { id, userId },

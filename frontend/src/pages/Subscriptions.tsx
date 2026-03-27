@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useSubscriptions, useCreateSubscription, useDeleteSubscription, useRenewSubscription, useProducts, useClients } from '../hooks/useQueries';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Zap,
   Plus,
@@ -17,13 +19,20 @@ const Subscriptions: React.FC = () => {
   const { data: subscriptions = [], isLoading: subscriptionsLoading } = useSubscriptions();
   const { data: products = [] } = useProducts();
   const { data: clients = [] } = useClients();
-  const createSubscription = useCreateSubscription();
-  const deleteSubscription = useDeleteSubscription();
-  const renewSubscription = useRenewSubscription();
+  const createSubscription = useCreateSubscription({
+    onSuccess: () => toast.success('Suscripción creada correctamente'),
+  });
+  const deleteSubscription = useDeleteSubscription({
+    onSuccess: () => toast.success('Suscripción cancelada correctamente'),
+  });
+  const renewSubscription = useRenewSubscription({
+    onSuccess: () => toast.success('Suscripción renovada correctamente'),
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     productId: '',
     clientId: '',
@@ -61,16 +70,23 @@ const Subscriptions: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error creating subscription:', error);
+      toast.error('Error creando la suscripción');
     }
   };
 
-  const handleCancel = async (id: string) => {
-    if (!confirm('Are you sure you want to cancel this subscription?')) return;
-    try {
-      await deleteSubscription.mutateAsync(id);
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
+  const handleCancel = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteSubscription.mutate(itemToDelete);
+      setItemToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setItemToDelete(null);
   };
 
   const handleRenew = async (id: string) => {
@@ -78,6 +94,7 @@ const Subscriptions: React.FC = () => {
       await renewSubscription.mutateAsync(id);
     } catch (error) {
       console.error('Error renewing subscription:', error);
+      toast.error('Error renovando la suscripción');
     }
   };
 
@@ -355,6 +372,14 @@ const Subscriptions: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Cancelar Suscripción"
+        message="¿Estás seguro de que quieres cancelar esta suscripción? Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

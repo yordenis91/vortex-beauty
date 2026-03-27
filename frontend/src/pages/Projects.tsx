@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import type { Project } from '../types';
 import { useProjects, useClients, useCreateProject, useUpdateProject, useDeleteProject } from '../hooks/useQueries';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   FolderOpen,
   Plus,
@@ -18,6 +20,7 @@ const Projects: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProject, setEditingProject] = useState<any | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     name: string;
     description: string;
@@ -39,9 +42,15 @@ const Projects: React.FC = () => {
   // Use React Query hooks
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const createProject = useCreateProject();
-  const updateProject = useUpdateProject();
-  const deleteProject = useDeleteProject();
+  const createProject = useCreateProject({
+    onSuccess: () => toast.success('Proyecto creado correctamente'),
+  });
+  const updateProject = useUpdateProject({
+    onSuccess: () => toast.success('Proyecto actualizado correctamente'),
+  });
+  const deleteProject = useDeleteProject({
+    onSuccess: () => toast.success('Proyecto eliminado correctamente'),
+  });
 
   const loading = projectsLoading || clientsLoading;
 
@@ -94,13 +103,19 @@ const Projects: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
-    try {
-      await deleteProject.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting project:', error);
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteProject.mutate(itemToDelete);
+      setItemToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setItemToDelete(null);
   };
 
   const openEditModal = (project: Project) => {
@@ -384,6 +399,14 @@ const Projects: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar Proyecto"
+        message="¿Estás seguro de que quieres eliminar este proyecto? Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

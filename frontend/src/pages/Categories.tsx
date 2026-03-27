@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../hooks/useQueries';
 import type { Category } from '../types';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   Folder,
   Plus,
@@ -14,6 +16,7 @@ const Categories: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -25,9 +28,15 @@ const Categories: React.FC = () => {
 
   // Use React Query hooks
   const { data: categories = [], isLoading: loading } = useCategories();
-  const createCategory = useCreateCategory();
-  const updateCategory = useUpdateCategory();
-  const deleteCategory = useDeleteCategory();
+  const createCategory = useCreateCategory({
+    onSuccess: () => toast.success('Categoría creada correctamente'),
+  });
+  const updateCategory = useUpdateCategory({
+    onSuccess: () => toast.success('Categoría actualizada correctamente'),
+  });
+  const deleteCategory = useDeleteCategory({
+    onSuccess: () => toast.success('Categoría eliminada correctamente'),
+  });
 
   const filteredCategories = categories.filter(category => {
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -55,6 +64,7 @@ const Categories: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error creating category:', error);
+      toast.error('Error creando la categoría');
     }
   };
 
@@ -67,16 +77,23 @@ const Categories: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error updating category:', error);
+      toast.error('Error actualizando la categoría');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
-    try {
-      await deleteCategory.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting category:', error);
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteCategory.mutate(itemToDelete);
+      setItemToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setItemToDelete(null);
   };
 
   const openEditModal = (category: Category) => {
@@ -329,6 +346,14 @@ const Categories: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar Categoría"
+        message="¿Estás seguro de que quieres eliminar esta categoría? Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

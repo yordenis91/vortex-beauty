@@ -5,17 +5,36 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const zod_1 = require("zod");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prismaClient_1 = __importDefault(require("../prismaClient"));
 const auth_1 = require("../middleware/auth");
 const router = express_1.default.Router();
 const clientSchema = zod_1.z.object({
     name: zod_1.z.string().min(1),
     email: zod_1.z.string().email(),
-    phone: zod_1.z.string().optional(),
+    code: zod_1.z.string().optional(),
+    displayName: zod_1.z.string().optional(),
     company: zod_1.z.string().optional(),
+    businessNumber: zod_1.z.string().optional(),
+    type: zod_1.z.enum(['CUSTOMER', 'SUPPLIER']).optional(),
+    phone: zod_1.z.string().optional(),
     address: zod_1.z.string().optional(),
+    city: zod_1.z.string().optional(),
+    state: zod_1.z.string().optional(),
+    zipCode: zod_1.z.string().optional(),
+    country: zod_1.z.string().optional(),
+    secondaryEmail: zod_1.z.string().email().optional(),
+    currency: zod_1.z.string().optional(),
+    groupId: zod_1.z.string().optional(),
+    ownerId: zod_1.z.string().optional(),
     taxId: zod_1.z.string().optional(),
 });
+const createClientSchema = clientSchema.extend({
+    username: zod_1.z.string().min(1).optional(),
+    password: zod_1.z.string().min(6).optional(),
+    sendWelcomeEmail: zod_1.z.boolean().optional(),
+});
+const updateClientSchema = clientSchema.partial();
 // GET /api/clients - List all clients
 router.get('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
@@ -48,11 +67,37 @@ router.get('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, re
 // POST /api/clients - Create new client
 router.post('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
-        const data = clientSchema.parse(req.body);
-        const client = await prismaClient_1.default.client.create({
-            data: { ...data, userId: req.userId },
+        const parsed = createClientSchema.parse(req.body);
+        const { username, password, sendWelcomeEmail, ...clientData } = parsed;
+        const result = await prismaClient_1.default.$transaction(async (tx) => {
+            const newClient = await tx.client.create({
+                data: {
+                    ...clientData,
+                    type: clientData.type || 'CUSTOMER',
+                    currency: clientData.currency || 'USD',
+                    userId: req.userId,
+                },
+            });
+            let newUser = null;
+            if (username && password) {
+                const hashedPassword = await bcryptjs_1.default.hash(password, 10);
+                newUser = await tx.user.create({
+                    data: {
+                        email: clientData.email,
+                        username,
+                        password: hashedPassword,
+                        name: clientData.displayName || clientData.name,
+                        role: 'CLIENT',
+                        clientId: newClient.id,
+                    },
+                });
+                if (sendWelcomeEmail) {
+                    console.log('Sending welcome email to...', clientData.email);
+                }
+            }
+            return { newClient, newUser };
         });
-        res.status(201).json(client);
+        res.status(201).json(result.newClient);
     }
     catch (error) { // Le decimos a TS que confíe en nosotros aquí temporalmente
         // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
@@ -66,10 +111,14 @@ router.post('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res)
 // PUT /api/clients/:id - Update client
 router.put('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
-        const data = clientSchema.parse(req.body);
+        const data = updateClientSchema.parse(req.body);
         const client = await prismaClient_1.default.client.updateMany({
             where: { id: req.params.id, userId: req.userId },
-            data,
+            data: {
+                ...data,
+                type: data.type || undefined,
+                currency: data.currency || undefined,
+            },
         });
         if (client.count === 0) {
             return res.status(404).json({ error: 'Client not found' });

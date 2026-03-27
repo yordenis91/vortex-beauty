@@ -7,6 +7,8 @@ import {
   useUpdateKnowledgeBase,
   useDeleteKnowledgeBase
 } from '../hooks/useQueries';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   BookOpen,
   Plus,
@@ -24,6 +26,7 @@ const KnowledgeBasePage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<KnowledgeBase | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -35,9 +38,15 @@ const KnowledgeBasePage: React.FC = () => {
   const { data: articles = [], isLoading: loading } = useKnowledgeBase();
   const { data: categories = [] } = useCategories('KNOWLEDGE_BASE');
 
-  const createArticleMutation = useCreateKnowledgeBase();
-  const updateArticleMutation = useUpdateKnowledgeBase();
-  const deleteArticleMutation = useDeleteKnowledgeBase();
+  const createArticleMutation = useCreateKnowledgeBase({
+    onSuccess: () => toast.success('Artículo creado correctamente'),
+  });
+  const updateArticleMutation = useUpdateKnowledgeBase({
+    onSuccess: () => toast.success('Artículo actualizado correctamente'),
+  });
+  const deleteArticleMutation = useDeleteKnowledgeBase({
+    onSuccess: () => toast.success('Artículo eliminado correctamente'),
+  });
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,6 +73,7 @@ const KnowledgeBasePage: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error creating article:', error);
+      toast.error('Error creando el artículo');
     }
   };
 
@@ -79,16 +89,23 @@ const KnowledgeBasePage: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error updating article:', error);
+      toast.error('Error actualizando el artículo');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this article?')) return;
-    try {
-      await deleteArticleMutation.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting article:', error);
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteArticleMutation.mutate(itemToDelete);
+      setItemToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setItemToDelete(null);
   };
 
   const openEditModal = (article: KnowledgeBase) => {
@@ -448,6 +465,14 @@ const KnowledgeBasePage: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar Artículo"
+        message="¿Estás seguro de que quieres eliminar este artículo? Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

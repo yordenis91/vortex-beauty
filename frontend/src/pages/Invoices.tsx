@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useInvoices, useClients, useProjects, useCreateInvoice, useUpdateInvoice, useDeleteInvoice } from '../hooks/useQueries';
 import type { Invoice, InvoiceItem } from '../types';
+import toast from 'react-hot-toast';
+import ConfirmModal from '../components/ConfirmModal';
 import {
   FileText,
   Plus,
@@ -21,6 +23,7 @@ const Invoices: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<any | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState<{
     invoiceNumber: string;
     clientId: string;
@@ -50,9 +53,15 @@ const Invoices: React.FC = () => {
   const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
-  const createInvoice = useCreateInvoice();
-  const updateInvoice = useUpdateInvoice();
-  const deleteInvoice = useDeleteInvoice();
+  const createInvoice = useCreateInvoice({
+    onSuccess: () => toast.success('Factura creada correctamente'),
+  });
+  const updateInvoice = useUpdateInvoice({
+    onSuccess: () => toast.success('Factura actualizada correctamente'),
+  });
+  const deleteInvoice = useDeleteInvoice({
+    onSuccess: () => toast.success('Factura eliminada correctamente'),
+  });
 
   const loading = invoicesLoading || clientsLoading || projectsLoading;
 
@@ -205,17 +214,23 @@ const Invoices: React.FC = () => {
       resetForm();
     } catch (error) {
       console.error('Error updating invoice:', error);
-      alert('Error updating invoice. Please try again.');
+      toast.error('Error actualizando la factura. Por favor, inténtalo de nuevo.');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
-    try {
-      await deleteInvoice.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting invoice:', error);
+  const handleDelete = (id: string) => {
+    setItemToDelete(id);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteInvoice.mutate(itemToDelete);
+      setItemToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setItemToDelete(null);
   };
 
   const openEditModal = (invoice: Invoice) => {
@@ -733,6 +748,14 @@ const Invoices: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <ConfirmModal
+        isOpen={itemToDelete !== null}
+        title="Eliminar Factura"
+        message="¿Estás seguro de que quieres eliminar esta factura? Esta acción no se puede deshacer."
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 };

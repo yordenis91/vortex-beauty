@@ -29,17 +29,17 @@ const AdminLayout: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { section: 'Business' },
+    { section: 'Business', highlight: true },
     { name: 'Clients', href: '/admin/clients', icon: Users },
     { name: 'Projects', href: '/admin/projects', icon: FolderOpen },
     { name: 'Invoices', href: '/admin/invoices', icon: FileText },
-    { section: '🚀 SaaS Platform', highlight: true },
-    { name: '📦 Products', href: '/admin/products', icon: Package, highlight: true },
-    { name: '⚡ Subscriptions', href: '/admin/subscriptions', icon: Zap, highlight: true },
-    { name: '📁 Categories', href: '/admin/categories', icon: Folder },
-    { section: '🎧 Support & Learning', highlight: true },
-    { name: '🎫 Tickets', href: '/admin/tickets', icon: AlertCircle, highlight: true },
-    { name: '📚 Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen, highlight: true },
+    { section: 'SaaS Platform', highlight: true },
+    { name: 'Products', href: '/admin/products', icon: Package },
+    { name: 'Subscriptions', href: '/admin/subscriptions', icon: Zap },
+    { name: 'Categories', href: '/admin/categories', icon: Folder },
+    { section: '📚 Support & Learning', highlight: true },
+    { name: 'Tickets', href: '/admin/tickets', icon: AlertCircle },
+    { name: 'Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen },
   ];
 
   return (
@@ -50,7 +50,7 @@ const AdminLayout: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileMenuOpen(false)} />
           <div className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
             <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Vortex Admin</h2>
+              <h3 className="text-lg font-semibold text-black">Vortex Admin</h3>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -99,9 +99,9 @@ const AdminLayout: React.FC = () => {
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           <div className="flex items-center flex-shrink-0 px-4 py-6 border-b border-gray-200">
-            <h1 className="text-xl font-bold text-gray-900">Vortex Admin</h1>
+            <h1 className="text-lg font-bold text-black">Vortex Admin</h1>
           </div>
-          <nav className="mt-8 flex-1 px-2 space-y-8">
+          <nav className="mt-8 flex-1 px-2 space-y-8 overflow-y-auto">
             {navigation.map((item, idx) => {
               if ('section' in item) {
                 return (

@@ -28,7 +28,7 @@ const createMessageSchema = zod_1.z.object({
     isInternal: zod_1.z.boolean().default(false),
 });
 // GET /api/tickets - Get all tickets (for agents) or client tickets
-router.get('/', auth_1.authenticateToken, async (req, res) => {
+router.get('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
         const userId = req.userId;
         const { status, priority, assignedTo, clientId } = req.query;
@@ -125,7 +125,7 @@ router.get('/:id', auth_1.authenticateToken, async (req, res) => {
     }
 });
 // POST /api/tickets - Create a new ticket
-router.post('/', auth_1.authenticateToken, async (req, res) => {
+router.post('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
         const userId = req.userId;
         const validatedData = createTicketSchema.parse(req.body);
@@ -174,7 +174,7 @@ router.post('/', auth_1.authenticateToken, async (req, res) => {
     }
 });
 // PUT /api/tickets/:id - Update a ticket
-router.put('/:id', auth_1.authenticateToken, async (req, res) => {
+router.put('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
         const id = req.params.id;
         const userId = req.userId;
@@ -276,7 +276,7 @@ router.post('/:id/messages', auth_1.authenticateToken, async (req, res) => {
     }
 });
 // DELETE /api/tickets/:id - Delete a ticket (admin only)
-router.delete('/:id', auth_1.authenticateToken, async (req, res) => {
+router.delete('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
         const id = req.params.id;
         const userId = req.userId;
