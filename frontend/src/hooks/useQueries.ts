@@ -321,3 +321,37 @@ export const useRenewSubscription = () => {
     },
   });
 };
+
+// Portal hooks - Client-specific data
+export const useMyInvoices = () => {
+  return useQuery({
+    queryKey: ['my-invoices'],
+    queryFn: async () => {
+      const response = await api.get<Invoice[]>('/portal/my-invoices');
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useMySubscriptions = () => {
+  return useQuery({
+    queryKey: ['my-subscriptions'],
+    queryFn: async () => {
+      const response = await api.get<Subscription[]>('/portal/my-subscriptions');
+      return response.data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+export const useMyProfile = () => {
+  return useQuery({
+    queryKey: ['my-profile'],
+    queryFn: async () => {
+      const response = await api.get<any>('/portal/my-profile');
+      return response.data;
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};

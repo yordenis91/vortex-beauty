@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -28,7 +28,7 @@ const createMessageSchema = z.object({
 });
 
 // GET /api/tickets - Get all tickets (for agents) or client tickets
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId;
     const { status, priority, assignedTo, clientId } = req.query;
@@ -130,7 +130,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/tickets - Create a new ticket
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId;
     const validatedData = createTicketSchema.parse(req.body);
@@ -186,7 +186,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/tickets/:id - Update a ticket
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id as string;
     const userId = (req as any).userId;
@@ -302,7 +302,7 @@ router.post('/:id/messages', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/tickets/:id - Delete a ticket (admin only)
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const id = req.params.id as string;
     const userId = (req as any).userId;

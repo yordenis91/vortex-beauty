@@ -1,6 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Layout from './components/Layout';
+import AdminLayout from './components/AdminLayout';
+import ClientLayout from './components/ClientLayout';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -12,9 +15,31 @@ import Subscriptions from './pages/Subscriptions';
 import Categories from './pages/Categories';
 import Tickets from './pages/Tickets';
 import KnowledgeBase from './pages/KnowledgeBase';
+import MyInvoices from './pages/MyInvoices';
+import MySubscriptions from './pages/MySubscriptions';
+import MyProfile from './pages/MyProfile';
 
-// Protected Route component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error instanceof Error && 'status' in error && typeof error.status === 'number') {
+          return error.status >= 500 && failureCount < 3;
+        }
+        return failureCount < 3;
+      },
+    },
+  },
+});
+
+/**
+ * Protected route component para usuarios ADMIN
+ */
+const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -29,41 +54,119 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
     return <Navigate to="/login" replace />;
   }
 
+  if (user.role !== 'ADMIN') {
+    return <Navigate to="/portal/my-invoices" replace />;
+  }
+
   return <>{children}</>;
+};
+
+/**
+ * Protected route component para usuarios CLIENT
+ */
+const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Si es ADMIN, redirige al panel de admin
+  if (user.role === 'ADMIN') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+/**
+ * Root redirect component que redirige a los usuarios según su rol
+ */
+const RootRedirect: React.FC = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirige según el rol
+  return user.role === 'ADMIN' 
+    ? <Navigate to="/admin/dashboard" replace /> 
+    : <Navigate to="/portal/my-invoices" replace />;
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Protected routes */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="clients" element={<Clients />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="invoices" element={<Invoices />} />
-            <Route path="products" element={<Products />} />
-            <Route path="subscriptions" element={<Subscriptions />} />
-            <Route path="categories" element={<Categories />} />
-            <Route path="tickets" element={<Tickets />} />
-            <Route path="knowledge-base" element={<KnowledgeBase />} />
-          </Route>
+            {/* Root redirect */}
+            <Route path="/" element={<RootRedirect />} />
 
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+            {/* Admin routes */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="clients" element={<Clients />} />
+              <Route path="projects" element={<Projects />} />
+              <Route path="invoices" element={<Invoices />} />
+              <Route path="products" element={<Products />} />
+              <Route path="subscriptions" element={<Subscriptions />} />
+              <Route path="categories" element={<Categories />} />
+              <Route path="tickets" element={<Tickets />} />
+              <Route path="knowledge-base" element={<KnowledgeBase />} />
+            </Route>
+
+            {/* Client/Portal routes */}
+            <Route
+              path="/portal"
+              element={
+                <ClientRoute>
+                  <ClientLayout />
+                </ClientRoute>
+              }
+            >
+              <Route index element={<Navigate to="/portal/my-invoices" replace />} />
+              <Route path="my-invoices" element={<MyInvoices />} />
+              <Route path="my-subscriptions" element={<MySubscriptions />} />
+              <Route path="my-profile" element={<MyProfile />} />
+            </Route>
+
+            {/* Catch all - redirect to root */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

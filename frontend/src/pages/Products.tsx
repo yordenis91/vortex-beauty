@@ -60,6 +60,10 @@ const Products: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.categoryId || formData.categoryId === '') {
+      alert('Please select a category');
+      return;
+    }
     try {
       const productData = {
         ...formData,
@@ -78,6 +82,10 @@ const Products: React.FC = () => {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
+    if (!formData.categoryId || formData.categoryId === '') {
+      alert('Please select a category');
+      return;
+    }
     try {
       const productData = {
         ...formData,
@@ -364,8 +372,9 @@ const Products: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Billing Cycle</label>
+                    <label className="block text-sm font-medium text-gray-700">Billing Cycle *</label>
                     <select
+                      required
                       value={formData.billingCycle}
                       onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value as any })}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"

@@ -1,8 +1,12 @@
 // User types
+export type UserRole = 'ADMIN' | 'CLIENT';
+
 export interface User {
   id: string;
   email: string;
   name: string;
+  role: UserRole;
+  clientId?: string;
   createdAt: string;
   updatedAt: string;
 }

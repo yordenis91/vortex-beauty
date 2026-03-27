@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -13,7 +13,7 @@ const projectSchema = z.object({
 });
 
 // GET /api/projects - List all projects
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const projects = await prisma.project.findMany({
       where: { userId: (req as any).userId },
@@ -26,7 +26,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/projects - Create new project
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const data = projectSchema.parse(req.body);
 
@@ -48,7 +48,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/projects/:id - Update project
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const data = projectSchema.parse(req.body);
 
@@ -71,7 +71,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/projects/:id - Delete project
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     await prisma.project.delete({
       where: { id: req.params.id as string },

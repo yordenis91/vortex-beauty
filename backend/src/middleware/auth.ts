@@ -3,6 +3,11 @@ import { Request, Response, NextFunction } from 'express';
 
 interface AuthRequest extends Request {
   userId?: string;
+  user?: {
+    userId: string;
+    role: 'ADMIN' | 'CLIENT';
+    clientId?: string;
+  };
 }
 
 export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -18,7 +23,29 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
-    req.userId = (decoded as any).userId;
+    const decodedUser = decoded as any;
+    req.userId = decodedUser.userId;
+    req.user = {
+      userId: decodedUser.userId,
+      role: decodedUser.role || 'CLIENT',
+      clientId: decodedUser.clientId,
+    };
     next();
   });
+};
+
+/**
+ * Middleware para verificar que el usuario es ADMIN
+ * Debe ser utilizado DESPUÉS de authenticateToken
+ */
+export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  next();
 };

@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -15,7 +15,7 @@ const clientSchema = z.object({
 });
 
 // GET /api/clients - List all clients
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
       where: { userId: (req as any).userId },
@@ -28,7 +28,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // GET /api/clients/:id - Get single client
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const client = await prisma.client.findFirst({
       where: { id: req.params.id as string, userId: (req as any).userId },
@@ -46,7 +46,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/clients - Create new client
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const data = clientSchema.parse(req.body);
 
@@ -67,7 +67,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/clients/:id - Update client
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const data = clientSchema.parse(req.body);
 
@@ -97,7 +97,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/clients/:id - Delete client
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const client = await prisma.client.deleteMany({
       where: { id: req.params.id as string, userId: (req as any).userId },

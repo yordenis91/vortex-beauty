@@ -132,14 +132,15 @@ const Invoices: React.FC = () => {
     }
 
     try {
-      const subtotal = calculateTotal(formData.items);
       const dataToSend: any = {
-        ...formData,
-        subtotal: Number(subtotal),
-        totalAmount: Number(subtotal), // La API calcula el total incluyendo tax, pero por ahora usamos subtotal
-        taxRate: 0, // Por defecto sin tax
+        invoiceNumber: formData.invoiceNumber,
+        clientId: formData.clientId,
         projectId: formData.projectId || undefined,
-        // Asegurar que los items no tengan IDs para nuevos items
+        issueDate: formData.issueDate,
+        dueDate: formData.dueDate,
+        status: formData.status,
+        notes: formData.notes,
+        taxRate: 0, // Por defecto sin tax; backend calculará subtotal y totalAmount
         items: formData.items.map(item => ({
           description: item.description,
           quantity: Number(item.quantity),
@@ -178,14 +179,15 @@ const Invoices: React.FC = () => {
     }
 
     try {
-      const subtotal = calculateTotal(formData.items);
       const dataToSend: any = {
-        ...formData,
-        subtotal: Number(subtotal),
-        totalAmount: Number(subtotal), // La API calcula el total incluyendo tax, pero por ahora usamos subtotal
-        taxRate: 0, // Por defecto sin tax
+        invoiceNumber: formData.invoiceNumber,
+        clientId: formData.clientId,
         projectId: formData.projectId || undefined,
-        // Limpiar items para que no incluyan IDs (el backend los recrea)
+        issueDate: formData.issueDate,
+        dueDate: formData.dueDate,
+        status: formData.status,
+        notes: formData.notes,
+        taxRate: 0, // Por defecto sin tax; backend calculará subtotal y totalAmount
         items: formData.items.map(item => ({
           description: item.description,
           quantity: Number(item.quantity),

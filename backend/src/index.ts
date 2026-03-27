@@ -11,6 +11,7 @@ import categoryRoutes from './routes/categories';
 import subscriptionRoutes from './routes/subscriptions';
 import ticketRoutes from './routes/tickets';
 import knowledgeBaseRoutes from './routes/knowledgeBase';
+import portalRoutes from './routes/portal';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +33,9 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
+
+// Portal routes (for CLIENT users)
+app.use('/api/portal', portalRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

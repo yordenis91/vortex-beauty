@@ -79,7 +79,13 @@ const Tickets: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await api.post('/tickets', formData);
+      const ticketData = {
+        subject: formData.subject,
+        description: formData.description,
+        priority: formData.priority,
+        ...(formData.categoryId && { categoryId: formData.categoryId }),
+      };
+      await api.post('/tickets', ticketData);
       setShowCreateModal(false);
       resetForm();
       fetchTickets();
@@ -436,7 +442,7 @@ const Tickets: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="CRITICAL">Critical</option>
+                      <option value="URGENT">Critical</option>
                       <option value="HIGH">High</option>
                       <option value="MEDIUM">Medium</option>
                       <option value="LOW">Low</option>

@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -10,9 +10,7 @@ const invoiceSchema = z.object({
   issueDate: z.string().transform(str => new Date(str)),
   dueDate: z.string().transform(str => new Date(str)),
   status: z.enum(['PENDING', 'PAID', 'CANCELLED', 'OVERDUE']).optional(),
-  subtotal: z.number().min(0),
   taxRate: z.number().min(0).max(100).optional(),
-  totalAmount: z.number().min(0),
   notes: z.string().optional(),
   clientId: z.string(),
   projectId: z.string().optional(),
@@ -24,7 +22,7 @@ const invoiceSchema = z.object({
 });
 
 // GET /api/invoices - List all invoices
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const invoices = await prisma.invoice.findMany({
       where: { userId: (req as any).userId },
@@ -38,19 +36,25 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // POST /api/invoices - Create new invoice
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { items, ...invoiceData } = invoiceSchema.parse(req.body);
 
-    // Calculate totals
+    // Calcula subtotal en backend (ignora subtotal/totalAmount de req.body)
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const taxRate = invoiceData.taxRate || 0;
+    const taxRate = invoiceData.taxRate ?? 0;
     const taxAmount = subtotal * (taxRate / 100);
     const totalAmount = subtotal + taxAmount;
 
     const invoice = await prisma.invoice.create({
       data: {
-        ...invoiceData,
+        invoiceNumber: invoiceData.invoiceNumber,
+        issueDate: invoiceData.issueDate,
+        dueDate: invoiceData.dueDate,
+        status: invoiceData.status || 'PENDING',
+        clientId: invoiceData.clientId,
+        projectId: invoiceData.projectId,
+        notes: invoiceData.notes,
         subtotal,
         taxRate,
         totalAmount,
@@ -82,21 +86,24 @@ router.post('/', authenticateToken, async (req, res) => {
 // PUT /api/invoices/:id - Update invoice
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    console.log('PUT /api/invoices/:id - Request body:', req.body);
     const { items, ...invoiceData } = invoiceSchema.parse(req.body);
-    console.log('Parsed invoice data:', invoiceData);
-    console.log('Parsed items:', items);
 
-    // Calculate totals
+    // Calcula subtotal en backend (ignora subtotal/totalAmount de req.body)
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const taxRate = invoiceData.taxRate || 0;
+    const taxRate = invoiceData.taxRate ?? 0;
     const taxAmount = subtotal * (taxRate / 100);
     const totalAmount = subtotal + taxAmount;
 
     const invoice = await prisma.invoice.update({
       where: { id: req.params.id as string },
       data: {
-        ...invoiceData,
+        invoiceNumber: invoiceData.invoiceNumber,
+        issueDate: invoiceData.issueDate,
+        dueDate: invoiceData.dueDate,
+        status: invoiceData.status || 'PENDING',
+        clientId: invoiceData.clientId,
+        projectId: invoiceData.projectId,
+        notes: invoiceData.notes,
         subtotal,
         taxRate,
         totalAmount,

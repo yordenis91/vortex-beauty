@@ -1,219 +1,172 @@
 import React, { useState } from 'react';
-import type { Client } from '../types';
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
-import {
-  Users,
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  Mail,
-  Phone,
-  MapPin
-} from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../lib/api'; // Tu instancia de Axios
+import { Users, Plus, Edit, Trash2, Search, Mail, Building } from 'lucide-react';
+
+// Tipado rápido para el componente
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  address?: string;
+  taxId?: string;
+}
 
 const Clients: React.FC = () => {
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingClient, setEditingClient] = useState<any | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: '',
+  const [showModal, setShowModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  
+  const initialForm = { name: '', email: '', phone: '', company: '', address: '', taxId: '' };
+  const [formData, setFormData] = useState(initialForm);
+
+  // 1. TRAER CLIENTES (GET)
+  const { data: clients = [], isLoading } = useQuery<Client[]>({
+    queryKey: ['clients'],
+    queryFn: async () => {
+      const response = await api.get('/clients');
+      return response.data;
+    }
   });
 
-  // Use React Query hooks
-  const { data: clients = [], isLoading: loading } = useClients();
-  const createClient = useCreateClient();
-  const updateClient = useUpdateClient();
-  const deleteClient = useDeleteClient();
+  // 2. CREAR CLIENTE (POST)
+  const createMutation = useMutation({
+    mutationFn: async (newClient: typeof formData) => {
+      await api.post('/clients', newClient);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] }); // Recarga la tabla
+      closeModal();
+    }
+  });
 
-  const filteredClients = clients.filter(client =>
-    client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.email.toLowerCase().includes(searchTerm.toLowerCase())
+  // 3. ACTUALIZAR CLIENTE (PUT/PATCH)
+  const updateMutation = useMutation({
+    mutationFn: async (data: { id: string; clientData: typeof formData }) => {
+      await api.put(`/clients/${data.id}`, data.clientData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      closeModal();
+    }
+  });
+
+  // 4. ELIMINAR CLIENTE (DELETE)
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/clients/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    }
+  });
+
+  // Funciones de UI
+  const filteredClients = clients.filter(c => 
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    c.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: '',
-    });
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingClient(null);
+    setFormData(initialForm);
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await createClient.mutateAsync(formData);
-      setShowCreateModal(false);
-      resetForm();
-    } catch (error) {
-      console.error('Error creating client:', error);
-    }
-  };
-
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingClient) return;
-    try {
-      await updateClient.mutateAsync({ id: editingClient.id, clientData: formData });
-      setEditingClient(null);
-      resetForm();
-    } catch (error) {
-      console.error('Error updating client:', error);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this client?')) return;
-    try {
-      await deleteClient.mutateAsync(id);
-    } catch (error) {
-      console.error('Error deleting client:', error);
-    }
-  };
-
-  const openEditModal = (client: Client) => {
+  const openEdit = (client: Client) => {
     setEditingClient(client);
     setFormData({
       name: client.name,
       email: client.email,
       phone: client.phone || '',
+      company: client.company || '',
       address: client.address || '',
-      city: client.city || '',
-      state: client.state || '',
-      zipCode: client.zipCode || '',
-      country: client.country || '',
+      taxId: client.taxId || '',
     });
+    setShowModal(true);
   };
 
-  if (loading) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingClient) {
+      updateMutation.mutate({ id: editingClient.id, clientData: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex h-full items-center justify-center min-h-[50vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-full flex flex-col">
       {/* Header */}
-      <div className="md:flex md:items-center md:justify-between">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Clients
-          </h2>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your client relationships and information
-          </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Clientes</h2>
+          <p className="mt-1 text-sm text-gray-500">Gestiona tu cartera de clientes</p>
         </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Add Client
-          </button>
+        <button
+          onClick={() => setShowModal(true)}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Nuevo Cliente
+        </button>
+      </div>
+
+      {/* Buscador */}
+      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Buscar por nombre o email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          />
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search clients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Clients List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      {/* Tabla / Lista (Expandida) */}
+      <div className="bg-white shadow-sm border border-gray-100 rounded-lg flex-1 overflow-hidden">
         {filteredClients.length === 0 ? (
-          <div className="px-4 py-8 text-center text-gray-500">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No clients</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new client.</p>
-            <div className="mt-6">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Add Client
-              </button>
-            </div>
+          <div className="p-12 text-center text-gray-500">
+            <Users className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+            <p>No se encontraron clientes.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200">
+          <ul className="divide-y divide-gray-100">
             {filteredClients.map((client) => (
-              <li key={client.id} className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                        <span className="text-white font-medium text-sm">
-                          {client.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {client.name}
-                      </div>
-                      <div className="flex items-center text-sm text-gray-500 space-x-4">
-                        <div className="flex items-center">
-                          <Mail className="h-4 w-4 mr-1" />
-                          {client.email}
-                        </div>
-                        {client.phone && (
-                          <div className="flex items-center">
-                            <Phone className="h-4 w-4 mr-1" />
-                            {client.phone}
-                          </div>
-                        )}
-                      </div>
-                      {client.city && client.country && (
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <MapPin className="h-4 w-4 mr-1" />
-                          {client.city}, {client.country}
-                        </div>
-                      )}
+              <li key={client.id} className="p-4 hover:bg-gray-50 flex justify-between items-center transition">
+                <div className="flex items-center">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+                    {client.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="ml-4">
+                    <p className="font-medium text-gray-900">{client.name}</p>
+                    <div className="flex space-x-4 text-sm text-gray-500 mt-1">
+                      <span className="flex items-center"><Mail className="h-4 w-4 mr-1" /> {client.email}</span>
+                      {client.company && <span className="flex items-center"><Building className="h-4 w-4 mr-1" /> {client.company}</span>}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => openEditModal(client)}
-                      className="p-1 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-                    >
-                      <Edit className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(client.id)}
-                      className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <button onClick={() => openEdit(client)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50">
+                    <Edit className="h-5 w-5" />
+                  </button>
+                  <button onClick={() => deleteMutation.mutate(client.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50">
+                    <Trash2 className="h-5 w-5" />
+                  </button>
                 </div>
               </li>
             ))}
@@ -221,114 +174,39 @@ const Clients: React.FC = () => {
         )}
       </div>
 
-      {/* Create/Edit Modal */}
-      {(showCreateModal || editingClient) && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingClient ? 'Edit Client' : 'Add New Client'}
-              </h3>
-              <form onSubmit={editingClient ? handleEdit : handleCreate} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email *</label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Address</label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">City</label>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">State</label>
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">ZIP Code</label>
-                    <input
-                      type="text"
-                      value={formData.zipCode}
-                      onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Country</label>
-                    <input
-                      type="text"
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setEditingClient(null);
-                      resetForm();
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    {editingClient ? 'Update' : 'Create'}
-                  </button>
-                </div>
-              </form>
+      {/* Modal Minimalista */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-gray-100">
+              <h3 className="text-xl font-semibold">{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
             </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Empresa</label>
+                  <input type="text" value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} className="w-full border rounded-md p-2 outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                  <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border rounded-md p-2 outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4 border-t mt-6">
+                <button type="button" onClick={closeModal} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancelar</button>
+                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+                  {createMutation.isPending || updateMutation.isPending ? 'Guardando...' : 'Guardar'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -11,6 +11,11 @@ datasource db {
 
 // ================= Enums =================
 
+enum Role {
+  ADMIN
+  CLIENT
+}
+
 enum InvoiceStatus {
   PENDING
   PAID
@@ -32,10 +37,15 @@ model User {
   email     String    @unique
   password  String    // Hash de la contraseña (e.g., bcrypt)
   name      String
+  role      Role      @default(CLIENT) // ADMIN o CLIENT
+  
+  // Relación con Client (un user puede estar asociado a un cliente)
+  clientId  String?
+  client    Client?   @relation("UserAsClient", fields: [clientId], references: [id], onDelete: SetNull)
   
   // Relaciones existentes
   projects  Project[] 
-  clients   Client[]
+  clients   Client[]  @relation("AdminofClient") // Relación inversa: admin de varios clientes
   invoices  Invoice[]
   
   // Nuevas relaciones para HostBilling
@@ -48,6 +58,8 @@ model User {
   
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  @@index([clientId])
 }
 
 model Client {
@@ -61,7 +73,10 @@ model Client {
   
   // Claves foráneas
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation("AdminofClient", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Usuarios (clientes) vinculados a este cliente
+  clientUsers User[]   @relation("UserAsClient")
   
   // Relaciones existentes
   projects  Project[]

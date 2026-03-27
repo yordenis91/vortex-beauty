@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -18,7 +18,7 @@ const createCategorySchema = z.object({
 const updateCategorySchema = createCategorySchema.partial();
 
 // GET /api/categories - Get all categories
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { type } = req.query;
 
@@ -46,7 +46,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // GET /api/categories/:id - Get a specific category
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -75,7 +75,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/categories - Create a new category
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validatedData = createCategorySchema.parse(req.body);
 
@@ -118,7 +118,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/categories/:id - Update a category
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const validatedData = updateCategorySchema.parse(req.body);
@@ -175,7 +175,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/categories/:id - Delete a category
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 

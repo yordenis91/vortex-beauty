@@ -1,0 +1,111 @@
+# Estructura del proyecto Vortex
+
+## raíz
+- docker-compose.yml
+- package.json
+- RBAC_IMPLEMENTATION.md
+- RBAC_SUMMARY.md
+- REACT_QUERY_FIX.md
+- README.md
+
+### backend/
+- Dockerfile
+- package.json
+- prisma.config.d.ts
+- prisma.config.ts
+- tsconfig.json
+- prisma/
+  - schema.prisma
+  - migrations/
+    - migration_lock.toml
+    - 20260322092251_init/
+      - migration.sql
+    - 20260323094419_add_hostbilling_features/
+      - migration.sql
+    - 20260325211529_make_category_optional/
+      - migration.sql
+    - 20260326072108_add_rbac_to_users/
+      - migration.sql
+- src/
+  - index.d.ts
+  - index.js
+  - index.ts
+  - prismaClient.d.ts
+  - prismaClient.js
+  - prismaClient.ts
+  - seed.ts
+  - test-db.ts
+  - test-login.ts
+  - controllers/
+  - middleware/
+    - auth.d.ts
+    - auth.js
+    - auth.ts
+  - routes/
+    - auth.d.ts
+    - auth.js
+    - auth.ts
+    - categories.ts
+    - clients.d.ts
+    - clients.js
+    - clients.ts
+    - invoices.d.ts
+    - invoices.js
+    - invoices.ts
+    - knowledgeBase.ts
+    - portal.ts
+    - products.ts
+    - projects.d.ts
+    - projects.js
+    - projects.ts
+    - subscriptions.ts
+    - tickets.ts
+  - services/
+  - utils/
+
+### frontend/
+- eslint.config.js
+- index.html
+- package.json
+- postcss.config.js
+- README-ReactQuery.md
+- README.md
+- tailwind.config.js
+- tsconfig.app.json
+- tsconfig.json
+- tsconfig.node.json
+- vite.config.ts
+- public/
+- src/
+  - App.css
+  - App.tsx
+  - index.css
+  - main.tsx
+  - assets/
+  - components/
+    - AdminLayout.tsx
+    - ClientLayout.tsx
+    - Layout.tsx
+  - contexts/
+    - AuthContext.tsx
+  - hooks/
+    - useQueries.ts
+  - lib/
+    - api.ts
+  - pages/
+    - Categories.tsx
+    - Clients.tsx
+    - Dashboard.tsx
+    - Invoices.tsx
+    - KnowledgeBase.tsx
+    - Login.tsx
+    - MyInvoices.tsx
+    - MyProfile.tsx
+    - MySubscriptions.tsx
+    - Products.tsx
+    - Projects.tsx
+    - Register.tsx
+    - Subscriptions.tsx
+    - Tickets.tsx
+  - types/
+    - index.ts

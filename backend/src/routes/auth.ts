@@ -31,15 +31,27 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await prisma.user.create({
-      data: { email, password: hashedPassword, name },
-      select: { id: true, email: true, name: true },
+      data: { 
+        email, 
+        password: hashedPassword, 
+        name,
+        role: 'CLIENT', // Por defecto, nuevos usuarios son CLIENT
+      },
+      select: { id: true, email: true, name: true, role: true, clientId: true },
     });
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { 
+        userId: user.id,
+        role: user.role,
+        clientId: user.clientId,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
 
     res.json({ user, token });
-  } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
-    // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
+  } catch (error: any) {
     if (error?.name === 'ZodError') {
       return res.status(400).json({ error: error.errors });
     }
@@ -54,7 +66,18 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ 
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        role: true,
+        clientId: true,
+      },
+    });
+    
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -64,20 +87,36 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET!, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { 
+        userId: user.id,
+        role: user.role,
+        clientId: user.clientId,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
 
     res.json({
-      user: { id: user.id, email: user.email, name: user.name },
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        name: user.name,
+        role: user.role,
+        clientId: user.clientId,
+      },
       token,
     });
-  } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
-    // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
+  } catch (error: any) {
     if (error?.name === 'ZodError') {
       return res.status(400).json({ error: error.errors });
     }
     
-    console.error(error);
-    return res.status(500).json({ error: "Error interno del servidor" });
+    console.error('Login error:', error);
+    return res.status(500).json({ 
+      error: "Error interno del servidor",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
   }
 });
 
@@ -86,7 +125,13 @@ router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: (req as any).userId },
-      select: { id: true, email: true, name: true },
+      select: { 
+        id: true, 
+        email: true, 
+        name: true,
+        role: true,
+        clientId: true,
+      },
     });
 
     if (!user) {

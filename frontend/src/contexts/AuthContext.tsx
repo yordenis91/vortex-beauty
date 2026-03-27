@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { User, AuthResponse } from '../types';
+import type { User, UserRole, AuthResponse } from '../types';
 import api from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
+  role: UserRole | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
@@ -85,6 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value = {
     user,
+    role: user?.role ?? null,
     login,
     register,
     logout,

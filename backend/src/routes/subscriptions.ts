@@ -9,15 +9,15 @@ const router = Router();
 const createSubscriptionSchema = z.object({
   productId: z.string().uuid('Invalid product ID'),
   clientId: z.string().uuid('Invalid client ID'),
-  startDate: z.string().datetime().optional(),
+  startDate: z.string().optional(),
   notes: z.string().optional(),
   autoRenew: z.boolean().default(true),
 });
 
 const updateSubscriptionSchema = z.object({
   status: z.enum(['ACTIVE', 'PENDING', 'CANCELLED', 'EXPIRED', 'SUSPENDED']).optional(),
-  endDate: z.string().datetime().optional(),
-  nextBilling: z.string().datetime().optional(),
+  endDate: z.string().optional(),
+  nextBilling: z.string().optional(),
   notes: z.string().optional(),
   autoRenew: z.boolean().optional(),
 });
@@ -25,7 +25,7 @@ const updateSubscriptionSchema = z.object({
 // GET /api/subscriptions - Get all subscriptions for the authenticated user
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     const { status, clientId, productId } = req.query;
 
     const where: any = { userId };
@@ -54,7 +54,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
 
     const subscription = await prisma.subscription.findFirst({
       where: {
@@ -81,7 +81,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 // POST /api/subscriptions - Create a new subscription
 router.post('/', authenticateToken, async (req, res) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     const validatedData = createSubscriptionSchema.parse(req.body);
 
     // Verify product exists and belongs to user
@@ -170,7 +170,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     const validatedData = updateSubscriptionSchema.parse(req.body);
 
     // Verify subscription exists and belongs to user
@@ -206,7 +206,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
 
     // Verify subscription exists and belongs to user
     const subscription = await prisma.subscription.findFirst({
@@ -238,7 +238,7 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 router.post('/:id/renew', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
 
     // Verify subscription exists and belongs to user
     const subscription = await prisma.subscription.findFirst({

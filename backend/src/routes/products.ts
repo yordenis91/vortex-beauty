@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -21,7 +21,7 @@ const createProductSchema = z.object({
 const updateProductSchema = createProductSchema.partial();
 
 // GET /api/products - Get all products for the authenticated user
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId;
 
@@ -68,7 +68,7 @@ router.get('/public', async (req, res) => {
 });
 
 // GET /api/products/:id - Get a specific product
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = (req as any).user.id;
@@ -111,9 +111,13 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/products - Create a new product
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
     const validatedData = createProductSchema.parse(req.body);
 
     // Verify category exists and belongs to user
@@ -150,10 +154,10 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/products/:id - Update a product
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
     const validatedData = updateProductSchema.parse(req.body);
 
     // Verify product exists and belongs to user
@@ -196,10 +200,10 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/products/:id - Delete a product
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user.id;
+    const userId = (req as any).userId;
 
     // Verify product exists and belongs to user
     const product = await prisma.product.findFirst({
