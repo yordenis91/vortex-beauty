@@ -141,7 +141,7 @@ const Dashboard: React.FC = () => {
         <div className="px-4 py-5 sm:p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Link
-              to="/products"
+              to="/admin/products"
               className="relative block w-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 group"
             >
               <div className="flex items-center justify-between">
@@ -157,7 +157,7 @@ const Dashboard: React.FC = () => {
             </Link>
 
             <Link
-              to="/subscriptions"
+              to="/admin/subscriptions"
               className="relative block w-full bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white hover:from-green-600 hover:to-green-700 transition-all duration-200 group"
             >
               <div className="flex items-center justify-between">
@@ -173,7 +173,7 @@ const Dashboard: React.FC = () => {
             </Link>
 
             <Link
-              to="/knowledge-base"
+              to="/admin/knowledge-base"
               className="relative block w-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white hover:from-purple-600 hover:to-purple-700 transition-all duration-200 group"
             >
               <div className="flex items-center justify-between">
@@ -252,18 +252,27 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="px-4 py-5 sm:p-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <button className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <Link
+              to="/admin/clients"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
               <Users className="mr-2 h-5 w-5" />
               Add Client
-            </button>
-            <button className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            </Link>
+            <Link
+              to="/admin/projects"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            >
               <FolderOpen className="mr-2 h-5 w-5" />
               New Project
-            </button>
-            <button className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+            </Link>
+            <Link
+              to="/admin/invoices"
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            >
               <FileText className="mr-2 h-5 w-5" />
               Create Invoice
-            </button>
+            </Link>
           </div>
         </div>
       </div>
