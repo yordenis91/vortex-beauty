@@ -202,7 +202,47 @@ router.put('/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// DELETE /api/subscriptions/:id - Cancel a subscription
+// PUT /api/subscriptions/:id/cancel - Cancel a subscription (soft delete)
+router.put('/:id/cancel', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id as string;
+    const userId = (req as any).userId;
+
+    // Verify subscription exists and belongs to user
+    const subscription = await prisma.subscription.findFirst({
+      where: { id: id as string, userId },
+    });
+
+    if (!subscription) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    // Cancel the subscription (soft delete - keeps record in DB)
+    const updatedSubscription = await prisma.subscription.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+        cancelledAt: new Date(),
+        endDate: new Date(), // End immediately
+      },
+      include: {
+        product: true,
+        client: true,
+      },
+    });
+
+    res.json(updatedSubscription);
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      return res.status(400).json({ error: 'Validation error', details: error.issues });
+    }
+
+    console.error('Error cancelling subscription:', error);
+    res.status(500).json({ error: 'Failed to cancel subscription' });
+  }
+});
+
+// DELETE /api/subscriptions/:id - Delete a subscription (hard delete)
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
@@ -217,20 +257,15 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Subscription not found' });
     }
 
-    // Cancel the subscription instead of deleting it
-    await prisma.subscription.update({
+    // Physically delete the subscription from database
+    await prisma.subscription.delete({
       where: { id },
-      data: {
-        status: 'CANCELLED',
-        cancelledAt: new Date(),
-        endDate: new Date(), // End immediately
-      },
     });
 
-    res.json({ message: 'Subscription cancelled successfully' });
+    res.json({ message: 'Subscription deleted successfully' });
   } catch (error) {
-    console.error('Error cancelling subscription:', error);
-    res.status(500).json({ error: 'Failed to cancel subscription' });
+    console.error('Error deleting subscription:', error);
+    res.status(500).json({ error: 'Failed to delete subscription' });
   }
 });
 

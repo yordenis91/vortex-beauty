@@ -417,6 +417,26 @@ export const useCreateSubscription = (options?: any) => {
   });
 };
 
+export const useCancelSubscription = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (id: string) => {
+      const response = await api.put(`/subscriptions/${id}/cancel`, {});
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
 export const useDeleteSubscription = (options?: any) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSubscriptions, useCreateSubscription, useDeleteSubscription, useRenewSubscription, useProducts, useClients } from '../hooks/useQueries';
+import { useSubscriptions, useCreateSubscription, useDeleteSubscription, useCancelSubscription, useRenewSubscription, useProducts, useClients } from '../hooks/useQueries';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import {
@@ -22,8 +22,11 @@ const Subscriptions: React.FC = () => {
   const createSubscription = useCreateSubscription({
     onSuccess: () => toast.success('Suscripción creada correctamente'),
   });
-  const deleteSubscription = useDeleteSubscription({
+  const cancelSubscription = useCancelSubscription({
     onSuccess: () => toast.success('Suscripción cancelada correctamente'),
+  });
+  const deleteSubscription = useDeleteSubscription({
+    onSuccess: () => toast.success('Suscripción eliminada correctamente'),
   });
   const renewSubscription = useRenewSubscription({
     onSuccess: () => toast.success('Suscripción renovada correctamente'),
@@ -33,6 +36,7 @@ const Subscriptions: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState<'cancel' | 'delete'>('cancel');
   const [formData, setFormData] = useState({
     productId: '',
     clientId: '',
@@ -74,7 +78,16 @@ const Subscriptions: React.FC = () => {
     }
   };
 
-  const handleCancel = (id: string) => {
+  const handleCancelClick = async (id: string) => {
+    try {
+      await cancelSubscription.mutateAsync(id);
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+    }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setDeleteMode('delete');
     setItemToDelete(id);
   };
 
@@ -84,15 +97,16 @@ const Subscriptions: React.FC = () => {
     try {
       await deleteSubscription.mutateAsync(itemToDelete);
     } catch (error) {
-      const errorMessage = error?.response?.data?.error || 'Error al eliminar el registro.';
-      console.error('Error:', errorMessage);
+      console.error('Error deleting subscription:', error);
     } finally {
       setItemToDelete(null);
+      setDeleteMode('cancel');
     }
   };
 
   const cancelDelete = () => {
     setItemToDelete(null);
+    setDeleteMode('cancel');
   };
 
   const handleRenew = async (id: string) => {
@@ -262,14 +276,21 @@ const Subscriptions: React.FC = () => {
                           <RefreshCw className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => handleCancel(subscription.id)}
-                          className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100"
+                          onClick={() => handleCancelClick(subscription.id)}
+                          className="p-1 rounded-full text-gray-400 hover:text-orange-500 hover:bg-gray-100"
                           title="Cancel subscription"
                         >
-                          <Trash2 className="h-5 w-5" />
+                          <AlertCircle className="h-5 w-5" />
                         </button>
                       </>
                     )}
+                    <button
+                      onClick={() => handleDeleteClick(subscription.id)}
+                      className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100"
+                      title="Delete subscription"
+                    >
+                      <Trash2 className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
               </li>
@@ -381,8 +402,8 @@ const Subscriptions: React.FC = () => {
       
       <ConfirmModal
         isOpen={itemToDelete !== null}
-        title="Cancelar Suscripción"
-        message="¿Estás seguro de que quieres cancelar esta suscripción? Esta acción no se puede deshacer."
+        title={deleteMode === 'delete' ? 'Eliminar Suscripción' : 'Cancelar Suscripción'}
+        message={deleteMode === 'delete' ? '¿Estás seguro de que quieres eliminar esta suscripción? Esta acción no se puede deshacer y será permanente.' : '¿Estás seguro de que quieres cancelar esta suscripción? Podrás renovarla más adelante.'}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
