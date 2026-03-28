@@ -222,9 +222,15 @@ const Invoices: React.FC = () => {
     setItemToDelete(id);
   };
 
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteInvoice.mutate(itemToDelete);
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      await deleteInvoice.mutateAsync(itemToDelete);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.error || 'Error al eliminar el registro.';
+      console.error('Error:', errorMessage);
+    } finally {
       setItemToDelete(null);
     }
   };

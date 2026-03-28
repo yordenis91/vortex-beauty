@@ -116,9 +116,15 @@ const Products: React.FC = () => {
     setItemToDelete(id);
   };
 
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteProduct.mutate(itemToDelete);
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      await deleteProduct.mutateAsync(itemToDelete);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.error || 'Error al eliminar el registro.';
+      console.error('Error:', errorMessage);
+    } finally {
       setItemToDelete(null);
     }
   };

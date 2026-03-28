@@ -1,6 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
-import prisma from '../prismaClient';
+import { Prisma } from '@prisma/client';
+import prisma from '../prismaClient';  // Para hacer las consultas
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
@@ -77,7 +78,12 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
       where: { id: req.params.id as string },
     });
     res.status(204).send();
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      return res.status(409).json({
+        error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. facturas, proyectos o suscripciones).',
+      });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import api from '../lib/api';
 import type { Client, Project, Invoice, Product, Category, Ticket, Subscription } from '../types';
 
@@ -79,6 +80,10 @@ export const useUpdateClient = (options?: any) => {
       const response = await api.put(`/clients/${id}`, clientData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -93,6 +98,10 @@ export const useDeleteClient = (options?: any) => {
     ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/clients/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -110,6 +119,10 @@ export const useCreateClient = (options?: any) => {
       const response = await api.post('/clients', clientData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -126,6 +139,10 @@ export const useUpdateProject = (options?: any) => {
       const response = await api.put(`/projects/${id}`, projectData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -140,6 +157,10 @@ export const useDeleteProject = (options?: any) => {
     ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/projects/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -157,6 +178,10 @@ export const useCreateProject = (options?: any) => {
       const response = await api.post('/projects', projectData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -172,6 +197,10 @@ export const useCreateInvoice = (options?: any) => {
     mutationFn: async (invoiceData: any) => {
       const response = await api.post('/invoices', invoiceData);
       return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -189,6 +218,10 @@ export const useUpdateInvoice = (options?: any) => {
       const response = await api.put(`/invoices/${id}`, invoiceData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -203,6 +236,10 @@ export const useDeleteInvoice = (options?: any) => {
     ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/invoices/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -220,6 +257,10 @@ export const useUpdateProduct = (options?: any) => {
       const response = await api.put(`/products/${id}`, productData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -234,6 +275,10 @@ export const useDeleteProduct = (options?: any) => {
     ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/products/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -251,6 +296,10 @@ export const useCreateProduct = (options?: any) => {
       const response = await api.post('/products', productData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -266,6 +315,10 @@ export const useCreateCategory = (options?: any) => {
     mutationFn: async (categoryData: any) => {
       const response = await api.post('/categories', categoryData);
       return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -283,6 +336,10 @@ export const useUpdateCategory = (options?: any) => {
       const response = await api.put(`/categories/${id}`, categoryData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -297,6 +354,10 @@ export const useDeleteCategory = (options?: any) => {
     ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/categories/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -313,6 +374,10 @@ export const useCreateTicket = (options?: any) => {
     mutationFn: async (ticketData: any) => {
       const response = await api.post('/tickets', ticketData);
       return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -341,6 +406,10 @@ export const useCreateSubscription = (options?: any) => {
       const response = await api.post('/subscriptions', subscriptionData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -355,6 +424,10 @@ export const useDeleteSubscription = (options?: any) => {
     ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/subscriptions/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -371,6 +444,10 @@ export const useRenewSubscription = (options?: any) => {
     mutationFn: async (id: string) => {
       const response = await api.post(`/subscriptions/${id}/renew`, {});
       return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -433,6 +510,10 @@ export const useCreateKnowledgeBase = (options?: any) => {
       const response = await api.post('/knowledge-base', articleData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -449,6 +530,10 @@ export const useUpdateKnowledgeBase = (options?: any) => {
       const response = await api.put(`/knowledge-base/${id}`, articleData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
@@ -463,6 +548,10 @@ export const useDeleteKnowledgeBase = (options?: any) => {
     ...otherOptions,
     mutationFn: async (id: string) => {
       await api.delete(`/knowledge-base/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
@@ -492,6 +581,10 @@ export const useCreateTicketMessage = (options?: any) => {
       const response = await api.post(`/tickets/${ticketId}/messages`, messageData);
       return response.data;
     },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
     onSuccess: (data, variables, context) => {
       const { ticketId } = variables;
       queryClient.invalidateQueries({ queryKey: ['ticket-messages', ticketId] });
@@ -510,6 +603,10 @@ export const useUpdateTicket = (options?: any) => {
     mutationFn: async ({ id, ticketData }: { id: string; ticketData: any }) => {
       const response = await api.patch(`/tickets/${id}`, ticketData);
       return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });

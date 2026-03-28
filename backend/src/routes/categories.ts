@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
@@ -216,7 +217,12 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     });
 
     res.json({ message: 'Category deleted successfully' });
-  } catch (error) {
+  } catch (error: any) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      return res.status(409).json({
+        error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. facturas, proyectos o suscripciones).',
+      });
+    }
     console.error('Error deleting category:', error);
     res.status(500).json({ error: 'Failed to delete category' });
   }

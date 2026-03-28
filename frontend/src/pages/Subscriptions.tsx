@@ -78,9 +78,15 @@ const Subscriptions: React.FC = () => {
     setItemToDelete(id);
   };
 
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteSubscription.mutate(itemToDelete);
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      await deleteSubscription.mutateAsync(itemToDelete);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.error || 'Error al eliminar el registro.';
+      console.error('Error:', errorMessage);
+    } finally {
       setItemToDelete(null);
     }
   };

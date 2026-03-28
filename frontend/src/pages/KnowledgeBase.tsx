@@ -97,9 +97,15 @@ const KnowledgeBasePage: React.FC = () => {
     setItemToDelete(id);
   };
 
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteArticleMutation.mutate(itemToDelete);
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      await deleteArticleMutation.mutateAsync(itemToDelete);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.error || 'Error al eliminar el registro.';
+      console.error('Error:', errorMessage);
+    } finally {
       setItemToDelete(null);
     }
   };

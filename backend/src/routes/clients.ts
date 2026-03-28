@@ -1,6 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
@@ -158,19 +159,30 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 // DELETE /api/clients/:id - Delete client
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const client = await prisma.client.deleteMany({
+    // Verify client exists and belongs to user
+    const existingClient = await prisma.client.findFirst({
       where: { id: req.params.id as string, userId: (req as any).userId },
     });
 
-    if (client.count === 0) {
+    if (!existingClient) {
       return res.status(404).json({ error: 'Client not found' });
     }
+
+    await prisma.client.delete({
+      where: { id: req.params.id as string },
+    });
 
     res.json({ message: 'Client deleted successfully' });
   } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
     // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
     if (error?.name === 'ZodError') {
       return res.status(400).json({ error: error.errors });
+    }
+
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+      return res.status(409).json({
+        error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. facturas, proyectos o suscripciones).',
+      });
     }
     
     console.error(error);

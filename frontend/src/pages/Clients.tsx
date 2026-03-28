@@ -213,9 +213,15 @@ const Clients: React.FC = () => {
     setItemToDelete(id);
   };
 
-  const confirmDelete = () => {
-    if (itemToDelete) {
-      deleteMutation.mutate(itemToDelete);
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    try {
+      await deleteMutation.mutateAsync(itemToDelete);
+    } catch (error) {
+      const errorMessage = error?.response?.data?.error || 'Error al eliminar el registro.';
+      console.error('Error:', errorMessage);
+    } finally {
       setItemToDelete(null);
     }
   };
