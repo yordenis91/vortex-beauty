@@ -1,0 +1,204 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const zod_1 = require("zod");
+const client_1 = require("@prisma/client");
+const prismaClient_1 = __importDefault(require("../prismaClient"));
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+// Validation schemas
+const createAppointmentSchema = zod_1.z.object({
+    date: zod_1.z.string().datetime('Invalid date format'),
+    startTime: zod_1.z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in format HH:mm'),
+    endTime: zod_1.z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm'),
+    clientId: zod_1.z.string().uuid('Invalid client ID'),
+    productId: zod_1.z.string().uuid('Invalid product ID'),
+    status: zod_1.z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED']).default('SCHEDULED'),
+    notes: zod_1.z.string().optional(),
+});
+const updateAppointmentSchema = createAppointmentSchema.partial();
+// GET /api/appointments - Get all appointments for the authenticated user
+router.get('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const appointments = await prismaClient_1.default.appointment.findMany({
+            include: {
+                client: true,
+                product: true,
+            },
+            orderBy: { date: 'asc' },
+        });
+        res.json(appointments);
+    }
+    catch (error) {
+        console.error('Error fetching appointments:', error);
+        res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+});
+// GET /api/appointments/:id - Get a specific appointment
+router.get('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const appointment = await prismaClient_1.default.appointment.findUnique({
+            where: { id },
+            include: {
+                client: true,
+                product: true,
+            },
+        });
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+        res.json(appointment);
+    }
+    catch (error) {
+        console.error('Error fetching appointment:', error);
+        res.status(500).json({ error: 'Failed to fetch appointment' });
+    }
+});
+// POST /api/appointments - Create a new appointment
+router.post('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const validatedData = createAppointmentSchema.parse(req.body);
+        // Verify client exists
+        const client = await prismaClient_1.default.client.findUnique({
+            where: { id: validatedData.clientId },
+        });
+        if (!client) {
+            return res.status(400).json({ error: 'Invalid client' });
+        }
+        // Verify product exists
+        const product = await prismaClient_1.default.product.findUnique({
+            where: { id: validatedData.productId },
+        });
+        if (!product) {
+            return res.status(400).json({ error: 'Invalid product' });
+        }
+        // Check for conflicting appointments
+        const conflictingAppointment = await prismaClient_1.default.appointment.findFirst({
+            where: {
+                clientId: validatedData.clientId,
+                date: new Date(validatedData.date),
+                status: { not: 'CANCELLED' },
+            },
+        });
+        if (conflictingAppointment) {
+            return res.status(400).json({ error: 'Client already has an appointment on this date' });
+        }
+        const appointment = await prismaClient_1.default.appointment.create({
+            data: {
+                date: new Date(validatedData.date),
+                startTime: validatedData.startTime,
+                endTime: validatedData.endTime,
+                status: validatedData.status,
+                notes: validatedData.notes,
+                clientId: validatedData.clientId,
+                productId: validatedData.productId,
+            },
+            include: {
+                client: true,
+                product: true,
+            },
+        });
+        res.status(201).json(appointment);
+    }
+    catch (error) {
+        if (error?.name === 'ZodError') {
+            return res.status(400).json({ error: 'Validation error', details: error.issues });
+        }
+        console.error('Error creating appointment:', error);
+        res.status(500).json({ error: 'Failed to create appointment' });
+    }
+});
+// PUT /api/appointments/:id - Update an appointment
+router.put('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const validatedData = updateAppointmentSchema.parse(req.body);
+        // Verify appointment exists
+        const existingAppointment = await prismaClient_1.default.appointment.findUnique({
+            where: { id },
+        });
+        if (!existingAppointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+        // If client is being changed, verify new client exists
+        if (validatedData.clientId && validatedData.clientId !== existingAppointment.clientId) {
+            const client = await prismaClient_1.default.client.findUnique({
+                where: { id: validatedData.clientId },
+            });
+            if (!client) {
+                return res.status(400).json({ error: 'Invalid client' });
+            }
+        }
+        // If product is being changed, verify new product exists
+        if (validatedData.productId && validatedData.productId !== existingAppointment.productId) {
+            const product = await prismaClient_1.default.product.findUnique({
+                where: { id: validatedData.productId },
+            });
+            if (!product) {
+                return res.status(400).json({ error: 'Invalid product' });
+            }
+        }
+        const dataToUpdate = {};
+        if (validatedData.date)
+            dataToUpdate.date = new Date(validatedData.date);
+        if (validatedData.startTime)
+            dataToUpdate.startTime = validatedData.startTime;
+        if (validatedData.endTime)
+            dataToUpdate.endTime = validatedData.endTime;
+        if (validatedData.status)
+            dataToUpdate.status = validatedData.status;
+        if (validatedData.notes !== undefined)
+            dataToUpdate.notes = validatedData.notes;
+        if (validatedData.clientId)
+            dataToUpdate.clientId = validatedData.clientId;
+        if (validatedData.productId)
+            dataToUpdate.productId = validatedData.productId;
+        const appointment = await prismaClient_1.default.appointment.update({
+            where: { id },
+            data: dataToUpdate,
+            include: {
+                client: true,
+                product: true,
+            },
+        });
+        res.json(appointment);
+    }
+    catch (error) {
+        if (error?.name === 'ZodError') {
+            return res.status(400).json({ error: 'Validation error', details: error.errors });
+        }
+        console.error('Error updating appointment:', error);
+        res.status(500).json({ error: 'Failed to update appointment' });
+    }
+});
+// DELETE /api/appointments/:id - Delete an appointment
+router.delete('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Verify appointment exists
+        const appointment = await prismaClient_1.default.appointment.findUnique({
+            where: { id },
+        });
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+        await prismaClient_1.default.appointment.delete({
+            where: { id },
+        });
+        res.json({ message: 'Appointment deleted successfully' });
+    }
+    catch (error) {
+        if (error instanceof client_1.Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+            return res.status(409).json({
+                error: 'Cannot delete this appointment due to related data in the system.',
+            });
+        }
+        console.error('Error deleting appointment:', error);
+        res.status(500).json({ error: 'Failed to delete appointment' });
+    }
+});
+exports.default = router;

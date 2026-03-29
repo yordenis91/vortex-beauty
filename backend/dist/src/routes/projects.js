@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const zod_1 = require("zod");
-const prismaClient_1 = __importDefault(require("../prismaClient"));
+const client_1 = require("@prisma/client");
+const prismaClient_1 = __importDefault(require("../prismaClient")); // Para hacer las consultas
 const auth_1 = require("../middleware/auth");
 const router = express_1.default.Router();
 const projectSchema = zod_1.z.object({
@@ -75,6 +76,11 @@ router.delete('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req,
         res.status(204).send();
     }
     catch (error) {
+        if (error instanceof client_1.Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+            return res.status(409).json({
+                error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. facturas, proyectos o suscripciones).',
+            });
+        }
         res.status(500).json({ error: 'Internal server error' });
     }
 });

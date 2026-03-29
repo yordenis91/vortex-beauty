@@ -104,6 +104,9 @@ model Client {
   subscriptions Subscription[]
   tickets       Ticket[]
 
+  // Relación con citas
+  appointments  Appointment[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -233,6 +236,7 @@ model Product {
   // Relaciones
   subscriptions Subscription[]
   orderItems   OrderItem[]
+  appointments Appointment[]
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -391,6 +395,31 @@ model KnowledgeBase {
   @@index([status])
 }
 
+// Sistema de Citas (Appointments)
+model Appointment {
+  id          String              @id @default(uuid())
+  date        DateTime            // Fecha exacta de la cita
+  startTime   String              // Hora de inicio (Ej: "10:00")
+  endTime     String              // Hora de fin (Ej: "11:30")
+  status      AppointmentStatus   @default(SCHEDULED)
+  notes       String?             @db.Text
+
+  // Relaciones
+  clientId    String
+  client      Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  productId   String
+  product     Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([clientId])
+  @@index([productId])
+  @@index([date])
+  @@index([status])
+}
+
 // ================= Enums adicionales =================
 
 enum CategoryType {
@@ -449,4 +478,10 @@ enum KBStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
 }

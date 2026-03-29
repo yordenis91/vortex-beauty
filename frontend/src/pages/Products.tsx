@@ -122,8 +122,7 @@ const Products: React.FC = () => {
     try {
       await deleteProduct.mutateAsync(itemToDelete);
     } catch (error) {
-      const errorMessage = error?.response?.data?.error || 'Error al eliminar el registro.';
-      console.error('Error:', errorMessage);
+      console.error('Error deleting record:', error);
     } finally {
       setItemToDelete(null);
     }

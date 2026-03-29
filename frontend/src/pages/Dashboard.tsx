@@ -1,21 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useClients, useProjects, useInvoices } from '../hooks/useQueries';
+import { useClients, useInvoices } from '../hooks/useQueries';
 import {
   Users,
-  FolderOpen,
   FileText,
   DollarSign,
   Calendar,
   Package,
-  Zap,
   BookOpen,
   ArrowRight
 } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
   const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
 
   // Calculate stats
@@ -25,14 +22,13 @@ const Dashboard: React.FC = () => {
 
   const stats = {
     clients: clients.length,
-    projects: projects.length,
     invoices: invoices.length,
     totalRevenue,
   };
 
   const recentInvoices = invoices.slice(0, 5);
 
-  const loading = clientsLoading || projectsLoading || invoicesLoading;
+  const loading = clientsLoading || invoicesLoading;
 
   const statCards = [
     {
@@ -40,12 +36,6 @@ const Dashboard: React.FC = () => {
       value: stats.clients,
       icon: Users,
       color: 'bg-blue-500',
-    },
-    {
-      name: 'Active Projects',
-      value: stats.projects,
-      icon: FolderOpen,
-      color: 'bg-green-500',
     },
     {
       name: 'Total Invoices',
@@ -139,7 +129,7 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
         <div className="px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Link
               to="/admin/products"
               className="relative block w-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 group"
@@ -150,22 +140,6 @@ const Dashboard: React.FC = () => {
                   <h3 className="text-lg font-semibold">Productos</h3>
                   <p className="text-blue-100 text-sm mt-1">
                     Gestiona tus productos y servicios SaaS
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
-              </div>
-            </Link>
-
-            <Link
-              to="/admin/subscriptions"
-              className="relative block w-full bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white hover:from-green-600 hover:to-green-700 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <Zap className="h-8 w-8 mb-2 opacity-90" />
-                  <h3 className="text-lg font-semibold">Suscripciones</h3>
-                  <p className="text-green-100 text-sm mt-1">
-                    Administra las suscripciones de clientes
                   </p>
                 </div>
                 <ArrowRight className="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
@@ -258,13 +232,6 @@ const Dashboard: React.FC = () => {
             >
               <Users className="mr-2 h-5 w-5" />
               Add Client
-            </Link>
-            <Link
-              to="/admin/projects"
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              <FolderOpen className="mr-2 h-5 w-5" />
-              New Project
             </Link>
             <Link
               to="/admin/invoices"

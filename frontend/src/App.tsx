@@ -9,12 +9,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
-import Projects from './pages/Projects';
 import Invoices from './pages/Invoices';
 import Products from './pages/Products';
-import Subscriptions from './pages/Subscriptions';
 import Categories from './pages/Categories';
-import Tickets from './pages/Tickets';
 import KnowledgeBase from './pages/KnowledgeBase';
 import MyInvoices from './pages/MyInvoices';
 import MySubscriptions from './pages/MySubscriptions';
@@ -137,12 +134,9 @@ function App() {
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="clients" element={<Clients />} />
-              <Route path="projects" element={<Projects />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="products" element={<Products />} />
-              <Route path="subscriptions" element={<Subscriptions />} />
               <Route path="categories" element={<Categories />} />
-              <Route path="tickets" element={<Tickets />} />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
             </Route>
 

@@ -4,14 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
   Users,
-  FolderOpen,
   FileText,
   LogOut,
   Menu,
   X,
   Package,
-  Zap,
-  AlertCircle,
   BookOpen,
   Folder
 } from 'lucide-react';
@@ -29,17 +26,14 @@ const Layout: React.FC = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { section: 'Business' },
+    { section: 'Beauty Salon' },
     { name: 'Clients', href: '/clients', icon: Users },
-    { name: 'Projects', href: '/projects', icon: FolderOpen },
     { name: 'Invoices', href: '/invoices', icon: FileText },
-    { section: '🚀 SaaS Platform', highlight: true },
-    { name: '📦 Products', href: '/products', icon: Package, highlight: true },
-    { name: '⚡ Subscriptions', href: '/subscriptions', icon: Zap, highlight: true },
-    { name: '📁 Categories', href: '/categories', icon: Folder },
-    { section: '🎧 Support & Learning', highlight: true },
-    { name: '🎫 Tickets', href: '/tickets', icon: AlertCircle, highlight: true },
-    { name: '📚 Knowledge Base', href: '/knowledge-base', icon: BookOpen, highlight: true },
+    { section: 'Services', highlight: true },
+    { name: 'Products', href: '/products', icon: Package, highlight: true },
+    { name: 'Categories', href: '/categories', icon: Folder },
+    { section: 'Learning & Resources', highlight: true },
+    { name: 'Knowledge Base', href: '/knowledge-base', icon: BookOpen, highlight: true },
   ];
 
   return (

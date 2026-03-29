@@ -285,3 +285,39 @@ export interface CreateKnowledgeBaseRequest {
 export interface VoteRequest {
   helpful: boolean;
 }
+
+// Appointment types
+export interface Appointment {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  notes?: string;
+  clientId: string;
+  productId: string;
+  createdAt: string;
+  updatedAt: string;
+  client?: Client;
+  product?: Product;
+}
+
+export interface CreateAppointmentRequest {
+  date: string;
+  startTime: string;
+  endTime: string;
+  clientId: string;
+  productId: string;
+  status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  notes?: string;
+}
+
+export interface UpdateAppointmentRequest {
+  date?: string;
+  startTime?: string;
+  endTime?: string;
+  clientId?: string;
+  productId?: string;
+  status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  notes?: string;
+}

@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
+const client_1 = require("@prisma/client");
 const prismaClient_1 = __importDefault(require("../prismaClient"));
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
@@ -211,6 +212,11 @@ router.delete('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req,
         res.json({ message: 'Product deleted successfully' });
     }
     catch (error) {
+        if (error instanceof client_1.Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
+            return res.status(409).json({
+                error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. facturas, proyectos o suscripciones).',
+            });
+        }
         console.error('Error deleting product:', error);
         res.status(500).json({ error: 'Failed to delete product' });
     }

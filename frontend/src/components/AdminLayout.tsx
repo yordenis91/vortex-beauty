@@ -4,14 +4,11 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   LayoutDashboard,
   Users,
-  FolderOpen,
   FileText,
   LogOut,
   Menu,
   X,
   Package,
-  Zap,
-  AlertCircle,
   BookOpen,
   Folder
 } from 'lucide-react';
@@ -31,14 +28,11 @@ const AdminLayout: React.FC = () => {
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { section: 'Business', highlight: true },
     { name: 'Clients', href: '/admin/clients', icon: Users },
-    { name: 'Projects', href: '/admin/projects', icon: FolderOpen },
     { name: 'Invoices', href: '/admin/invoices', icon: FileText },
-    { section: 'SaaS Platform', highlight: true },
+    { section: 'Services', highlight: true },
     { name: 'Products', href: '/admin/products', icon: Package },
-    { name: 'Subscriptions', href: '/admin/subscriptions', icon: Zap },
     { name: 'Categories', href: '/admin/categories', icon: Folder },
-    { section: '📚 Support & Learning', highlight: true },
-    { name: 'Tickets', href: '/admin/tickets', icon: AlertCircle },
+    { section: 'Learning & Resources', highlight: true },
     { name: 'Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen },
   ];
 

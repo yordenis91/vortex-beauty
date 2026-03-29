@@ -11,6 +11,7 @@ import categoryRoutes from './routes/categories';
 import subscriptionRoutes from './routes/subscriptions';
 import ticketRoutes from './routes/tickets';
 import knowledgeBaseRoutes from './routes/knowledgeBase';
+import appointmentRoutes from './routes/appointments';
 import portalRoutes from './routes/portal';
 
 const app = express();
@@ -33,6 +34,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 // Portal routes (for CLIENT users)
 app.use('/api/portal', portalRoutes);

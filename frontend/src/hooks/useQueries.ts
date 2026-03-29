@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import type { Client, Project, Invoice, Product, Category, Ticket, Subscription } from '../types';
+import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment } from '../types';
 
 // Clients
 export const useClients = () => {
@@ -630,6 +630,76 @@ export const useUpdateTicket = (options?: any) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+// Appointments
+export const useAppointments = () => {
+  return useQuery({
+    queryKey: ['appointments'],
+    queryFn: async () => {
+      const response = await api.get<Appointment[]>('/appointments');
+      return response.data;
+    },
+  });
+};
+
+export const useCreateAppointment = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (appointmentData: any) => {
+      const response = await api.post('/appointments', appointmentData);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+export const useUpdateAppointment = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async ({ id, appointmentData }: { id: string; appointmentData: any }) => {
+      const response = await api.put(`/appointments/${id}`, appointmentData);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+export const useDeleteAppointment = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (id: string) => {
+      await api.delete(`/appointments/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
