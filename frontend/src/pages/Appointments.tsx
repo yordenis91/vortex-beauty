@@ -1,8 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment } from '../hooks/useQueries';
-import { Calendar, Plus, Edit, Trash2, Check, Clock } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { es } from 'date-fns/locale/es';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 interface Appointment {
   id: string;
@@ -36,13 +40,30 @@ interface FormData {
   notes: string;
 }
 
-type FilterType = 'today' | 'tomorrow' | 'all';
+interface CalendarEvent {
+  title: string;
+  start: Date;
+  end: Date;
+  resource: Appointment;
+}
+
+// FASE 1: Configurar localizer del calendario
+const locales = {
+  es: es,
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+});
 
 const Appointments: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<FilterType>('all');
 
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
@@ -76,35 +97,32 @@ const Appointments: React.FC = () => {
     onSuccess: () => {
       toast.success('Cita eliminada correctamente');
       setItemToDelete(null);
+      closeModal();
     },
   });
 
-  // Funciones de filtrado
-  const getToday = () => new Date().toISOString().split('T')[0];
-  const getTomorrow = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 1);
-    return date.toISOString().split('T')[0];
-  };
+  // FASE 2: Mapeo de Datos - Transformar appointments al formato del calendario
+  const calendarEvents: CalendarEvent[] = useMemo(() => {
+    return appointments.map((appointment) => {
+      // Combinar fecha y hora para crear objetos Date
+      const [year, month, day] = appointment.date.split('T')[0].split('-');
+      const [startHour, startMin] = appointment.startTime.split(':');
+      const [endHour, endMin] = appointment.endTime.split(':');
 
-  const filteredAppointments = useMemo(() => {
-    let filtered = appointments;
+      const start = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(startHour), parseInt(startMin));
+      const end = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(endHour), parseInt(endMin));
 
-    if (filterType === 'today') {
-      filtered = filtered.filter(a => a.date.split('T')[0] === getToday());
-    } else if (filterType === 'tomorrow') {
-      filtered = filtered.filter(a => a.date.split('T')[0] === getTomorrow());
-    }
-
-    return filtered.sort((a, b) => {
-      const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
-      if (dateCompare !== 0) return dateCompare;
-      return a.startTime.localeCompare(b.startTime);
+      return {
+        title: `${appointment.client?.name || 'Sin asignar'} - ${appointment.product?.name || 'Sin servicio'}`,
+        start,
+        end,
+        resource: appointment,
+      };
     });
-  }, [appointments, filterType]);
+  }, [appointments]);
 
   // Funciones de Modal
-  const openModal = (appointment?: Appointment) => {
+  const openModal = (appointment?: Appointment, slotStart?: Date, slotEnd?: Date) => {
     if (appointment) {
       setEditingAppointment(appointment);
       setFormData({
@@ -117,12 +135,23 @@ const Appointments: React.FC = () => {
       });
     } else {
       setEditingAppointment(null);
+      let newDate = new Date().toISOString().split('T')[0];
+      let newStartTime = '10:00';
+      let newEndTime = '11:00';
+
+      // Si se proporciona un slot seleccionado, usar esas horas
+      if (slotStart && slotEnd) {
+        newDate = format(slotStart, 'yyyy-MM-dd');
+        newStartTime = format(slotStart, 'HH:mm');
+        newEndTime = format(slotEnd, 'HH:mm');
+      }
+
       setFormData({
         clientId: '',
         productId: '',
-        date: new Date().toISOString().split('T')[0],
-        startTime: '10:00',
-        endTime: '11:00',
+        date: newDate,
+        startTime: newStartTime,
+        endTime: newEndTime,
         notes: '',
       });
     }
@@ -159,36 +188,41 @@ const Appointments: React.FC = () => {
   };
 
   // Funciones de Acciones
-  const handleCompleteAppointment = (appointment: Appointment) => {
-    if (appointment.status === 'COMPLETED') {
-      toast.success('Esta cita ya está completada');
-      return;
-    }
-
-    updateMutation.mutate({
-      id: appointment.id,
-      appointmentData: {
-        status: 'COMPLETED',
-      },
-    });
-  };
-
   const handleDeleteAppointment = (id: string) => {
     deleteMutation.mutate(id);
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      SCHEDULED: 'bg-blue-100 text-blue-800',
-      COMPLETED: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
+  // FASE 3: Colorear eventos según el status
+  const eventPropGetter = (event: CalendarEvent) => {
+    const status = event.resource.status;
+    
+    let style = {
+      backgroundColor: '#3b82f6', // Azul por defecto (SCHEDULED)
+      borderRadius: '5px',
+      opacity: 0.8,
+      color: 'white',
+      border: '0px',
+      display: 'block',
     };
-    return styles[status as keyof typeof styles] || 'bg-gray-100 text-gray-800';
+
+    if (status === 'COMPLETED') {
+      style.backgroundColor = '#10b981'; // Verde
+    } else if (status === 'CANCELLED') {
+      style.backgroundColor = '#ef4444'; // Rojo
+    }
+
+    return { style };
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  // Manejadores del calendario
+  const handleSelectSlot = (slotInfo: any) => {
+    // Abre modal para crear nueva cita con la hora y fecha del slot seleccionado
+    openModal(undefined, slotInfo.start, slotInfo.end);
+  };
+
+  const handleSelectEvent = (event: CalendarEvent) => {
+    // Abre modal para editar la cita
+    openModal(event.resource);
   };
 
   const isLoading = appointmentsLoading || clientsLoading || productsLoading;
@@ -202,7 +236,7 @@ const Appointments: React.FC = () => {
             Agenda de Citas
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona todas las citas del salón de belleza
+            Gestiona todas las citas del salón de belleza - Haz clic en un espacio para crear una cita o en un evento para editarlo
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -216,140 +250,42 @@ const Appointments: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="border-b border-gray-200">
-          <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            {[
-              { id: 'all', label: 'Todas las Citas' },
-              { id: 'today', label: 'Hoy' },
-              { id: 'tomorrow', label: 'Mañana' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setFilterType(tab.id as FilterType)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  filterType === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      {/* Appointments List */}
-      <div className="space-y-4">
+      {/* Calendario */}
+      <div className="bg-white rounded-lg shadow p-4">
         {isLoading ? (
-          <div className="flex items-center justify-center h-64">
+          <div className="flex items-center justify-center h-screen">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
-        ) : filteredAppointments.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-12">
-            <div className="flex flex-col items-center justify-center text-center">
-              <Calendar className="h-12 w-12 text-gray-400 flex-shrink-0 mb-4" />
-              <h3 className="text-sm font-medium text-gray-900">Sin citas programadas</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {filterType !== 'all'
-                  ? `No hay citas para ${filterType === 'today' ? 'hoy' : 'mañana'}.`
-                  : 'Comienza creando una nueva cita'}
-              </p>
-              <button
-                onClick={() => openModal()}
-                className="mt-4 inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Nueva Cita
-              </button>
-            </div>
-          </div>
         ) : (
-          filteredAppointments.map((appointment) => (
-            <div key={appointment.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    {/* Date */}
-                    <p className="text-sm font-semibold text-gray-500 mb-2">
-                      {formatDate(appointment.date)}
-                    </p>
-
-                    {/* Time and Status */}
-                    <div className="flex items-baseline gap-3 mb-3">
-                      <div className="flex items-center text-lg font-bold text-gray-900">
-                        <Clock className="h-5 w-5 mr-2 text-blue-600" />
-                        {appointment.startTime} - {appointment.endTime}
-                      </div>
-                      <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadge(appointment.status)}`}>
-                        {appointment.status === 'SCHEDULED' && 'Programada'}
-                        {appointment.status === 'COMPLETED' && 'Completada'}
-                        {appointment.status === 'CANCELLED' && 'Cancelada'}
-                      </span>
-                    </div>
-
-                    {/* Client and Service */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Clienta</p>
-                        <p className="mt-1 text-sm font-semibold text-gray-900">
-                          {appointment.client?.name || 'No asignada'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Servicio</p>
-                        <p className="mt-1 text-sm font-semibold text-gray-900">
-                          {appointment.product?.name || 'No especificado'}
-                        </p>
-                        {appointment.product?.price && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            ${Number(appointment.product.price).toFixed(2)}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    {appointment.notes && (
-                      <div className="mt-3 p-2 bg-gray-50 rounded border border-gray-200">
-                        <p className="text-xs font-medium text-gray-500 mb-1">Notas</p>
-                        <p className="text-sm text-gray-700">{appointment.notes}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="ml-4 flex gap-2 flex-shrink-0">
-                    {appointment.status !== 'COMPLETED' && appointment.status !== 'CANCELLED' && (
-                      <button
-                        onClick={() => handleCompleteAppointment(appointment)}
-                        className="inline-flex items-center justify-center rounded-md bg-green-50 p-2 text-green-700 hover:bg-green-100 transition-colors"
-                        title="Completar cita"
-                      >
-                        <Check className="h-5 w-5" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => openModal(appointment)}
-                      className="inline-flex items-center justify-center rounded-md bg-blue-50 p-2 text-blue-700 hover:bg-blue-100 transition-colors"
-                      title="Editar cita"
-                    >
-                      <Edit className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => setItemToDelete(appointment.id)}
-                      className="inline-flex items-center justify-center rounded-md bg-red-50 p-2 text-red-700 hover:bg-red-100 transition-colors"
-                      title="Eliminar cita"
-                    >
-                      <Trash2 className="h-5 w-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
+          <Calendar
+            localizer={localizer}
+            events={calendarEvents}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 'calc(100vh - 200px)' }}
+            selectable
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            eventPropGetter={eventPropGetter}
+            popup
+            culture="es"
+            messages={{
+              today: 'Hoy',
+              previous: 'Anterior',
+              next: 'Siguiente',
+              month: 'Mes',
+              week: 'Semana',
+              day: 'Día',
+              agenda: 'Agenda',
+              date: 'Fecha',
+              time: 'Hora',
+              event: 'Evento',
+              allDay: 'Todo el día',
+              work_week: 'Semana Laboral',
+              yesterday: 'Ayer',
+              tomorrow: 'Mañana',
+            }}
+          />
         )}
       </div>
 
@@ -366,6 +302,8 @@ const Appointments: React.FC = () => {
             {/* Modal */}
             <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                
+                {/* Header del Modal arreglado */}
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
                     {editingAppointment ? 'Editar Cita' : 'Nueva Cita'}
@@ -374,15 +312,15 @@ const Appointments: React.FC = () => {
                     onClick={closeModal}
                     className="text-gray-400 hover:text-gray-500 focus:outline-none"
                   >
-                    <span className="sr-only">Close</span>
+                    <span className="sr-only">Cerrar</span>
                     <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
                 </div>
 
+                {/* Apertura del formulario agregada */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Clienta */}
                   <div>
                     <label htmlFor="client" className="block text-sm font-medium text-gray-700">
                       Clienta <span className="text-red-500">*</span>
@@ -485,21 +423,37 @@ const Appointments: React.FC = () => {
                   </div>
 
                   {/* Botones */}
-                  <div className="flex justify-end gap-3 pt-6 border-t">
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={createMutation.isPending || updateMutation.isPending}
-                      className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar Cita'}
-                    </button>
+                  <div className="flex justify-between gap-3 pt-6 border-t mt-6">
+                    {/* Botón de eliminar, solo si estamos editando */}
+                    {editingAppointment ? (
+                      <button
+                        type="button"
+                        onClick={() => setItemToDelete(editingAppointment.id)}
+                        className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-transparent rounded-md shadow-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Eliminar
+                      </button>
+                    ) : (
+                      <div></div> /* Espaciador para alinear los otros botones a la derecha */
+                    )}
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                        className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar Cita'}
+                      </button>
+                    </div>
                   </div>
                 </form>
               </div>
