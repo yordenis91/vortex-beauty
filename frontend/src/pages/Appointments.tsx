@@ -6,7 +6,11 @@ import ConfirmModal from '../components/ConfirmModal';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { es } from 'date-fns/locale/es';
+
+// Importaciones necesarias para el Drag and Drop
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 
 interface Appointment {
   id: string;
@@ -38,6 +42,7 @@ interface FormData {
   startTime: string;
   endTime: string;
   notes: string;
+  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 }
 
 interface CalendarEvent {
@@ -47,7 +52,7 @@ interface CalendarEvent {
   resource: Appointment;
 }
 
-// FASE 1: Configurar localizer del calendario
+// Configurar localizer del calendario
 const locales = {
   es: es,
 };
@@ -59,6 +64,12 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+// Extraemos la función real en caso de que Vite la haya envuelto en un objeto 'default'
+const withDragAndDropFn = (withDragAndDrop as any).default || withDragAndDrop;
+
+// Envolver el calendario usando la función extraída
+const DnDCalendar = withDragAndDropFn(Calendar as any);
 
 const Appointments: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
@@ -72,6 +83,7 @@ const Appointments: React.FC = () => {
     startTime: '10:00',
     endTime: '11:00',
     notes: '',
+    status: 'SCHEDULED',
   });
 
   // Hooks
@@ -101,10 +113,9 @@ const Appointments: React.FC = () => {
     },
   });
 
-  // FASE 2: Mapeo de Datos - Transformar appointments al formato del calendario
+  // Mapeo de Datos - Transformar appointments al formato del calendario
   const calendarEvents: CalendarEvent[] = useMemo(() => {
     return appointments.map((appointment) => {
-      // Combinar fecha y hora para crear objetos Date
       const [year, month, day] = appointment.date.split('T')[0].split('-');
       const [startHour, startMin] = appointment.startTime.split(':');
       const [endHour, endMin] = appointment.endTime.split(':');
@@ -132,6 +143,7 @@ const Appointments: React.FC = () => {
         startTime: appointment.startTime,
         endTime: appointment.endTime,
         notes: appointment.notes || '',
+        status: appointment.status,
       });
     } else {
       setEditingAppointment(null);
@@ -139,7 +151,6 @@ const Appointments: React.FC = () => {
       let newStartTime = '10:00';
       let newEndTime = '11:00';
 
-      // Si se proporciona un slot seleccionado, usar esas horas
       if (slotStart && slotEnd) {
         newDate = format(slotStart, 'yyyy-MM-dd');
         newStartTime = format(slotStart, 'HH:mm');
@@ -153,6 +164,7 @@ const Appointments: React.FC = () => {
         startTime: newStartTime,
         endTime: newEndTime,
         notes: '',
+        status: 'SCHEDULED',
       });
     }
     setShowModal(true);
@@ -192,7 +204,7 @@ const Appointments: React.FC = () => {
     deleteMutation.mutate(id);
   };
 
-  // FASE 3: Colorear eventos según el status
+  // Colorear eventos según el status
   const eventPropGetter = (event: CalendarEvent) => {
     const status = event.resource.status;
     
@@ -215,14 +227,44 @@ const Appointments: React.FC = () => {
   };
 
   // Manejadores del calendario
-  const handleSelectSlot = (slotInfo: any) => {
-    // Abre modal para crear nueva cita con la hora y fecha del slot seleccionado
+  const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
     openModal(undefined, slotInfo.start, slotInfo.end);
   };
 
   const handleSelectEvent = (event: CalendarEvent) => {
-    // Abre modal para editar la cita
     openModal(event.resource);
+  };
+
+  // Función que maneja cuando se suelta el evento arrastrado (Tipado corregido)
+  const handleEventDrop = async ({ event, start, end }: { event: CalendarEvent; start: string | Date; end: string | Date }) => {
+    const appointment = event.resource;
+    
+    const newStart = new Date(start);
+    const newEnd = new Date(end);
+
+    if (!newStart || !newEnd) {
+      toast.error('Error al mover la cita');
+      return;
+    }
+
+    try {
+      const updatedAppointment = {
+        clientId: appointment.clientId,
+        productId: appointment.productId,
+        date: newStart.toISOString(),
+        startTime: format(newStart, 'HH:mm'),
+        endTime: format(newEnd, 'HH:mm'),
+        notes: appointment.notes || '',
+        status: appointment.status,
+      };
+
+      updateMutation.mutate({
+        id: appointment.id,
+        appointmentData: updatedAppointment,
+      });
+    } catch (error) {
+      toast.error('Error al actualizar la cita');
+    }
   };
 
   const isLoading = appointmentsLoading || clientsLoading || productsLoading;
@@ -236,7 +278,7 @@ const Appointments: React.FC = () => {
             Agenda de Citas
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona todas las citas del salón de belleza - Haz clic en un espacio para crear una cita o en un evento para editarlo
+            Gestiona todas las citas del salón de belleza - Haz clic en un espacio para crear, en un evento para editarlo, o arrástralo para cambiar su hora.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -257,7 +299,7 @@ const Appointments: React.FC = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : (
-          <Calendar
+          <DnDCalendar
             localizer={localizer}
             events={calendarEvents}
             startAccessor="start"
@@ -266,7 +308,9 @@ const Appointments: React.FC = () => {
             selectable
             onSelectSlot={handleSelectSlot}
             onSelectEvent={handleSelectEvent}
+            onEventDrop={handleEventDrop}
             eventPropGetter={eventPropGetter}
+            resizable={false}
             popup
             culture="es"
             messages={{
@@ -303,7 +347,7 @@ const Appointments: React.FC = () => {
             <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 
-                {/* Header del Modal arreglado */}
+                {/* Header del Modal */}
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
                     {editingAppointment ? 'Editar Cita' : 'Nueva Cita'}
@@ -319,7 +363,7 @@ const Appointments: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Apertura del formulario agregada */}
+                {/* Formulario */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label htmlFor="client" className="block text-sm font-medium text-gray-700">
@@ -422,6 +466,23 @@ const Appointments: React.FC = () => {
                     />
                   </div>
 
+                  {/* Estado */}
+                  <div>
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                      Estado <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="status"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' })}
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                    >
+                      <option value="SCHEDULED">Agendada</option>
+                      <option value="COMPLETED">Completada</option>
+                      <option value="CANCELLED">Cancelada</option>
+                    </select>
+                  </div>
+
                   {/* Botones */}
                   <div className="flex justify-between gap-3 pt-6 border-t mt-6">
                     {/* Botón de eliminar, solo si estamos editando */}
@@ -435,7 +496,7 @@ const Appointments: React.FC = () => {
                         Eliminar
                       </button>
                     ) : (
-                      <div></div> /* Espaciador para alinear los otros botones a la derecha */
+                      <div></div>
                     )}
 
                     <div className="flex gap-3">

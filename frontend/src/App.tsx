@@ -17,6 +17,9 @@ import Appointments from './pages/Appointments';
 import MyInvoices from './pages/MyInvoices';
 import MySubscriptions from './pages/MySubscriptions';
 import MyProfile from './pages/MyProfile';
+import ClientDashboard from './pages/client/ClientDashboard';
+import ClientGallery from './pages/client/ClientGallery';
+import ClientAppointments from './pages/client/ClientAppointments';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -151,7 +154,10 @@ function App() {
                 </ClientRoute>
               }
             >
-              <Route index element={<Navigate to="/portal/my-invoices" replace />} />
+              <Route index element={<Navigate to="/portal/dashboard" replace />} />
+              <Route path="dashboard" element={<ClientDashboard />} />
+              <Route path="appointments" element={<ClientAppointments />} />
+              <Route path="gallery" element={<ClientGallery />} />
               <Route path="my-invoices" element={<MyInvoices />} />
               <Route path="my-subscriptions" element={<MySubscriptions />} />
               <Route path="my-profile" element={<MyProfile />} />

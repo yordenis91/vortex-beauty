@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Menu, X, FileText, User } from 'lucide-react';
+import { LogOut, Menu, X, Calendar, Sparkles, BarChart3, Home } from 'lucide-react';
 
 const ClientLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -15,9 +15,10 @@ const ClientLayout: React.FC = () => {
   };
 
   const navigation = [
-    { name: 'Mis Facturas', href: '/portal/my-invoices', icon: FileText },
-    { name: 'Mis Suscripciones', href: '/portal/my-subscriptions', icon: FileText },
-    { name: 'Mi Perfil', href: '/portal/my-profile', icon: User },
+    { name: 'Mi Resumen', href: '/portal/dashboard', icon: Home },
+    { name: 'Mis Citas', href: '/portal/appointments', icon: Calendar },
+    { name: 'Inspiración', href: '/portal/gallery', icon: Sparkles },
+    { name: 'Facturas/Pagos', href: '/portal/my-invoices', icon: BarChart3 },
   ];
 
   return (

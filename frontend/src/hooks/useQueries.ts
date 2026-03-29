@@ -704,3 +704,57 @@ export const useDeleteAppointment = (options?: any) => {
     },
   });
 };
+
+// ==================== CLIENT PORTAL HOOKS ====================
+
+/**
+ * Hook para obtener las citas del cliente autenticado
+ * Usa endpoint /api/portal/my-appointments
+ */
+export const useClientAppointments = () => {
+  return useQuery({
+    queryKey: ['client-appointments'],
+    queryFn: async () => {
+      const response = await api.get<Appointment[]>('/portal/my-appointments');
+      return response.data;
+    },
+  });
+};
+
+/**
+ * Hook para obtener los productos/servicios disponibles para clientes
+ * Usa endpoint /api/portal/products
+ */
+export const useClientProducts = () => {
+  return useQuery({
+    queryKey: ['client-products'],
+    queryFn: async () => {
+      const response = await api.get<Product[]>('/portal/products');
+      return response.data;
+    },
+  });
+};
+
+/**
+ * Hook para crear una nueva cita como cliente
+ * Usa endpoint /api/portal/appointments
+ */
+export const useCreateClientAppointment = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (appointmentData: any) => {
+      const response = await api.post('/portal/appointments', appointmentData);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al crear la cita.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};

@@ -120,4 +120,110 @@ router.get('/my-subscriptions', auth_1.authenticateToken, async (req, res) => {
         return res.status(500).json({ error: 'Error interno del servidor' });
     }
 });
+/**
+ * GET /api/portal/my-appointments
+ * Retorna las citas del cliente autenticado
+ */
+router.get('/my-appointments', auth_1.authenticateToken, async (req, res) => {
+    try {
+        const clientId = req.user?.clientId;
+        if (!clientId) {
+            return res.json([]);
+        }
+        const appointments = await prismaClient_1.default.appointment.findMany({
+            where: {
+                clientId: clientId,
+            },
+            include: {
+                client: {
+                    select: { id: true, name: true, email: true },
+                },
+                product: {
+                    select: { id: true, name: true, price: true },
+                },
+            },
+            orderBy: { date: 'asc' },
+        });
+        res.json(appointments);
+    }
+    catch (error) {
+        console.error('Error fetching client appointments:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+/**
+ * POST /api/portal/appointments
+ * Crea una nueva cita para el cliente autenticado
+ */
+router.post('/appointments', auth_1.authenticateToken, async (req, res) => {
+    try {
+        const { productId, date, startTime, endTime, notes } = req.body;
+        const clientId = req.user?.clientId;
+        const userId = req.user?.userId;
+        // Validar que el cliente existe
+        if (!clientId) {
+            return res.status(400).json({ error: 'Cliente no identificado' });
+        }
+        // Validar campos requeridos
+        if (!productId || !date || !startTime || !endTime) {
+            return res.status(400).json({ error: 'Campos requeridos faltantes' });
+        }
+        // Verificar que el producto existe
+        const product = await prismaClient_1.default.product.findUnique({
+            where: { id: productId },
+        });
+        if (!product) {
+            return res.status(400).json({ error: 'Servicio no encontrado' });
+        }
+        // Crear la cita
+        const appointment = await prismaClient_1.default.appointment.create({
+            data: {
+                clientId,
+                productId,
+                date: new Date(date),
+                startTime,
+                endTime,
+                notes: notes || '',
+                status: 'SCHEDULED',
+            },
+            include: {
+                client: {
+                    select: { id: true, name: true, email: true },
+                },
+                product: {
+                    select: { id: true, name: true, price: true },
+                },
+            },
+        });
+        res.status(201).json(appointment);
+    }
+    catch (error) {
+        console.error('Error creating appointment:', error);
+        return res.status(500).json({ error: 'Error al crear la cita' });
+    }
+});
+/**
+ * GET /api/portal/products
+ * Retorna los productos/servicios disponibles para clientes
+ */
+router.get('/products', auth_1.authenticateToken, async (req, res) => {
+    try {
+        const products = await prismaClient_1.default.product.findMany({
+            where: {
+                isPublic: true,
+            },
+            include: {
+                category: {
+                    select: { id: true, name: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+        res.json(products);
+    }
+    catch (error) {
+        console.error('Error fetching products:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
 exports.default = router;

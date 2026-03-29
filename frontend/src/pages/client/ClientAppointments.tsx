@@ -1,0 +1,423 @@
+import React, { useState, useMemo } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import { useClientAppointments, useClientProducts, useCreateClientAppointment } from '../../hooks/useQueries';
+import { Calendar, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { format, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale/es';
+import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
+import { startOfWeek, getDay, parse } from 'date-fns';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+
+interface Appointment {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  notes?: string;
+  clientId: string;
+  productId: string;
+  createdAt: string;
+  updatedAt: string;
+  client?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  product?: {
+    id: string;
+    name: string;
+    price: number;
+  };
+}
+
+interface FormData {
+  productId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface CalendarEvent {
+  title: string;
+  start: Date;
+  end: Date;
+  resource: Appointment;
+}
+
+// Configurar localizer del calendario
+const locales = {
+  es: es,
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales,
+});
+
+const withDragAndDropFn = (withDragAndDrop as any).default || withDragAndDrop;
+const DnDCalendar = withDragAndDropFn(BigCalendar as any);
+
+const ClientAppointments: React.FC = () => {
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<FormData>({
+    productId: '',
+    date: new Date().toISOString().split('T')[0],
+    startTime: '10:00',
+    endTime: '11:00',
+  });
+
+  const [showForm, setShowForm] = useState(false);
+
+  // Hooks
+  const { data: appointments = [], isLoading: appointmentsLoading } = useClientAppointments();
+  const { data: products = [] } = useClientProducts();
+
+  const createMutation = useCreateClientAppointment({
+    onSuccess: () => {
+      toast.success('¡Cita agendada correctamente!');
+      resetForm();
+    },
+  });
+
+  // Filtrar citas de la clienta actual
+  const clientAppointments = useMemo(() => {
+    return appointments.filter((apt: Appointment) => apt.clientId === user?.id);
+  }, [appointments, user?.id]);
+
+  // Próximas citas (SCHEDULED)
+  const upcomingAppointments = useMemo(() => {
+    return clientAppointments
+      .filter((apt: Appointment) => apt.status === 'SCHEDULED')
+      .sort((a: Appointment, b: Appointment) => {
+        const dateA = parseISO(`${a.date}T${a.startTime}`);
+        const dateB = parseISO(`${b.date}T${b.startTime}`);
+        return dateA.getTime() - dateB.getTime();
+      });
+  }, [clientAppointments]);
+
+  // Mapeo de Datos - Transformar appointments al formato del calendario
+  const calendarEvents: CalendarEvent[] = useMemo(() => {
+    return appointments.map((appointment) => {
+      const [year, month, day] = appointment.date.split('T')[0].split('-');
+      const [startHour, startMin] = appointment.startTime.split(':');
+      const [endHour, endMin] = appointment.endTime.split(':');
+
+      const start = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(startHour), parseInt(startMin));
+      const end = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(endHour), parseInt(endMin));
+
+      return {
+        title: `${appointment.client?.name || 'Sin asignar'} - ${appointment.product?.name || 'Sin servicio'}`,
+        start,
+        end,
+        resource: appointment,
+      };
+    });
+  }, [appointments]);
+
+  const formatDate = (date: string, time: string) => {
+    try {
+      const dateTime = parseISO(`${date}T${time}`);
+      return format(dateTime, 'EEEE d MMMM yyyy - HH:mm', { locale: es });
+    } catch {
+      return 'Fecha no válida';
+    }
+  };
+
+  const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
+    const newDate = format(slotInfo.start, 'yyyy-MM-dd');
+    const newStartTime = format(slotInfo.start, 'HH:mm');
+    const newEndTime = format(slotInfo.end, 'HH:mm');
+
+    setFormData({
+      productId: '',
+      date: newDate,
+      startTime: newStartTime,
+      endTime: newEndTime,
+    });
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.productId || !formData.date) {
+      toast.error('Por favor completa todos los campos');
+      return;
+    }
+
+    // Inyectar automáticamente el clientId del usuario autenticado
+    const appointmentData = {
+      clientId: user?.id || '',
+      productId: formData.productId,
+      date: new Date(formData.date).toISOString(),
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      notes: '',
+    };
+
+    if (!appointmentData.clientId) {
+      toast.error('Error: No se pudo obtener tu ID de usuario');
+      return;
+    }
+
+    createMutation.mutate(appointmentData);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      productId: '',
+      date: new Date().toISOString().split('T')[0],
+      startTime: '10:00',
+      endTime: '11:00',
+    });
+    setShowForm(false);
+  };
+
+  // Colorear eventos según el status
+  const eventPropGetter = (event: CalendarEvent) => {
+    const status = event.resource.status;
+    
+    let style = {
+      backgroundColor: '#3b82f6', // Azul por defecto (SCHEDULED)
+      borderRadius: '5px',
+      opacity: 0.8,
+      color: 'white',
+      border: '0px',
+      display: 'block',
+    };
+
+    if (status === 'COMPLETED') {
+      style.backgroundColor = '#10b981'; // Verde
+    } else if (status === 'CANCELLED') {
+      style.backgroundColor = '#ef4444'; // Rojo
+    }
+
+    return { style };
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Mis Citas</h1>
+        <p className="text-gray-600 mt-2">Selecciona un espacio en el calendario para agendar tu próxima cita</p>
+      </div>
+
+      {/* Calendario */}
+      <div className="bg-white rounded-lg shadow p-4">
+        {appointmentsLoading ? (
+          <div className="flex items-center justify-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          </div>
+        ) : (
+          <DnDCalendar
+            localizer={localizer}
+            events={calendarEvents}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ height: 'calc(100vh - 400px)' }}
+            selectable
+            onSelectSlot={handleSelectSlot}
+            eventPropGetter={eventPropGetter}
+            resizable={false}
+            popup
+            culture="es"
+            messages={{
+              today: 'Hoy',
+              previous: 'Anterior',
+              next: 'Siguiente',
+              month: 'Mes',
+              week: 'Semana',
+              day: 'Día',
+              agenda: 'Agenda',
+              date: 'Fecha',
+              time: 'Hora',
+              event: 'Evento',
+              allDay: 'Todo el día',
+              work_week: 'Semana Laboral',
+              yesterday: 'Ayer',
+              tomorrow: 'Mañana',
+            }}
+          />
+        )}
+      </div>
+
+      {/* Próximas Citas */}
+      {upcomingAppointments.length > 0 && !showForm && (
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Tus Próximas Citas</h2>
+          <div className="space-y-4">
+            {upcomingAppointments.map((appointment: Appointment) => (
+              <div
+                key={appointment.id}
+                className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      {appointment.product?.name || 'Servicio'}
+                    </h3>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center text-gray-600">
+                        <Calendar className="h-5 w-5 mr-3 text-purple-600" />
+                        {formatDate(appointment.date, appointment.startTime)}
+                      </div>
+                      {appointment.product?.price && (
+                        <div className="text-sm font-medium text-gray-900">
+                          💰 ${appointment.product.price.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                      Agendada
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Formulario Simplificado - Modal */}
+      {showForm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity duration-300"
+              onClick={resetForm}
+            />
+
+            {/* Modal */}
+            <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                
+                {/* Header del Modal */}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    Agendar Nueva Cita
+                  </h3>
+                  <button
+                    onClick={resetForm}
+                    className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                  >
+                    <span className="sr-only">Cerrar</span>
+                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Fecha y Hora Seleccionadas */}
+                <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-sm text-gray-600">Fecha y hora seleccionada:</p>
+                  <p className="text-lg font-semibold text-purple-600 mt-1">
+                    {formatDate(formData.date, formData.startTime)}
+                  </p>
+                </div>
+
+                {/* Formulario */}
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Servicio - Campo Principal */}
+                  <div>
+                    <label htmlFor="product" className="block text-sm font-semibold text-gray-900">
+                      Selecciona tu Servicio <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-sm text-gray-600 mt-1 mb-3">
+                      Elige el servicio de manicura que deseas
+                    </p>
+                    <select
+                      id="product"
+                      value={formData.productId}
+                      onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                      className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-3"
+                      autoFocus
+                    >
+                      <option value="">-- Selecciona un servicio --</option>
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name} - ${Number(product.price).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Hora Inicio y Fin */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="startTime" className="block text-sm font-semibold text-gray-900">
+                        Hora de Inicio <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="startTime"
+                        type="time"
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-3"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="endTime" className="block text-sm font-semibold text-gray-900">
+                        Hora de Fin <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="endTime"
+                        type="time"
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                        className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-3"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Botones */}
+                  <div className="flex gap-4 pt-6 border-t mt-8">
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="flex-1 inline-flex justify-center px-4 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={createMutation.isPending}
+                      className="flex-1 inline-flex justify-center items-center px-4 py-3 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-lg shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {createMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Agendando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="mr-2 h-5 w-5" />
+                          Confirmar Cita
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ClientAppointments;
