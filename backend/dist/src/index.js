@@ -19,6 +19,7 @@ const subscriptions_1 = __importDefault(require("./routes/subscriptions"));
 const tickets_1 = __importDefault(require("./routes/tickets"));
 const knowledgeBase_1 = __importDefault(require("./routes/knowledgeBase"));
 const appointments_1 = __importDefault(require("./routes/appointments"));
+const notifications_1 = __importDefault(require("./routes/notifications"));
 const portal_1 = __importDefault(require("./routes/portal"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
@@ -38,6 +39,7 @@ app.use('/api/subscriptions', subscriptions_1.default);
 app.use('/api/tickets', tickets_1.default);
 app.use('/api/knowledge-base', knowledgeBase_1.default);
 app.use('/api/appointments', appointments_1.default);
+app.use('/api/notifications', notifications_1.default);
 // Portal routes (for CLIENT users)
 app.use('/api/portal', portal_1.default);
 // Health check

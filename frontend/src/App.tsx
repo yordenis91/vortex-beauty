@@ -14,6 +14,7 @@ import Products from './pages/Products';
 import Categories from './pages/Categories';
 import KnowledgeBase from './pages/KnowledgeBase';
 import Appointments from './pages/Appointments';
+import Notifications from './pages/Notifications';
 import MyInvoices from './pages/MyInvoices';
 import MySubscriptions from './pages/MySubscriptions';
 import MyProfile from './pages/MyProfile';
@@ -143,6 +144,7 @@ function App() {
               <Route path="products" element={<Products />} />
               <Route path="categories" element={<Categories />} />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
+              <Route path="notifications" element={<Notifications />} />
             </Route>
 
             {/* Client/Portal routes */}

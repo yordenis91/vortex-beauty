@@ -107,6 +107,9 @@ model Client {
   // Relación con citas
   appointments  Appointment[]
 
+  // Relación con notificaciones
+  notifications Notification[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
@@ -420,6 +423,28 @@ model Appointment {
   @@index([status])
 }
 
+model Notification {
+  id          String              @id @default(uuid())
+  type        NotificationType    // WHATSAPP, EMAIL, SYSTEM
+  recipient   String              // Número de teléfono, email o ID interno
+  content     String              @db.Text // Texto del mensaje
+  status      NotificationStatus  @default(PENDING)
+  isRead      Boolean             @default(false) // Para la campanita del cliente
+  errorLog    String?             @db.Text // Log de errores si falla el envío
+
+  // Relaciones
+  clientId    String?
+  client      Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([clientId])
+  @@index([status])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
 // ================= Enums adicionales =================
 
 enum CategoryType {
@@ -484,4 +509,16 @@ enum AppointmentStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
+}
+
+enum NotificationType {
+  WHATSAPP
+  EMAIL
+  SYSTEM
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
 }

@@ -11,7 +11,8 @@ import {
   Package,
   BookOpen,
   Calendar,
-  Folder
+  Folder,
+  Bell
 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
@@ -36,6 +37,8 @@ const AdminLayout: React.FC = () => {
     { name: 'Categories', href: '/admin/categories', icon: Folder },
     { section: 'Learning & Resources', highlight: true },
     { name: 'Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen },
+    { section: 'Operations', highlight: true },
+    { name: 'Notifications', href: '/admin/notifications', icon: Bell },
   ];
 
   return (

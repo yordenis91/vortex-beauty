@@ -758,3 +758,59 @@ export const useCreateClientAppointment = (options?: any) => {
     },
   });
 };
+
+// ==================== NOTIFICATION HOOKS ====================
+
+/**
+ * Hook para obtener todas las notificaciones (Admin)
+ * Usa endpoint /api/notifications
+ */
+export const useNotifications = () => {
+  return useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
+      const response = await api.get('/notifications');
+      return response.data;
+    },
+  });
+};
+
+/**
+ * Hook para obtener las notificaciones del cliente autenticado
+ * Usa endpoint /api/notifications/client
+ * Incluye polling suave cada 30 segundos
+ */
+export const useClientNotifications = () => {
+  return useQuery({
+    queryKey: ['client-notifications'],
+    queryFn: async () => {
+      const response = await api.get('/notifications/client');
+      return response.data;
+    },
+    refetchInterval: 30000, // Polling cada 30 segundos
+  });
+};
+
+/**
+ * Hook para marcar una notificación como leída
+ * Usa endpoint PUT /api/notifications/:id/read
+ */
+export const useMarkNotificationAsRead = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (notificationId: string) => {
+      const response = await api.put(`/notifications/${notificationId}/read`);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al actualizar la notificación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['client-notifications'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};

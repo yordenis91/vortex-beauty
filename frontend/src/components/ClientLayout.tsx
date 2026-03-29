@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Menu, X, Calendar, Sparkles, BarChart3, Home } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 const ClientLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -78,7 +79,7 @@ const ClientLayout: React.FC = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex space-x-8">
+            <nav className="hidden lg:flex space-x-8 items-center">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -97,6 +98,11 @@ const ClientLayout: React.FC = () => {
                 );
               })}
             </nav>
+
+            {/* Notification Bell */}
+            <div className="flex items-center space-x-4">
+              <NotificationBell />
+            </div>
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
