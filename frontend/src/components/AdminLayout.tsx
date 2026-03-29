@@ -10,6 +10,7 @@ import {
   X,
   Package,
   BookOpen,
+  Calendar,
   Folder
 } from 'lucide-react';
 
@@ -29,7 +30,8 @@ const AdminLayout: React.FC = () => {
     { section: 'Business', highlight: true },
     { name: 'Clients', href: '/admin/clients', icon: Users },
     { name: 'Invoices', href: '/admin/invoices', icon: FileText },
-    { section: 'Services', highlight: true },
+    { section: 'Services & Scheduling', highlight: true },
+    { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Categories', href: '/admin/categories', icon: Folder },
     { section: 'Learning & Resources', highlight: true },

@@ -13,6 +13,7 @@ import Invoices from './pages/Invoices';
 import Products from './pages/Products';
 import Categories from './pages/Categories';
 import KnowledgeBase from './pages/KnowledgeBase';
+import Appointments from './pages/Appointments';
 import MyInvoices from './pages/MyInvoices';
 import MySubscriptions from './pages/MySubscriptions';
 import MyProfile from './pages/MyProfile';
@@ -135,6 +136,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="clients" element={<Clients />} />
               <Route path="invoices" element={<Invoices />} />
+              <Route path="appointments" element={<Appointments />} />
               <Route path="products" element={<Products />} />
               <Route path="categories" element={<Categories />} />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
