@@ -21,13 +21,14 @@ const knowledgeBase_1 = __importDefault(require("./routes/knowledgeBase"));
 const appointments_1 = __importDefault(require("./routes/appointments"));
 const notifications_1 = __importDefault(require("./routes/notifications"));
 const portal_1 = __importDefault(require("./routes/portal"));
+const settings_1 = __importDefault(require("./routes/settings"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: '50mb', strict: true }));
 // Middleware
 app.use((0, cors_1.default)());
-app.use(express_1.default.json());
+app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 // Routes
 app.use('/api/auth', auth_1.default);
 app.use('/api/clients', clients_1.default);
@@ -42,6 +43,8 @@ app.use('/api/appointments', appointments_1.default);
 app.use('/api/notifications', notifications_1.default);
 // Portal routes (for CLIENT users)
 app.use('/api/portal', portal_1.default);
+// Settings routes
+app.use('/api/settings', settings_1.default);
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });

@@ -14,7 +14,8 @@ import {
   Folder,
   Bell,
   User,
-  ChevronDown
+  ChevronDown,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
@@ -42,6 +43,7 @@ const AdminLayout: React.FC = () => {
     { name: 'Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen },
     { section: 'Operations', highlight: true },
     { name: 'Notifications', href: '/admin/notifications', icon: Bell },
+    { name: 'Settings', href: '/admin/settings', icon: SettingsIcon },
   ];
 
   return (
@@ -179,6 +181,15 @@ const AdminLayout: React.FC = () => {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
                 >
+                  {user?.imageUrl ? (
+                    <img
+                      src={user.imageUrl}
+                      alt="Avatar"
+                      className="h-8 w-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-8 w-8" />
+                  )}
                   <span>{user?.name}</span>
                   <ChevronDown className="h-4 w-4" />
                 </button>

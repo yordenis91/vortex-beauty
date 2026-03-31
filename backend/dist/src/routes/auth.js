@@ -65,6 +65,7 @@ router.post('/login', async (req, res) => {
                 password: true,
                 role: true,
                 clientId: true,
+                imageUrl: true,
             },
         });
         if (!user) {
@@ -112,6 +113,7 @@ router.get('/me', auth_1.authenticateToken, async (req, res) => {
                 name: true,
                 role: true,
                 clientId: true,
+                imageUrl: true,
             },
         });
         if (!user) {

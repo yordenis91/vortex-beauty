@@ -15,8 +15,6 @@ const clientSchema = zod_1.z.object({
     email: zod_1.z.string().email(),
     code: zod_1.z.string().optional(),
     displayName: zod_1.z.string().optional(),
-    company: zod_1.z.string().optional(),
-    businessNumber: zod_1.z.string().optional(),
     type: zod_1.z.enum(['CUSTOMER', 'SUPPLIER']).optional(),
     phone: zod_1.z.string().optional(),
     address: zod_1.z.string().optional(),
@@ -24,11 +22,10 @@ const clientSchema = zod_1.z.object({
     state: zod_1.z.string().optional(),
     zipCode: zod_1.z.string().optional(),
     country: zod_1.z.string().optional(),
-    secondaryEmail: zod_1.z.string().email().optional(),
-    currency: zod_1.z.string().optional(),
     groupId: zod_1.z.string().optional(),
     ownerId: zod_1.z.string().optional(),
     taxId: zod_1.z.string().optional(),
+    imageUrl: zod_1.z.string().optional(),
 });
 const createClientSchema = clientSchema.extend({
     username: zod_1.z.string().min(1).optional(),
@@ -75,7 +72,6 @@ router.post('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res)
                 data: {
                     ...clientData,
                     type: clientData.type || 'CUSTOMER',
-                    currency: clientData.currency || 'USD',
                     userId: req.userId,
                 },
             });
@@ -118,7 +114,6 @@ router.put('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, re
             data: {
                 ...data,
                 type: data.type || undefined,
-                currency: data.currency || undefined,
             },
         });
         if (client.count === 0) {

@@ -112,6 +112,15 @@ const ClientLayout: React.FC = () => {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
               >
+                {user?.imageUrl ? (
+                  <img
+                    src={user.imageUrl}
+                    alt="Avatar"
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="h-8 w-8" />
+                )}
                 <span className="hidden sm:block">{user?.name}</span>
                 <ChevronDown className="h-4 w-4" />
               </button>

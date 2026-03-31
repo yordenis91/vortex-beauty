@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
-import { Users, Plus, Edit, Trash2, Search, Mail, Building } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Search, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -11,8 +11,6 @@ interface Client {
   email: string;
   code?: string;
   displayName?: string;
-  company?: string;
-  businessNumber?: string;
   type?: 'CUSTOMER' | 'SUPPLIER';
   phone?: string;
   address?: string;
@@ -20,11 +18,10 @@ interface Client {
   state?: string;
   zipCode?: string;
   country?: string;
-  secondaryEmail?: string;
-  currency?: string;
   groupId?: string;
   ownerId?: string;
   taxId?: string;
+  imageUrl?: string;
 }
 
 interface ClientFormData {
@@ -32,8 +29,6 @@ interface ClientFormData {
   email: string;
   code: string;
   displayName: string;
-  company: string;
-  businessNumber: string;
   type: 'CUSTOMER' | 'SUPPLIER';
   phone: string;
   address: string;
@@ -41,11 +36,10 @@ interface ClientFormData {
   state: string;
   zipCode: string;
   country: string;
-  secondaryEmail: string;
-  currency: string;
   groupId: string;
   ownerId: string;
   taxId: string;
+  imageUrl: string;
   username: string;
   password: string;
   confirmPassword: string;
@@ -63,8 +57,6 @@ const Clients: React.FC = () => {
     email: '',
     code: '',
     displayName: '',
-    company: '',
-    businessNumber: '',
     type: 'CUSTOMER',
     phone: '',
     address: '',
@@ -72,11 +64,10 @@ const Clients: React.FC = () => {
     state: '',
     zipCode: '',
     country: '',
-    secondaryEmail: '',
-    currency: 'USD',
     groupId: '',
     ownerId: '',
     taxId: '',
+    imageUrl: '',
     username: '',
     password: '',
     confirmPassword: '',
@@ -107,8 +98,6 @@ const Clients: React.FC = () => {
       email: '',
       code: '',
       displayName: '',
-      company: '',
-      businessNumber: '',
       type: 'CUSTOMER',
       phone: '',
       address: '',
@@ -116,11 +105,10 @@ const Clients: React.FC = () => {
       state: '',
       zipCode: '',
       country: '',
-      secondaryEmail: '',
-      currency: 'USD',
       groupId: '',
       ownerId: '',
       taxId: '',
+      imageUrl: '',
       username: '',
       password: '',
       confirmPassword: '',
@@ -141,8 +129,6 @@ const Clients: React.FC = () => {
       email: client.email,
       code: client.code || '',
       displayName: client.displayName || '',
-      company: client.company || '',
-      businessNumber: client.businessNumber || '',
       type: client.type || 'CUSTOMER',
       phone: client.phone || '',
       address: client.address || '',
@@ -150,17 +136,28 @@ const Clients: React.FC = () => {
       state: client.state || '',
       zipCode: client.zipCode || '',
       country: client.country || '',
-      secondaryEmail: client.secondaryEmail || '',
-      currency: client.currency || 'USD',
       groupId: client.groupId || '',
       ownerId: client.ownerId || '',
       taxId: client.taxId || '',
+      imageUrl: client.imageUrl || '',
       username: '',
       password: '',
       confirmPassword: '',
       sendWelcomeEmail: false,
     });
     setShowModal(true);
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setFormData({ ...formData, imageUrl: base64 });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -179,8 +176,6 @@ const Clients: React.FC = () => {
       email: formData.email,
       code: formData.code || undefined,
       displayName: formData.displayName || undefined,
-      company: formData.company || undefined,
-      businessNumber: formData.businessNumber || undefined,
       type: formData.type,
       phone: formData.phone || undefined,
       address: formData.address || undefined,
@@ -188,11 +183,10 @@ const Clients: React.FC = () => {
       state: formData.state || undefined,
       zipCode: formData.zipCode || undefined,
       country: formData.country || undefined,
-      secondaryEmail: formData.secondaryEmail || undefined,
-      currency: formData.currency,
       groupId: formData.groupId || undefined,
       ownerId: formData.ownerId || undefined,
       taxId: formData.taxId || undefined,
+      imageUrl: formData.imageUrl || undefined,
     };
 
     if (editingClient) {
@@ -287,7 +281,6 @@ const Clients: React.FC = () => {
                     <p className="font-medium text-gray-900">{client.name}</p>
                     <div className="flex space-x-4 text-sm text-gray-500 mt-1">
                       <span className="flex items-center"><Mail className="h-4 w-4 mr-1" /> {client.email}</span>
-                      {client.company && <span className="flex items-center"><Building className="h-4 w-4 mr-1" /> {client.company}</span>}
                     </div>
                   </div>
                 </div>
@@ -331,12 +324,8 @@ const Clients: React.FC = () => {
                   <input type="text" value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                  <input type="text" value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Business Number</label>
-                  <input type="text" value={formData.businessNumber} onChange={e => setFormData({...formData, businessNumber: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
@@ -344,10 +333,6 @@ const Clients: React.FC = () => {
                     <option value="CUSTOMER">Customer</option>
                     <option value="SUPPLIER">Supplier</option>
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Secondary Email</label>
-                  <input type="email" value={formData.secondaryEmail} onChange={e => setFormData({...formData, secondaryEmail: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
                 </div>
               </div>
 
@@ -381,8 +366,8 @@ const Clients: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-                    <input type="text" value={formData.currency} onChange={e => setFormData({...formData, currency: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+                    <input type="file" accept="image/*" onChange={handleImageChange} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
                   </div>
                 </div>
               </div>

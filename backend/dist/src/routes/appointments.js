@@ -76,11 +76,33 @@ router.post('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res)
         if (!product) {
             return res.status(400).json({ error: 'Invalid product' });
         }
+        // ===== VALIDACIÓN DE HORARIOS COMERCIALES =====
+        const appointmentDate = new Date(validatedData.date);
+        const dayOfWeek = appointmentDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        const businessHour = await prismaClient_1.default.businessHour.findUnique({
+            where: { dayOfWeek },
+        });
+        if (!businessHour || !businessHour.isOpen) {
+            return res.status(400).json({ error: 'El salón está cerrado en este horario' });
+        }
+        // Convert request times to minutes for comparison
+        const [reqStartHour, reqStartMin] = validatedData.startTime.split(':').map(Number);
+        const [reqEndHour, reqEndMin] = validatedData.endTime.split(':').map(Number);
+        const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
+        const [shopEndHour, shopEndMin] = businessHour.endTime.split(':').map(Number);
+        const reqStartMinutes = reqStartHour * 60 + reqStartMin;
+        const reqEndMinutes = reqEndHour * 60 + reqEndMin;
+        const shopStartMinutes = shopStartHour * 60 + shopStartMin;
+        const shopEndMinutes = shopEndHour * 60 + shopEndMin;
+        // Verify requested time is within business hours
+        if (reqStartMinutes < shopStartMinutes || reqEndMinutes > shopEndMinutes) {
+            return res.status(400).json({ error: 'El salón está cerrado en este horario' });
+        }
         // Check for conflicting appointments
         const conflictingAppointment = await prismaClient_1.default.appointment.findFirst({
             where: {
                 clientId: validatedData.clientId,
-                date: new Date(validatedData.date),
+                date: appointmentDate,
                 status: { not: 'CANCELLED' },
             },
         });
@@ -141,6 +163,28 @@ router.put('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, re
             if (!product) {
                 return res.status(400).json({ error: 'Invalid product' });
             }
+        }
+        // ===== VALIDACIÓN DE HORARIOS COMERCIALES =====
+        const dateToCheck = validatedData.date ? new Date(validatedData.date) : existingAppointment.date;
+        const startTimeToCheck = validatedData.startTime || existingAppointment.startTime;
+        const endTimeToCheck = validatedData.endTime || existingAppointment.endTime;
+        const dayOfWeek = dateToCheck.getDay();
+        const businessHour = await prismaClient_1.default.businessHour.findUnique({
+            where: { dayOfWeek },
+        });
+        if (!businessHour || !businessHour.isOpen) {
+            return res.status(400).json({ error: 'El salón está cerrado en este horario' });
+        }
+        const [reqStartHour, reqStartMin] = startTimeToCheck.split(':').map(Number);
+        const [reqEndHour, reqEndMin] = endTimeToCheck.split(':').map(Number);
+        const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
+        const [shopEndHour, shopEndMin] = businessHour.endTime.split(':').map(Number);
+        const reqStartMinutes = reqStartHour * 60 + reqStartMin;
+        const reqEndMinutes = reqEndHour * 60 + reqEndMin;
+        const shopStartMinutes = shopStartHour * 60 + shopStartMin;
+        const shopEndMinutes = shopEndHour * 60 + shopEndMin;
+        if (reqStartMinutes < shopStartMinutes || reqEndMinutes > shopEndMinutes) {
+            return res.status(400).json({ error: 'El salón está cerrado en este horario' });
         }
         const dataToUpdate = {};
         if (validatedData.date)

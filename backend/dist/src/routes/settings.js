@@ -1,0 +1,144 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const zod_1 = require("zod");
+const prismaClient_1 = __importDefault(require("../prismaClient"));
+const auth_1 = require("../middleware/auth");
+const router = (0, express_1.Router)();
+// Log all available models on startup
+console.log('[SETTINGS] BusinessHour model exists:', 'businessHour' in prismaClient_1.default);
+// Test route - no authentication required
+router.get('/health', async (req, res) => {
+    try {
+        console.log('[SETTINGS] Health check called');
+        const count = await prismaClient_1.default.businessHour.count();
+        console.log('[SETTINGS] BusinessHour count:', count);
+        res.json({ status: 'OK', businessHourCount: count });
+    }
+    catch (error) {
+        console.error('[SETTINGS] Health check error:', error?.message);
+        res.status(500).json({ error: error?.message });
+    }
+});
+// Validation schemas
+const updateBusinessHourSchema = zod_1.z.object({
+    dayOfWeek: zod_1.z.number().min(0).max(6),
+    startTime: zod_1.z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in format HH:mm'),
+    endTime: zod_1.z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm'),
+    isOpen: zod_1.z.boolean().default(true),
+});
+// Helper: Initialize default business hours if they don't exist
+const initializeDefaultBusinessHours = async () => {
+    try {
+        console.log('Checking if business hours need initialization...');
+        const existingCount = await prismaClient_1.default.businessHour.count();
+        if (existingCount === 0) {
+            console.log('No business hours found, creating defaults...');
+            const defaultHours = [
+                { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', isOpen: false }, // Domingo (cerrado)
+                { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true }, // Lunes
+                { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true }, // Martes
+                { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true }, // Miércoles
+                { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true }, // Jueves
+                { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true }, // Viernes
+                { dayOfWeek: 6, startTime: '09:00', endTime: '18:00', isOpen: false }, // Sábado (cerrado)
+            ];
+            await prismaClient_1.default.businessHour.createMany({
+                data: defaultHours,
+            });
+            console.log('Default business hours created successfully');
+        }
+        else {
+            console.log(`Business hours already exist (${existingCount} records), skipping initialization`);
+        }
+    }
+    catch (error) {
+        console.error('Error initializing business hours:', error);
+        throw error;
+    }
+};
+// GET /api/settings/business-hours - Get all business hours
+router.get('/business-hours', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        console.log('GET /api/settings/business-hours called');
+        // Initialize default hours if they don't exist
+        await initializeDefaultBusinessHours();
+        const businessHours = await prismaClient_1.default.businessHour.findMany({
+            orderBy: { dayOfWeek: 'asc' },
+        });
+        console.log('Business hours retrieved:', businessHours);
+        res.json(businessHours);
+    }
+    catch (error) {
+        console.error('Error fetching business hours:', error);
+        console.error('Error message:', error?.message);
+        console.error('Error code:', error?.code);
+        res.status(500).json({
+            error: 'Failed to fetch business hours',
+            details: error?.message || 'Unknown error'
+        });
+    }
+});
+// GET /api/settings/business-hours/:dayOfWeek - Get business hours for a specific day
+router.get('/business-hours/:dayOfWeek', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const { dayOfWeek } = req.params;
+        const day = parseInt(dayOfWeek);
+        if (isNaN(day) || day < 0 || day > 6) {
+            return res.status(400).json({ error: 'Invalid day of week (0-6)' });
+        }
+        const businessHour = await prismaClient_1.default.businessHour.findUnique({
+            where: { dayOfWeek: day },
+        });
+        if (!businessHour) {
+            return res.status(404).json({ error: 'Business hour not found for this day' });
+        }
+        res.json(businessHour);
+    }
+    catch (error) {
+        console.error('Error fetching business hour:', error);
+        res.status(500).json({ error: 'Failed to fetch business hour' });
+    }
+});
+// PUT /api/settings/business-hours/:dayOfWeek - Update business hours for a specific day
+router.put('/business-hours/:dayOfWeek', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const { dayOfWeek } = req.params;
+        const day = parseInt(dayOfWeek);
+        if (isNaN(day) || day < 0 || day > 6) {
+            return res.status(400).json({ error: 'Invalid day of week (0-6)' });
+        }
+        const validatedData = updateBusinessHourSchema.parse(req.body);
+        // Verify the day matches (security check)
+        if (validatedData.dayOfWeek !== day) {
+            return res.status(400).json({ error: 'Day of week in URL does not match request body' });
+        }
+        // Ensure the record exists (or create it)
+        let businessHour = await prismaClient_1.default.businessHour.findUnique({
+            where: { dayOfWeek: day },
+        });
+        if (!businessHour) {
+            businessHour = await prismaClient_1.default.businessHour.create({
+                data: validatedData,
+            });
+        }
+        else {
+            businessHour = await prismaClient_1.default.businessHour.update({
+                where: { dayOfWeek: day },
+                data: validatedData,
+            });
+        }
+        res.json(businessHour);
+    }
+    catch (error) {
+        if (error?.name === 'ZodError') {
+            return res.status(400).json({ error: 'Validation error', details: error.issues });
+        }
+        console.error('Error updating business hour:', error);
+        res.status(500).json({ error: 'Failed to update business hour' });
+    }
+});
+exports.default = router;

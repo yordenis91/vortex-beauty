@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment } from '../hooks/useQueries';
 import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -6,11 +7,22 @@ import ConfirmModal from '../components/ConfirmModal';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { es } from 'date-fns/locale/es';
+import { api } from '../lib/api';
 
 // Importaciones necesarias para el Drag and Drop
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+
+interface BusinessHour {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isOpen: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface Appointment {
   id: string;
@@ -71,10 +83,50 @@ const withDragAndDropFn = (withDragAndDrop as any).default || withDragAndDrop;
 // Envolver el calendario usando la función extraída
 const DnDCalendar = withDragAndDropFn(Calendar as any);
 
+// Hook para obtener horarios comerciales
+const useBusinessHours = () => {
+  return useQuery<BusinessHour[]>({
+    queryKey: ['businessHours'],
+    queryFn: async () => {
+      const response = await api.get('/settings/business-hours');
+      return response.data;
+    },
+  });
+};
+
+// Función auxiliar para validar si una hora está dentro del horario comercial
+const isTimeWithinBusinessHours = (
+  date: Date,
+  startTime: string,
+  endTime: string,
+  businessHours: BusinessHour[]
+): boolean => {
+  const dayOfWeek = date.getDay();
+  const businessHour = businessHours.find((bh) => bh.dayOfWeek === dayOfWeek);
+
+  if (!businessHour || !businessHour.isOpen) {
+    return false;
+  }
+
+  const [reqStartHour, reqStartMin] = startTime.split(':').map(Number);
+  const [reqEndHour, reqEndMin] = endTime.split(':').map(Number);
+  const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
+  const [shopEndHour, shopEndMin] = businessHour.endTime.split(':').map(Number);
+
+  const reqStartMinutes = reqStartHour * 60 + reqStartMin;
+  const reqEndMinutes = reqEndHour * 60 + reqEndMin;
+  const shopStartMinutes = shopStartHour * 60 + shopStartMin;
+  const shopEndMinutes = shopEndHour * 60 + shopEndMin;
+
+  return reqStartMinutes >= shopStartMinutes && reqEndMinutes <= shopEndMinutes;
+};
+
 const Appointments: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState('month');
 
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
@@ -90,6 +142,7 @@ const Appointments: React.FC = () => {
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
 
   const createMutation = useCreateAppointment({
     onSuccess: () => {
@@ -228,11 +281,28 @@ const Appointments: React.FC = () => {
 
   // Manejadores del calendario
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
+    // Validar que la hora seleccionada esté dentro del horario comercial
+    const startTimeStr = format(slotInfo.start, 'HH:mm');
+    const endTimeStr = format(slotInfo.end, 'HH:mm');
+
+    if (!isTimeWithinBusinessHours(slotInfo.start, startTimeStr, endTimeStr, businessHours)) {
+      toast.error('Horario fuera de servicio');
+      return;
+    }
+
     openModal(undefined, slotInfo.start, slotInfo.end);
   };
 
   const handleSelectEvent = (event: CalendarEvent) => {
     openModal(event.resource);
+  };
+
+  const handleNavigate = (newDate: Date) => {
+    setCurrentDate(newDate);
+  };
+
+  const handleViewChange = (newView: string) => {
+    setCurrentView(newView);
   };
 
   // Función que maneja cuando se suelta el evento arrastrado (Tipado corregido)
@@ -267,7 +337,45 @@ const Appointments: React.FC = () => {
     }
   };
 
-  const isLoading = appointmentsLoading || clientsLoading || productsLoading;
+  const isLoading = appointmentsLoading || clientsLoading || productsLoading || businessHoursLoading;
+
+  // Calcular el rango de horas del calendario basado en los horarios comerciales
+  const calendarMinMax = useMemo(() => {
+    if (businessHours.length === 0) {
+      // Horario por defecto si no hay datos
+      const defaultMin = new Date();
+      const defaultMax = new Date();
+      defaultMin.setHours(8, 0, 0, 0);
+      defaultMax.setHours(20, 0, 0, 0);
+      return { min: defaultMin, max: defaultMax };
+    }
+
+    // Encontrar la hora de apertura más temprana y la de cierre más tarde
+    let earliestStart = '23:59';
+    let latestEnd = '00:00';
+
+    businessHours.forEach((bh) => {
+      if (bh.isOpen) {
+        if (bh.startTime < earliestStart) {
+          earliestStart = bh.startTime;
+        }
+        if (bh.endTime > latestEnd) {
+          latestEnd = bh.endTime;
+        }
+      }
+    });
+
+    const min = new Date();
+    const max = new Date();
+
+    const [startHour, startMin] = earliestStart.split(':').map(Number);
+    const [endHour, endMin] = latestEnd.split(':').map(Number);
+
+    min.setHours(Math.max(0, startHour - 1), startMin, 0, 0);
+    max.setHours(Math.min(23, endHour + 1), endMin, 0, 0);
+
+    return { min, max };
+  }, [businessHours]);
 
   return (
     <div className="space-y-6">
@@ -313,6 +421,12 @@ const Appointments: React.FC = () => {
             resizable={false}
             popup
             culture="es"
+            date={currentDate}
+            onNavigate={handleNavigate}
+            view={currentView as any}
+            onView={handleViewChange}
+            min={calendarMinMax.min}
+            max={calendarMinMax.max}
             messages={{
               today: 'Hoy',
               previous: 'Anterior',

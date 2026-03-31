@@ -1,11 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, Phone, Mail, Heart, Loader } from 'lucide-react';
-import { useClientProfile } from '../../hooks/useQueries';
+import { User, Phone, Mail, Heart, Loader, Upload, X } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useClientProfile, useUpdateClientProfile } from '../../hooks/useQueries';
 
 const ClientProfile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const { data: profileData, isLoading } = useClientProfile();
+  const updateProfileMutation = useUpdateClientProfile();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  const clientInfo = {
+    name: profileData?.client?.name || user?.name || 'N/A',
+    email: profileData?.client?.email || user?.email || 'N/A',
+    phone: profileData?.client?.phone || 'N/A',
+    address: profileData?.client?.address || 'N/A',
+    imageUrl: imageUrl || profileData?.client?.imageUrl || user?.imageUrl || null,
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string;
+        setImageUrl(base64);
+        updateProfileMutation.mutate({ imageUrl: base64 }, {
+          onSuccess: () => {
+            if (user && setUser) {
+              setUser({ ...user, imageUrl: base64 });
+            }
+            toast.success('Foto de perfil actualizada correctamente');
+          },
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl(null);
+    updateProfileMutation.mutate({ imageUrl: null }, {
+      onSuccess: () => {
+        if (user && setUser) {
+          setUser({ ...user, imageUrl: undefined });
+        }
+        toast.success('Foto de perfil eliminada correctamente');
+      },
+    });
+  };
 
   if (isLoading) {
     return (
@@ -18,15 +61,6 @@ const ClientProfile: React.FC = () => {
     );
   }
 
-  const clientInfo = profileData || {
-    name: user?.name || 'N/A',
-    email: user?.email || 'N/A',
-    phone: 'N/A',
-    address: 'N/A',
-    city: 'N/A',
-    country: 'N/A',
-  };
-
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -38,8 +72,37 @@ const ClientProfile: React.FC = () => {
       {/* Personal Info Card */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-start space-x-4">
-          <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center">
-            <User className="h-8 w-8 text-pink-600" />
+          <div className="relative">
+            {clientInfo.imageUrl || imageUrl ? (
+              <img
+                src={imageUrl || clientInfo.imageUrl}
+                alt="Foto de perfil"
+                className="h-16 w-16 rounded-full object-cover"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center">
+                <User className="h-8 w-8 text-pink-600" />
+              </div>
+            )}
+            <div className="absolute -bottom-2 -right-2 flex space-x-1">
+              <label className="bg-blue-500 text-white p-1 rounded-full cursor-pointer hover:bg-blue-600">
+                <Upload className="h-4 w-4" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+              {(clientInfo.imageUrl || imageUrl) && (
+                <button
+                  onClick={handleRemoveImage}
+                  className="bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{clientInfo.name}</h2>
@@ -64,14 +127,14 @@ const ClientProfile: React.FC = () => {
               <Phone className="h-5 w-5 text-gray-400" />
               <div>
                 <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-                <p className="mt-1 text-gray-900">{clientInfo.phone}</p>
+                <p className="mt-1 text-gray-900">{clientInfo.phone || 'No especificado'}</p>
               </div>
             </div>
             <div className="flex items-center space-x-3 md:col-span-2">
               <User className="h-5 w-5 text-gray-400" />
               <div>
                 <label className="block text-sm font-medium text-gray-700">Dirección</label>
-                <p className="mt-1 text-gray-900">{clientInfo.address}, {clientInfo.city}, {clientInfo.country}</p>
+                <p className="mt-1 text-gray-900">{clientInfo.address || 'No especificada'}</p>
               </div>
             </div>
           </div>

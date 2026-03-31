@@ -2,10 +2,12 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User, UserRole, AuthResponse } from '../types';
 import api from '../lib/api';
+import { queryClient } from '../lib/queryClient';
 
 interface AuthContextType {
   user: User | null;
   role: UserRole | null;
+  setUser: (user: User | null) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
@@ -81,12 +83,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    queryClient.clear();
     setUser(null);
   };
 
   const value = {
     user,
     role: user?.role ?? null,
+    setUser,
     login,
     register,
     logout,

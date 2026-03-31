@@ -14,16 +14,17 @@ import knowledgeBaseRoutes from './routes/knowledgeBase';
 import appointmentRoutes from './routes/appointments';
 import notificationRoutes from './routes/notifications';
 import portalRoutes from './routes/portal';
+import settingsRoutes from './routes/settings';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb', strict: true }));
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -40,6 +41,9 @@ app.use('/api/notifications', notificationRoutes);
 
 // Portal routes (for CLIENT users)
 app.use('/api/portal', portalRoutes);
+
+// Settings routes
+app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

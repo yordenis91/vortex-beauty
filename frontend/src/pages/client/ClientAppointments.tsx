@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useClientAppointments, useClientProducts, useCreateClientAppointment } from '../../hooks/useQueries';
-import { Calendar, CheckCircle } from 'lucide-react';
+import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots } from '../../hooks/useQueries';
+import { Calendar, CheckCircle, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale/es';
@@ -74,10 +74,13 @@ const ClientAppointments: React.FC = () => {
   });
 
   const [showForm, setShowForm] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentView, setCurrentView] = useState('month');
 
   // Hooks
   const { data: appointments = [], isLoading: appointmentsLoading } = useClientAppointments();
   const { data: products = [] } = useClientProducts();
+  const { data: availableSlots = [], isLoading: slotsLoading } = useAvailableSlots(formData.date);
 
   const createMutation = useCreateClientAppointment({
     onSuccess: () => {
@@ -142,6 +145,27 @@ const ClientAppointments: React.FC = () => {
       endTime: newEndTime,
     });
     setShowForm(true);
+  };
+
+  const handleSelectAvailableSlot = (slotTime: string) => {
+    // Asumir duración de 1 hora por defecto
+    const [hours, minutes] = slotTime.split(':').map(Number);
+    const endHour = hours + 1;
+    const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+
+    setFormData({
+      ...formData,
+      startTime: slotTime,
+      endTime: endTime,
+    });
+  };
+
+  const handleNavigate = (newDate: Date) => {
+    setCurrentDate(newDate);
+  };
+
+  const handleViewChange = (newView: string) => {
+    setCurrentView(newView);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -229,6 +253,10 @@ const ClientAppointments: React.FC = () => {
             resizable={false}
             popup
             culture="es"
+            date={currentDate}
+            onNavigate={handleNavigate}
+            view={currentView as any}
+            onView={handleViewChange}
             messages={{
               today: 'Hoy',
               previous: 'Anterior',
@@ -318,13 +346,68 @@ const ClientAppointments: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Fecha y Hora Seleccionadas */}
-                <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <p className="text-sm text-gray-600">Fecha y hora seleccionada:</p>
-                  <p className="text-lg font-semibold text-purple-600 mt-1">
-                    {formatDate(formData.date, formData.startTime)}
-                  </p>
+                {/* Fecha Seleccionada */}
+                <div className="mb-6">
+                  <label htmlFor="date" className="block text-sm font-semibold text-gray-900">
+                    Fecha de la Cita <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="date"
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-3"
+                    required
+                  />
                 </div>
+
+                {/* Slots Disponibles */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-900 mb-3">
+                    Horarios Disponibles
+                  </label>
+                  {slotsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                      <span className="ml-3 text-gray-600">Cargando horarios...</span>
+                    </div>
+                  ) : availableSlots.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {availableSlots.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() => handleSelectAvailableSlot(slot)}
+                          className={`flex items-center justify-center px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                            formData.startTime === slot
+                              ? 'bg-purple-600 text-white border-purple-600'
+                              : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400 hover:bg-purple-50'
+                          }`}
+                        >
+                          <Clock className="h-4 w-4 mr-2" />
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>No hay horarios disponibles para esta fecha</p>
+                      <p className="text-sm mt-1">Intenta seleccionar otra fecha</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Hora Inicio y Fin - Solo mostrar si se seleccionó un slot */}
+                {formData.startTime && (
+                  <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-sm text-gray-600">Horario seleccionado:</p>
+                    <p className="text-lg font-semibold text-green-600 mt-1">
+                      {formData.startTime} - {formData.endTime}
+                    </p>
+                  </div>
+                )}
 
                 {/* Formulario */}
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -350,37 +433,6 @@ const ClientAppointments: React.FC = () => {
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  {/* Hora Inicio y Fin */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="startTime" className="block text-sm font-semibold text-gray-900">
-                        Hora de Inicio <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="startTime"
-                        type="time"
-                        value={formData.startTime}
-                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                        className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-3"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="endTime" className="block text-sm font-semibold text-gray-900">
-                        Hora de Fin <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="endTime"
-                        type="time"
-                        value={formData.endTime}
-                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                        className="mt-1 block w-full rounded-lg border border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 px-4 py-3"
-                        required
-                      />
-                    </div>
                   </div>
 
                   {/* Botones */}

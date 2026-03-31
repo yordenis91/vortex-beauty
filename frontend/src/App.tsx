@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { queryClient } from './lib/queryClient';
 import AdminLayout from './components/AdminLayout';
 import ClientLayout from './components/ClientLayout';
 import Login from './pages/Login';
@@ -22,23 +23,7 @@ import ClientDashboard from './pages/client/ClientDashboard';
 import ClientGallery from './pages/client/ClientGallery';
 import ClientAppointments from './pages/client/ClientAppointments';
 import ClientProfile from './pages/client/ClientProfile';
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 10, // 10 minutes
-      retry: (failureCount, error) => {
-        // Don't retry on 4xx errors
-        if (error instanceof Error && 'status' in error && typeof error.status === 'number') {
-          return error.status >= 500 && failureCount < 3;
-        }
-        return failureCount < 3;
-      },
-    },
-  },
-});
+import Settings from './pages/Settings';
 
 /**
  * Protected route component para usuarios ADMIN
@@ -147,6 +132,7 @@ function App() {
               <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="profile" element={<MyProfile />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
 
             {/* Client/Portal routes */}

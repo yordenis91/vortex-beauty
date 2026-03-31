@@ -75,15 +75,16 @@ router.get('/my-profile', authenticateToken, async (req: AuthRequest, res) => {
         email: true,
         name: true,
         role: true,
+        imageUrl: true,
         clientId: true,
         client: {
           select: {
             id: true,
             name: true,
             email: true,
-            company: true,
             phone: true,
             address: true,
+            imageUrl: true,
           },
         },
       },
@@ -96,6 +97,80 @@ router.get('/my-profile', authenticateToken, async (req: AuthRequest, res) => {
     res.json(user);
   } catch (error) {
     console.error('Error fetching user profile:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+/**
+ * PUT /api/portal/my-profile
+ * Actualiza el perfil del cliente autenticado
+ */
+router.put('/my-profile', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId;
+    const clientId = req.user?.clientId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { name, phone, address, imageUrl } = req.body;
+
+    const result = await prisma.$transaction(async (tx) => {
+      // Actualizar User si name o imageUrl
+      let updatedUser = null;
+      if (name !== undefined || imageUrl !== undefined) {
+        updatedUser = await tx.user.update({
+          where: { id: userId },
+          data: {
+            ...(name !== undefined && { name }),
+            ...(imageUrl !== undefined && { imageUrl }),
+          },
+        });
+      }
+
+      // Actualizar Client si phone o address o imageUrl
+      let updatedClient = null;
+      if (clientId && (phone !== undefined || address !== undefined || imageUrl !== undefined)) {
+        updatedClient = await tx.client.update({
+          where: { id: clientId },
+          data: {
+            ...(phone !== undefined && { phone }),
+            ...(address !== undefined && { address }),
+            ...(imageUrl !== undefined && { imageUrl }),
+          },
+        });
+      }
+
+      return { updatedUser, updatedClient };
+    });
+
+    // Retornar el perfil actualizado
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        imageUrl: true,
+        clientId: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
@@ -254,3 +329,76 @@ router.get('/products', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 export default router;
+
+/**
+ * GET /api/portal/available-slots
+ * Retorna los slots disponibles para una fecha específica
+ * Query params: date (YYYY-MM-DD)
+ */
+router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { date } = req.query;
+
+    if (!date || typeof date !== 'string') {
+      return res.status(400).json({ error: 'Fecha requerida (formato YYYY-MM-DD)' });
+    }
+
+    // Validar formato de fecha
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({ error: 'Formato de fecha inválido (YYYY-MM-DD)' });
+    }
+
+    // Convertir string a Date y obtener día de la semana
+    const appointmentDate = new Date(date + 'T00:00:00');
+    const dayOfWeek = appointmentDate.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+
+    // Buscar horario comercial para ese día
+    const businessHour = await prisma.businessHour.findUnique({
+      where: { dayOfWeek },
+    });
+
+    // Si no hay horario comercial o el día está cerrado, retornar array vacío
+    if (!businessHour || !businessHour.isOpen) {
+      return res.json([]);
+    }
+
+    // Generar slots disponibles en bloques de 1 hora
+    const availableSlots: string[] = [];
+    const [startHour, startMin] = businessHour.startTime.split(':').map(Number);
+    const [endHour, endMin] = businessHour.endTime.split(':').map(Number);
+
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+
+    // Generar slots cada 60 minutos (1 hora)
+    for (let minutes = startMinutes; minutes < endMinutes; minutes += 60) {
+      const hour = Math.floor(minutes / 60);
+      const min = minutes % 60;
+      const slotTime = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+      availableSlots.push(slotTime);
+    }
+
+    // Buscar citas agendadas para esa fecha
+    const scheduledAppointments = await prisma.appointment.findMany({
+      where: {
+        date: appointmentDate,
+        status: 'SCHEDULED',
+      },
+      select: {
+        startTime: true,
+      },
+    });
+
+    // Crear set de horas ocupadas
+    const occupiedSlots = new Set(scheduledAppointments.map(apt => apt.startTime));
+
+    // Filtrar slots disponibles (excluir los ocupados)
+    const finalAvailableSlots = availableSlots.filter(slot => !occupiedSlots.has(slot));
+
+    res.json(finalAvailableSlots);
+  } catch (error) {
+    console.error('Error fetching available slots:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});

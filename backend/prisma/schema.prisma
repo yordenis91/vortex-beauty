@@ -45,6 +45,9 @@ model User {
   name      String
   role      Role      @default(CLIENT) // ADMIN o CLIENT
   
+  // Foto de perfil (Base64)
+  imageUrl  String?   @db.Text
+  
   // Relación con Client (un user puede estar asociado a un cliente)
   clientId  String?
   client    Client?   @relation("UserAsClient", fields: [clientId], references: [id], onDelete: SetNull)
@@ -88,6 +91,9 @@ model Client {
   groupId        String?
   ownerId        String?
   taxId          String?     // CIF/NIF/RUT para la facturación
+  
+  // Foto de perfil (Base64)
+  imageUrl       String?     @db.Text
   
   // Claves foráneas
   userId    String
@@ -443,6 +449,21 @@ model Notification {
   @@index([status])
   @@index([isRead])
   @@index([createdAt])
+}
+
+// Horarios Comerciales
+model BusinessHour {
+  id        String   @id @default(uuid())
+  dayOfWeek Int      // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  startTime String   // Ej: "09:00"
+  endTime   String   // Ej: "18:00"
+  isOpen    Boolean  @default(true) // Si es false, ese día está cerrado
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dayOfWeek])
+  @@index([dayOfWeek])
 }
 
 // ================= Enums adicionales =================

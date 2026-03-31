@@ -521,6 +521,27 @@ export const useClientProfile = () => {
   });
 };
 
+export const useUpdateClientProfile = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (profileData: any) => {
+      const response = await api.put('/portal/my-profile', profileData);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['client-profile'] });
+      toast.success('Perfil guardado correctamente');
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
 // Knowledge Base
 export const useKnowledgeBase = () => {
   return useQuery({
@@ -674,6 +695,18 @@ export const useCreateAppointment = (options?: any) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
+  });
+};
+
+// Available Slots
+export const useAvailableSlots = (date: string) => {
+  return useQuery({
+    queryKey: ['available-slots', date],
+    queryFn: async () => {
+      const response = await api.get<string[]>(`/portal/available-slots?date=${date}`);
+      return response.data;
+    },
+    enabled: !!date,
   });
 };
 

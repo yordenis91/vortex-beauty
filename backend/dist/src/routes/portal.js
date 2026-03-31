@@ -63,15 +63,16 @@ router.get('/my-profile', auth_1.authenticateToken, async (req, res) => {
                 email: true,
                 name: true,
                 role: true,
+                imageUrl: true,
                 clientId: true,
                 client: {
                     select: {
                         id: true,
                         name: true,
                         email: true,
-                        company: true,
                         phone: true,
                         address: true,
+                        imageUrl: true,
                     },
                 },
             },
@@ -83,6 +84,73 @@ router.get('/my-profile', auth_1.authenticateToken, async (req, res) => {
     }
     catch (error) {
         console.error('Error fetching user profile:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+/**
+ * PUT /api/portal/my-profile
+ * Actualiza el perfil del cliente autenticado
+ */
+router.put('/my-profile', auth_1.authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+        const clientId = req.user?.clientId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        const { name, phone, address, imageUrl } = req.body;
+        const result = await prismaClient_1.default.$transaction(async (tx) => {
+            // Actualizar User si name o imageUrl
+            let updatedUser = null;
+            if (name !== undefined || imageUrl !== undefined) {
+                updatedUser = await tx.user.update({
+                    where: { id: userId },
+                    data: {
+                        ...(name !== undefined && { name }),
+                        ...(imageUrl !== undefined && { imageUrl }),
+                    },
+                });
+            }
+            // Actualizar Client si phone o address o imageUrl
+            let updatedClient = null;
+            if (clientId && (phone !== undefined || address !== undefined || imageUrl !== undefined)) {
+                updatedClient = await tx.client.update({
+                    where: { id: clientId },
+                    data: {
+                        ...(phone !== undefined && { phone }),
+                        ...(address !== undefined && { address }),
+                        ...(imageUrl !== undefined && { imageUrl }),
+                    },
+                });
+            }
+            return { updatedUser, updatedClient };
+        });
+        // Retornar el perfil actualizado
+        const user = await prismaClient_1.default.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                email: true,
+                name: true,
+                role: true,
+                imageUrl: true,
+                clientId: true,
+                client: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        address: true,
+                        imageUrl: true,
+                    },
+                },
+            },
+        });
+        res.json(user);
+    }
+    catch (error) {
+        console.error('Error updating user profile:', error);
         return res.status(500).json({ error: 'Error interno del servidor' });
     }
 });

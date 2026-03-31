@@ -7,24 +7,28 @@ export interface User {
   name: string;
   role: UserRole;
   clientId?: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
 
 // Client types
+export type ClientType = 'CUSTOMER' | 'SUPPLIER';
+
 export interface Client {
   id: string;
   name: string;
   email: string;
   phone?: string;
-  company?: string;
   address?: string;
   city?: string;
   state?: string;
   zipCode?: string;
   country?: string;
   taxId?: string;
+  type: ClientType;
   userId: string;
+  imageUrl?: string;
   createdAt: string;
   updatedAt: string;
   projects?: Project[];

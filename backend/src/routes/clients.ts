@@ -12,8 +12,6 @@ const clientSchema = z.object({
   email: z.string().email(),
   code: z.string().optional(),
   displayName: z.string().optional(),
-  company: z.string().optional(),
-  businessNumber: z.string().optional(),
   type: z.enum(['CUSTOMER', 'SUPPLIER']).optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -21,11 +19,10 @@ const clientSchema = z.object({
   state: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
-  secondaryEmail: z.string().email().optional(),
-  currency: z.string().optional(),
   groupId: z.string().optional(),
   ownerId: z.string().optional(),
   taxId: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 const createClientSchema = clientSchema.extend({
@@ -83,7 +80,6 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         data: {
           ...clientData,
           type: clientData.type || 'CUSTOMER',
-          currency: clientData.currency || 'USD',
           userId: (req as any).userId,
         },
       });
@@ -132,7 +128,6 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       data: {
         ...data,
         type: data.type || undefined,
-        currency: data.currency || undefined,
       },
     });
 
