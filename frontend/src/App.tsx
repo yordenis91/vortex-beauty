@@ -24,6 +24,7 @@ import ClientGallery from './pages/client/ClientGallery';
 import ClientAppointments from './pages/client/ClientAppointments';
 import ClientProfile from './pages/client/ClientProfile';
 import Settings from './pages/Settings';
+import AdminGallery from './pages/AdminGallery';
 
 /**
  * Protected route component para usuarios ADMIN
@@ -130,6 +131,7 @@ function App() {
               <Route path="products" element={<Products />} />
               <Route path="categories" element={<Categories />} />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
+              <Route path="gallery" element={<AdminGallery />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="profile" element={<MyProfile />} />
               <Route path="settings" element={<Settings />} />

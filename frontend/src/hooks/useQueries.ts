@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment } from '../types';
+import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem } from '../types';
 
 // Clients
 export const useClients = () => {
@@ -775,6 +775,89 @@ export const useClientProducts = () => {
     queryFn: async () => {
       const response = await api.get<Product[]>('/portal/products');
       return response.data;
+    },
+  });
+};
+
+// Gallery (inspiration)
+export const useGalleryItems = () => {
+  return useQuery({
+    queryKey: ['gallery-items'],
+    queryFn: async () => {
+      const response = await api.get<GalleryItem[]>('/gallery');
+      return response.data;
+    },
+  });
+};
+
+export const useAdminGalleryItems = () => {
+  return useQuery({
+    queryKey: ['admin-gallery-items'],
+    queryFn: async () => {
+      const response = await api.get<GalleryItem[]>('/gallery/admin');
+      return response.data;
+    },
+  });
+};
+
+export const useCreateGalleryItem = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (payload: any) => {
+      const response = await api.post('/gallery', payload);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Error creando elemento de galería.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-gallery-items'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+export const useUpdateGalleryItem = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async ({ id, payload }: { id: string; payload: any }) => {
+      const response = await api.put(`/gallery/${id}`, payload);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Error actualizando elemento de galería.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-gallery-items'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+export const useDeleteGalleryItem = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (id: string) => {
+      await api.delete(`/gallery/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Error eliminando elemento de galería.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-gallery-items'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };

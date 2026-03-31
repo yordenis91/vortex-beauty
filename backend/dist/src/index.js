@@ -22,6 +22,7 @@ const appointments_1 = __importDefault(require("./routes/appointments"));
 const notifications_1 = __importDefault(require("./routes/notifications"));
 const portal_1 = __importDefault(require("./routes/portal"));
 const settings_1 = __importDefault(require("./routes/settings"));
+const gallery_1 = __importDefault(require("./routes/gallery"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 app.use((0, cors_1.default)());
@@ -45,6 +46,8 @@ app.use('/api/notifications', notifications_1.default);
 app.use('/api/portal', portal_1.default);
 // Settings routes
 app.use('/api/settings', settings_1.default);
+// Gallery routes
+app.use('/api/gallery', gallery_1.default);
 // Health check
 app.get('/api/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });

@@ -14,6 +14,7 @@ import {
   Folder,
   Bell,
   User,
+  Sparkles,
   ChevronDown,
   Settings as SettingsIcon,
 } from 'lucide-react';
@@ -40,8 +41,7 @@ const AdminLayout: React.FC = () => {
     { name: 'Products', href: '/admin/products', icon: Package },
     { name: 'Categories', href: '/admin/categories', icon: Folder },
     { section: 'Learning & Resources', highlight: true },
-    { name: 'Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen },
-    { section: 'Operations', highlight: true },
+    { name: 'Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen },    { name: 'Galería', href: '/admin/gallery', icon: Sparkles },    { section: 'Operations', highlight: true },
     { name: 'Notifications', href: '/admin/notifications', icon: Bell },
     { name: 'Settings', href: '/admin/settings', icon: SettingsIcon },
   ];

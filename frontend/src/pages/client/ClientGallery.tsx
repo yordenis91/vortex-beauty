@@ -1,154 +1,177 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sparkles } from 'lucide-react';
-
-interface GalleryItem {
-  id: string;
-  title: string;
-  image: string;
-  category: string;
-}
+import { useGalleryItems, useAvailableSlots, useCreateClientAppointment } from '../../hooks/useQueries';
+import type { GalleryItem } from '../../types';
+import toast from 'react-hot-toast';
 
 const ClientGallery: React.FC = () => {
-  // Mock data de imágenes de manicuras de Unsplash
-  const mockGalleryItems: GalleryItem[] = useMemo(() => [
-    {
-      id: '1',
-      title: 'Acrílicas Francesas',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&h=500&fit=crop',
-      category: 'Acrílicas',
+  const { data: galleryItems = [], isLoading: galleryLoading } = useGalleryItems();
+  const [selectedItem, setSelectedItem] = useState<GalleryItem | null>(null);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState('');
+
+  const { data: availableSlots = [], isLoading: slotsLoading, refetch: refetchSlots } = useAvailableSlots(selectedDate);
+
+  const appointmentMutation = useCreateClientAppointment({
+    onSuccess: () => {
+      toast.success('¡Cita creada con éxito!');
+      setSelectedItem(null);
+      setSelectedDate('');
+      setSelectedSlot('');
     },
-    {
-      id: '2',
-      title: 'Baby Boomer',
-      image: 'https://images.unsplash.com/photo-1632345031435-8917c3a3897d?w=500&h=600&fit=crop',
-      category: 'Degradado',
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || 'No se pudo crear la cita.';
+      toast.error(errorMessage);
     },
-    {
-      id: '3',
-      title: 'Efecto Cristal',
-      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=500&h=500&fit=crop',
-      category: 'Efecto',
-    },
-    {
-      id: '4',
-      title: 'Nude Clásico',
-      image: 'https://images.unsplash.com/photo-1657699563004-ab757a748639?w=500&h=600&fit=crop',
-      category: 'Clásico',
-    },
-    {
-      id: '5',
-      title: 'Neon Vibrante',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&h=700&fit=crop',
-      category: 'Colorido',
-    },
-    {
-      id: '6',
-      title: 'Glitter Gold',
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&h=500&fit=crop',
-      category: 'Brillo',
-    },
-    {
-      id: '7',
-      title: 'Ombre Clásico',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&h=600&fit=crop',
-      category: 'Degradado',
-    },
-    {
-      id: '8',
-      title: 'Halloween Art',
-      image: 'https://images.unsplash.com/photo-1632345031435-8917c3a3897d?w=500&h=500&fit=crop',
-      category: 'Artística',
-    },
-    {
-      id: '9',
-      title: 'Minimalista Chic',
-      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=500&h=700&fit=crop',
-      category: 'Minimalista',
-    },
-    {
-      id: '10',
-      title: 'Floral Delicado',
-      image: 'https://images.unsplash.com/photo-1657699563004-ab757a748639?w=500&h=500&fit=crop',
-      category: 'Flores',
-    },
-    {
-      id: '11',
-      title: 'Efecto Espejo',
-      image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=500&h=600&fit=crop',
-      category: 'Efecto',
-    },
-    {
-      id: '12',
-      title: 'Degradado Pastel',
-      image: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=500&h=500&fit=crop',
-      category: 'Pastel',
-    },
-  ], []);
+  });
+
+  useEffect(() => {
+    if (selectedDate) {
+      refetchSlots();
+      setSelectedSlot('');
+    }
+  }, [selectedDate, refetchSlots]);
+
+  const closeModal = () => {
+    setSelectedItem(null);
+    setSelectedDate('');
+    setSelectedSlot('');
+  };
+
+  const handleBookStyle = () => {
+    if (!selectedItem) return;
+    if (!selectedDate) {
+      toast.error('Selecciona una fecha.');
+      return;
+    }
+    if (!selectedSlot) {
+      toast.error('Selecciona una hora.');
+      return;
+    }
+
+    const [hour, minute] = selectedSlot.split(':').map(Number);
+    const endHour = hour + 1;
+    const endTime = `${String(endHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+    appointmentMutation.mutate({
+      productId: selectedItem.productId,
+      date: selectedDate,
+      startTime: selectedSlot,
+      endTime,
+      notes: `Reservado desde inspiración: ${selectedItem.title}`,
+    });
+  };
+
+  if (galleryLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-12">
-        <div className="flex items-center justify-start gap-3 mb-4">
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center gap-3 mb-4">
           <Sparkles className="h-8 w-8 text-purple-600" />
           <h1 className="text-4xl font-bold text-gray-900">Inspiración</h1>
         </div>
         <p className="text-gray-600 text-lg">
-          Explora nuestra galería de diseños de manicura y encuentra tu próximo estilo favorito
+          Explora diseños de manicura y reserva la cita sin pasos adicionales.
         </p>
       </div>
 
-      {/* Masonry Grid */}
-      <div className="grid gap-6 auto-rows-max grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {mockGalleryItems.map((item, index) => (
-          <div
-            key={item.id}
-            className={`group relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer ${
-              // Crear efecto masonry con alturas variadas
-              index % 5 === 0 ? 'lg:col-span-1 lg:row-span-2' : ''
-            }`}
-          >
-            {/* Imagen */}
-            <div className="relative overflow-hidden bg-gray-200 h-64 sm:h-72">
-              <img
-                src={item.image}
-                alt={item.title}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                loading="lazy"
-              />
-              
-              {/* Overlay oscuro en hover */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300" />
-            </div>
-
-            {/* Content card debajo */}
-            <div className="bg-white p-4">
-              <h3 className="font-semibold text-gray-900 text-base group-hover:text-purple-600 transition-colors">
-                {item.title}
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">{item.category}</p>
-            </div>
-
-            {/* Hover overlay con texto centrado */}
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-70 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
-              <div className="text-center text-white">
-                <p className="text-lg font-semibold">{item.title}</p>
-                <p className="text-sm mt-2 text-gray-200">{item.category}</p>
-              </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {galleryItems.map((item) => (
+          <div key={item.id} className="group relative overflow-hidden rounded-xl cursor-pointer shadow-md bg-white">
+            <img
+              src={item.imageUrl}
+              alt={item.title}
+              className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex flex-col justify-end p-4">
+              <p className="text-white font-bold text-lg">{item.title}</p>
+              <p className="text-white/80 text-sm">{item.product?.price ?? '—'} {item.product?.currency ?? ''}</p>
+              <button
+                onClick={() => {
+                  if (!item.isActive) {
+                    toast.error('Este estilo no está activo');
+                    return;
+                  }
+                  setSelectedItem(item);
+                  setSelectedDate('');
+                  setSelectedSlot('');
+                }}
+                className="mt-3 w-full rounded-md bg-pink-500 py-2 text-sm font-semibold text-white hover:bg-pink-600"
+              >
+                Agendar este estilo
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Footer message */}
-      <div className="mt-16 text-center py-12 border-t border-gray-200">
-        <p className="text-gray-600 text-lg">
-          💡 ¿Te gustó alguno de estos diseños? 
-          <span className="block mt-2 font-semibold text-purple-600">
-            ¡Contacta con nosotras para agendar tu próxima cita!
-          </span>
-        </p>
-      </div>
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-8">
+          <div className="bg-white rounded-xl w-full max-w-2xl p-6 relative">
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-2xl font-bold mb-4">Reserva: {selectedItem.title}</h3>
+            <img src={selectedItem.imageUrl} alt={selectedItem.title} className="w-full h-60 object-cover rounded-lg mb-4" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Fecha</label>
+                <input
+                  type="date"
+                  className="mt-1 block w-full rounded-md border-gray-300"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Hora</label>
+                <select
+                  className="mt-1 block w-full rounded-md border-gray-300"
+                  value={selectedSlot}
+                  onChange={(e) => setSelectedSlot(e.target.value)}
+                  disabled={!selectedDate || slotsLoading || availableSlots.length === 0}
+                >
+                  <option value="">Selecciona una hora</option>
+                  {availableSlots.map((slot) => (
+                    <option key={slot} value={slot}>{slot}</option>
+                  ))}
+                </select>
+                {selectedDate && !slotsLoading && availableSlots.length === 0 && (
+                  <p className="text-sm text-red-500 mt-2">No hay horarios disponibles para la fecha seleccionada.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={closeModal}
+                className="rounded-md px-4 py-2 border text-gray-700 hover:bg-gray-100"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleBookStyle}
+                disabled={appointmentMutation.isPending}
+                className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              >
+                {appointmentMutation.isPending ? 'Agendando...' : 'Confirmar cita'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

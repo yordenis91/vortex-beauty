@@ -149,6 +149,17 @@ export interface Product {
   };
 }
 
+export interface GalleryItem {
+  id: string;
+  title: string;
+  imageUrl: string;
+  isActive: boolean;
+  productId: string;
+  product: Product;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Subscription types
 export interface Subscription {
   id: string;
