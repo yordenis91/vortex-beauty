@@ -71,7 +71,7 @@ const ClientGallery: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
       <div>
         <div className="flex items-center gap-3 mb-4">
           <Sparkles className="h-8 w-8 text-purple-600" />
