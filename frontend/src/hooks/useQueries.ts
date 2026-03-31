@@ -510,6 +510,17 @@ export const useMyProfile = () => {
   });
 };
 
+export const useClientProfile = () => {
+  return useQuery({
+    queryKey: ['client-profile'],
+    queryFn: async () => {
+      const response = await api.get<any>('/portal/my-profile');
+      return response.data;
+    },
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+};
+
 // Knowledge Base
 export const useKnowledgeBase = () => {
   return useQuery({

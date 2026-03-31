@@ -1,12 +1,15 @@
-# Estructura del proyecto Vortex
+# Estructura del proyecto VortexBeauty
 
 ## raíz
 - docker-compose.yml
+- ESTRUCTURA.md
 - package.json
 - RBAC_IMPLEMENTATION.md
 - RBAC_SUMMARY.md
 - REACT_QUERY_FIX.md
 - README.md
+- scripts/
+  - api-matrix-test.sh
 
 ### backend/
 - Dockerfile
@@ -16,6 +19,7 @@
 - tsconfig.json
 - prisma/
   - schema.prisma
+  - seed.ts
   - migrations/
     - migration_lock.toml
     - 20260322092251_init/
@@ -25,6 +29,12 @@
     - 20260325211529_make_category_optional/
       - migration.sql
     - 20260326072108_add_rbac_to_users/
+      - migration.sql
+    - 20260329050435_migracion_de_inicio/
+      - migration.sql
+    - 20260329055537_add_appointments/
+      - migration.sql
+    - 20260329092158_add_notification_model/
       - migration.sql
 - src/
   - index.d.ts
@@ -42,6 +52,7 @@
     - auth.js
     - auth.ts
   - routes/
+    - appointments.ts
     - auth.d.ts
     - auth.js
     - auth.ts
@@ -53,6 +64,7 @@
     - invoices.js
     - invoices.ts
     - knowledgeBase.ts
+    - notifications.ts
     - portal.ts
     - products.ts
     - projects.d.ts
@@ -61,6 +73,7 @@
     - subscriptions.ts
     - tickets.ts
   - services/
+    - notificationService.ts
   - utils/
 
 ### frontend/
@@ -76,16 +89,17 @@
 - tsconfig.node.json
 - vite.config.ts
 - public/
+  - favicon.svg
 - src/
-  - App.css
   - App.tsx
-  - index.css
   - main.tsx
   - assets/
   - components/
     - AdminLayout.tsx
     - ClientLayout.tsx
+    - ConfirmModal.tsx
     - Layout.tsx
+    - NotificationBell.tsx
   - contexts/
     - AuthContext.tsx
   - hooks/
@@ -93,6 +107,7 @@
   - lib/
     - api.ts
   - pages/
+    - Appointments.tsx
     - Categories.tsx
     - Clients.tsx
     - Dashboard.tsx
@@ -102,10 +117,18 @@
     - MyInvoices.tsx
     - MyProfile.tsx
     - MySubscriptions.tsx
+    - Notifications.tsx
     - Products.tsx
     - Projects.tsx
     - Register.tsx
     - Subscriptions.tsx
     - Tickets.tsx
+    - client/
+      - ClientAppointments.tsx
+      - ClientDashboard.tsx
+      - ClientGallery.tsx
+      - ClientProfile.tsx
+  - styles/
+    - global.css
   - types/
     - index.ts

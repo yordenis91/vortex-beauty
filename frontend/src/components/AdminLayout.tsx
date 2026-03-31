@@ -12,7 +12,9 @@ import {
   BookOpen,
   Calendar,
   Folder,
-  Bell
+  Bell,
+  User,
+  ChevronDown
 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
@@ -20,6 +22,7 @@ const AdminLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -49,7 +52,7 @@ const AdminLayout: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileMenuOpen(false)} />
           <div className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-black">Vortex Admin</h3>
+              <h3 className="text-lg font-semibold text-black">VortexB Admin</h3>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -98,7 +101,7 @@ const AdminLayout: React.FC = () => {
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           <div className="flex items-center flex-shrink-0 px-4 py-6 border-b border-gray-200">
-            <h1 className="text-lg font-bold text-black">Vortex Admin</h1>
+            <h1 className="text-lg font-bold text-black">VortexNails Admin</h1>
           </div>
           <nav className="mt-8 flex-1 px-2 space-y-8 overflow-y-auto">
             {navigation.map((item, idx) => {
@@ -171,15 +174,36 @@ const AdminLayout: React.FC = () => {
               </div>
             </div>
             <div className="ml-4 flex items-center md:ml-6">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">{user?.name}</span>
+              <div className="relative">
                 <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  <span>{user?.name}</span>
+                  <ChevronDown className="h-4 w-4" />
                 </button>
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+                    <Link
+                      to="/admin/profile"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Mi Perfil
+                    </Link>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsUserMenuOpen(false);
+                      }}
+                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

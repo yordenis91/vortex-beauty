@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Menu, X, Calendar, Sparkles, BarChart3, Home } from 'lucide-react';
+import { LogOut, Menu, X, Calendar, Sparkles, BarChart3, Home, User, ChevronDown } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
 const ClientLayout: React.FC = () => {
@@ -9,6 +9,7 @@ const ClientLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -20,6 +21,7 @@ const ClientLayout: React.FC = () => {
     { name: 'Mis Citas', href: '/portal/appointments', icon: Calendar },
     { name: 'Inspiración', href: '/portal/gallery', icon: Sparkles },
     { name: 'Facturas/Pagos', href: '/portal/my-invoices', icon: BarChart3 },
+    { name: 'Mi Perfil', href: '/portal/my-profile', icon: User },
   ];
 
   return (
@@ -105,18 +107,36 @@ const ClientLayout: React.FC = () => {
             </div>
 
             {/* User Menu */}
-            <div className="flex items-center space-x-4">
-              <div className="hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                <p className="text-xs text-gray-500">{user?.email}</p>
-              </div>
+            <div className="relative">
               <button
-                onClick={handleLogout}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
               >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
+                <span className="hidden sm:block">{user?.name}</span>
+                <ChevronDown className="h-4 w-4" />
               </button>
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
+                  <Link
+                    to="/portal/my-profile"
+                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Mi Perfil
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsUserMenuOpen(false);
+                    }}
+                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Cerrar Sesión
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

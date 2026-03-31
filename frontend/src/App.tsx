@@ -21,6 +21,7 @@ import MyProfile from './pages/MyProfile';
 import ClientDashboard from './pages/client/ClientDashboard';
 import ClientGallery from './pages/client/ClientGallery';
 import ClientAppointments from './pages/client/ClientAppointments';
+import ClientProfile from './pages/client/ClientProfile';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -145,6 +146,7 @@ function App() {
               <Route path="categories" element={<Categories />} />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="notifications" element={<Notifications />} />
+              <Route path="profile" element={<MyProfile />} />
             </Route>
 
             {/* Client/Portal routes */}
@@ -162,7 +164,7 @@ function App() {
               <Route path="gallery" element={<ClientGallery />} />
               <Route path="my-invoices" element={<MyInvoices />} />
               <Route path="my-subscriptions" element={<MySubscriptions />} />
-              <Route path="my-profile" element={<MyProfile />} />
+              <Route path="my-profile" element={<ClientProfile />} />
             </Route>
 
             {/* Catch all - redirect to root */}
