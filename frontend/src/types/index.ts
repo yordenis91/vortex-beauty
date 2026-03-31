@@ -99,6 +99,15 @@ export interface RegisterRequest {
   name: string;
 }
 
+// ClosedDate types
+export interface ClosedDate {
+  id: string;
+  date: string; // YYYY-MM-DD
+  reason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API types
 export interface ApiError {
   error: string | string[];

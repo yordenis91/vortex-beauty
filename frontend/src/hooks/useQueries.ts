@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem } from '../types';
+import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem, ClosedDate } from '../types';
 
 // Clients
 export const useClients = () => {
@@ -744,6 +744,69 @@ export const useDeleteAppointment = (options?: any) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+// ==================== CLOSED DATES HOOKS ====================
+
+/**
+ * Hook para obtener todos los días cerrados (vacaciones, feriados, etc.)
+ * Usa endpoint /api/closed-dates
+ */
+export const useClosedDates = () => {
+  return useQuery({
+    queryKey: ['closed-dates'],
+    queryFn: async () => {
+      const response = await api.get<ClosedDate[]>('/closed-dates');
+      return response.data;
+    },
+  });
+};
+
+/**
+ * Hook para crear un nuevo día cerrado
+ * Usa endpoint POST /api/closed-dates
+ */
+export const useCreateClosedDate = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (closedDateData: { date: string; reason?: string }) => {
+      const response = await api.post('/closed-dates', closedDateData);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['closed-dates'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+/**
+ * Hook para eliminar un día cerrado
+ * Usa endpoint DELETE /api/closed-dates/:id
+ */
+export const useDeleteClosedDate = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (id: string) => {
+      await api.delete(`/closed-dates/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['closed-dates'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });

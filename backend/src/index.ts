@@ -16,6 +16,7 @@ import notificationRoutes from './routes/notifications';
 import portalRoutes from './routes/portal';
 import settingsRoutes from './routes/settings';
 import galleryRoutes from './routes/gallery';
+import closedDatesRoutes from './routes/closedDates';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -48,6 +49,9 @@ app.use('/api/settings', settingsRoutes);
 
 // Gallery routes
 app.use('/api/gallery', galleryRoutes);
+
+// Closed dates routes
+app.use('/api/closed-dates', closedDatesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment } from '../hooks/useQueries';
+import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates } from '../hooks/useQueries';
 import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -121,6 +121,54 @@ const isTimeWithinBusinessHours = (
   return reqStartMinutes >= shopStartMinutes && reqEndMinutes <= shopEndMinutes;
 };
 
+// Función para verificar si una fecha específica está bloqueada
+const isSpecificClosedDay = (date: Date, closedDates: any[]): boolean => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  return closedDates.some(cd => cd.date === dateStr);
+};
+
+// Función para verificar si un día está disponible (no es pasado, domingo, ni día cerrado específico)
+const isDayAvailable = (date: Date, closedDates: any[]): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Verificar si es una fecha pasada
+  if (date < today) {
+    return false;
+  }
+
+  // Verificar si es domingo
+  if (date.getDay() === 0) {
+    return false;
+  }
+
+  // Verificar si es un día cerrado específico
+  if (isSpecificClosedDay(date, closedDates)) {
+    return false;
+  }
+
+  return true;
+};
+
+// Función para propiedades personalizadas del día en el calendario
+const customDayPropGetter = (date: Date, closedDates: any[]) => {
+  const isAvailable = isDayAvailable(date, closedDates);
+
+  if (!isAvailable) {
+    return {
+      style: {
+        backgroundColor: '#f3f4f6',
+        cursor: 'not-allowed',
+        opacity: 0.6,
+      },
+    };
+  }
+
+  return {
+    style: {},
+  };
+};
+
 const Appointments: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
@@ -143,6 +191,7 @@ const Appointments: React.FC = () => {
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
+  const { data: closedDates = [], isLoading: closedDatesLoading } = useClosedDates();
 
   const createMutation = useCreateAppointment({
     onSuccess: () => {
@@ -281,6 +330,12 @@ const Appointments: React.FC = () => {
 
   // Manejadores del calendario
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
+    // Verificar si el día está disponible (no es pasado, domingo, ni día cerrado específico)
+    if (!isDayAvailable(slotInfo.start, closedDates)) {
+      toast.error('Este día no está disponible para agendar');
+      return;
+    }
+
     // Validar que la hora seleccionada esté dentro del horario comercial
     const startTimeStr = format(slotInfo.start, 'HH:mm');
     const endTimeStr = format(slotInfo.end, 'HH:mm');
@@ -337,7 +392,7 @@ const Appointments: React.FC = () => {
     }
   };
 
-  const isLoading = appointmentsLoading || clientsLoading || productsLoading || businessHoursLoading;
+  const isLoading = appointmentsLoading || clientsLoading || productsLoading || businessHoursLoading || closedDatesLoading;
 
   // Calcular el rango de horas del calendario basado en los horarios comerciales
   const calendarMinMax = useMemo(() => {
@@ -418,6 +473,7 @@ const Appointments: React.FC = () => {
             onSelectEvent={handleSelectEvent}
             onEventDrop={handleEventDrop}
             eventPropGetter={eventPropGetter}
+            dayPropGetter={(date: Date) => customDayPropGetter(date, closedDates)}
             resizable={false}
             popup
             culture="es"

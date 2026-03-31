@@ -481,6 +481,15 @@ model BusinessHour {
   @@index([dayOfWeek])
 }
 
+model ClosedDate {
+  id        String   @id @default(uuid())
+  date      String   @unique // YYYY-MM-DD
+  reason    String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
 // ================= Enums adicionales =================
 
 enum CategoryType {

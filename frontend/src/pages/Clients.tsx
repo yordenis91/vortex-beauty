@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
-import { Users, Plus, Edit, Trash2, Search, Mail } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Search, Mail, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -9,36 +9,16 @@ interface Client {
   id: string;
   name: string;
   email: string;
-  code?: string;
-  displayName?: string;
-  type?: 'CUSTOMER' | 'SUPPLIER';
   phone?: string;
   address?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-  groupId?: string;
-  ownerId?: string;
-  taxId?: string;
   imageUrl?: string;
 }
 
 interface ClientFormData {
   name: string;
   email: string;
-  code: string;
-  displayName: string;
-  type: 'CUSTOMER' | 'SUPPLIER';
   phone: string;
   address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
-  groupId: string;
-  ownerId: string;
-  taxId: string;
   imageUrl: string;
   username: string;
   password: string;
@@ -55,18 +35,8 @@ const Clients: React.FC = () => {
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
     email: '',
-    code: '',
-    displayName: '',
-    type: 'CUSTOMER',
     phone: '',
     address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: '',
-    groupId: '',
-    ownerId: '',
-    taxId: '',
     imageUrl: '',
     username: '',
     password: '',
@@ -96,18 +66,8 @@ const Clients: React.FC = () => {
     setFormData({
       name: '',
       email: '',
-      code: '',
-      displayName: '',
-      type: 'CUSTOMER',
       phone: '',
       address: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      country: '',
-      groupId: '',
-      ownerId: '',
-      taxId: '',
       imageUrl: '',
       username: '',
       password: '',
@@ -127,18 +87,8 @@ const Clients: React.FC = () => {
     setFormData({
       name: client.name,
       email: client.email,
-      code: client.code || '',
-      displayName: client.displayName || '',
-      type: client.type || 'CUSTOMER',
       phone: client.phone || '',
       address: client.address || '',
-      city: client.city || '',
-      state: client.state || '',
-      zipCode: client.zipCode || '',
-      country: client.country || '',
-      groupId: client.groupId || '',
-      ownerId: client.ownerId || '',
-      taxId: client.taxId || '',
       imageUrl: client.imageUrl || '',
       username: '',
       password: '',
@@ -174,18 +124,8 @@ const Clients: React.FC = () => {
     const payload = {
       name: formData.name,
       email: formData.email,
-      code: formData.code || undefined,
-      displayName: formData.displayName || undefined,
-      type: formData.type,
       phone: formData.phone || undefined,
       address: formData.address || undefined,
-      city: formData.city || undefined,
-      state: formData.state || undefined,
-      zipCode: formData.zipCode || undefined,
-      country: formData.country || undefined,
-      groupId: formData.groupId || undefined,
-      ownerId: formData.ownerId || undefined,
-      taxId: formData.taxId || undefined,
       imageUrl: formData.imageUrl || undefined,
     };
 
@@ -298,118 +238,201 @@ const Clients: React.FC = () => {
         )}
       </div>
 
-      {/* Modal Minimalista */}
+      {/* Modal Premium SaaS */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 transition-opacity flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
-              <h3 className="text-xl font-semibold">{editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}</h3>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-white">
+                {editingClient ? 'Editar Cliente' : 'Crear Nuevo Cliente'}
+              </h3>
+              <button
+                onClick={closeModal}
+                className="text-blue-100 hover:text-white transition"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                  <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                  <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Code</label>
-                  <input type="text" value={formData.code} onChange={e => setFormData({...formData, code: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
-                  <input type="text" value={formData.displayName} onChange={e => setFormData({...formData, displayName: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as 'CUSTOMER' | 'SUPPLIER'})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="CUSTOMER">Customer</option>
-                    <option value="SUPPLIER">Supplier</option>
-                  </select>
+
+            <form onSubmit={handleSubmit} className="p-8 space-y-8">
+              {/* Avatar Section */}
+              <div className="flex justify-center mb-8">
+                <label className="cursor-pointer group">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                  <div className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 group-hover:border-blue-500 transition flex items-center justify-center relative overflow-hidden">
+                    {formData.imageUrl ? (
+                      <img
+                        src={formData.imageUrl}
+                        alt="Avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-blue-500 transition">
+                        <Camera className="h-8 w-8 mb-1" />
+                        <span className="text-xs">Foto</span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-center text-xs text-gray-500 mt-2 group-hover:text-blue-600 transition">Haz clic para cambiar</p>
+                </label>
+              </div>
+
+              {/* Información Personal Section */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+                  Información Personal
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre Completo <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="Ej: María García"
+                    />
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      required
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="maria@example.com"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Teléfono
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="+34 612 345 678"
+                    />
+                  </div>
+
+                  {/* Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Dirección
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="Calle Principal 123"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Ubicación</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                    <input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+              {/* Seguridad Section */}
+              {!editingClient && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+                    Credenciales de Acceso
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Username */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Usuario
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.username}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        placeholder="nombre_usuario"
+                      />
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Contraseña
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        placeholder="••••••••"
+                      />
+                    </div>
+
+                    {/* Confirm Password */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Confirmar Contraseña
+                      </label>
+                      <input
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        placeholder="••••••••"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                    <input type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State/Region</label>
-                    <input type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">ZIP/Postal Code</label>
-                    <input type="text" value={formData.zipCode} onChange={e => setFormData({...formData, zipCode: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                    <select value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-                      <option value="">Seleccione país</option>
-                      <option value="USA">USA</option>
-                      <option value="CAN">Canada</option>
-                      <option value="MEX">Mexico</option>
-                      <option value="ESP">España</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
-                    <input type="file" accept="image/*" onChange={handleImageChange} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
+
+                  {/* Welcome Email Checkbox */}
+                  <div className="flex items-center space-x-3 bg-blue-50 rounded-lg p-4 border border-blue-100">
+                    <input
+                      id="sendWelcomeEmail"
+                      type="checkbox"
+                      checked={formData.sendWelcomeEmail}
+                      onChange={(e) => setFormData({ ...formData, sendWelcomeEmail: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="sendWelcomeEmail" className="text-sm text-gray-700 cursor-pointer">
+                      <span className="font-medium">Enviar correo de bienvenida</span>
+                      <p className="text-xs text-gray-500">El cliente recibirá sus credenciales por email</p>
+                    </label>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-semibold text-gray-700 mb-2">Credenciales de Acceso</h4>
-                {!editingClient && (
-                  <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                        <input type="text" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                        <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                        <input type="password" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} className="w-full border rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" />
-                      </div>
-                      <div className="flex items-end">
-                        <label className="inline-flex items-center text-sm text-gray-700">
-                          <input type="checkbox" checked={formData.sendWelcomeEmail} onChange={e => setFormData({...formData, sendWelcomeEmail: e.target.checked})} className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
-                          <span className="ml-2">Enviar correo de bienvenida</span>
-                        </label>
-                      </div>
-                    </div>
-                    <div className="flex items-center mt-3">
-                      <input type="checkbox" checked={formData.sendWelcomeEmail} onChange={e => setFormData({...formData, sendWelcomeEmail: e.target.checked})} className="h-4 w-4 text-blue-600 border-gray-300 rounded" />
-                      <label className="ml-2 text-sm text-gray-700">Enviar correo de bienvenida</label>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t mt-6">
-                <button type="button" onClick={closeModal} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">Cancelar</button>
-                <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
-                  {createMutation.isPending || updateMutation.isPending ? 'Guardando...' : 'Guardar'}
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                  className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar'}
                 </button>
               </div>
             </form>

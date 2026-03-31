@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api } from '../lib/api';
+import { useClosedDates, useCreateClosedDate, useDeleteClosedDate } from '../hooks/useQueries';
+import { Trash2 } from 'lucide-react';
 
 interface BusinessHour {
   id: string;
@@ -51,6 +53,15 @@ const Settings: React.FC = () => {
   const updateMutation = useUpdateBusinessHour();
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [formData, setFormData] = useState<{ [key: number]: BusinessHour }>({});
+
+  // Estados para días de cierre
+  const [newClosedDate, setNewClosedDate] = useState('');
+  const [newClosedReason, setNewClosedReason] = useState('');
+
+  // Hooks para closed dates
+  const { data: closedDates = [] } = useClosedDates();
+  const createClosedDateMutation = useCreateClosedDate();
+  const deleteClosedDateMutation = useDeleteClosedDate();
 
   // Inicializar formData cuando los datos se cargan
   useEffect(() => {
@@ -121,6 +132,32 @@ const Settings: React.FC = () => {
     });
 
     setEditingDay(null);
+  };
+
+  const handleCreateClosedDate = () => {
+    if (!newClosedDate) {
+      toast.error('Por favor selecciona una fecha');
+      return;
+    }
+
+    createClosedDateMutation.mutate(
+      { date: newClosedDate, reason: newClosedReason || undefined },
+      {
+        onSuccess: () => {
+          setNewClosedDate('');
+          setNewClosedReason('');
+          toast.success('Día de cierre agregado correctamente');
+        },
+      }
+    );
+  };
+
+  const handleDeleteClosedDate = (id: string) => {
+    deleteClosedDateMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success('Día de cierre eliminado correctamente');
+      },
+    });
   };
 
   if (isLoading) {
@@ -276,6 +313,92 @@ const Settings: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Closed Dates Card */}
+      <div className="bg-white rounded-lg shadow overflow-hidden mt-8">
+        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">
+            Días de Cierre Específicos (Vacaciones/Feriados)
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Configura fechas específicas en las que el salón estará cerrado, como vacaciones o feriados.
+          </p>
+        </div>
+
+        <div className="px-4 py-6 sm:px-6">
+          {/* Formulario para agregar */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fecha de Cierre
+                </label>
+                <input
+                  type="date"
+                  value={newClosedDate}
+                  onChange={(e) => setNewClosedDate(e.target.value)}
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Motivo (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={newClosedReason}
+                  onChange={(e) => setNewClosedReason(e.target.value)}
+                  placeholder="Ej: Vacaciones"
+                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                />
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={handleCreateClosedDate}
+                  disabled={createClosedDateMutation.isPending}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+                >
+                  {createClosedDateMutation.isPending ? 'Agregando...' : 'Agregar Día'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Lista de días cerrados */}
+          <div>
+            <h4 className="text-base font-medium text-gray-900 mb-4">Días Configurados</h4>
+            {closedDates.length === 0 ? (
+              <p className="text-sm text-gray-500">No hay días de cierre configurados.</p>
+            ) : (
+              <div className="space-y-2">
+                {closedDates.map((closedDate) => (
+                  <div key={closedDate.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">
+                        {new Date(closedDate.date).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </span>
+                      {closedDate.reason && (
+                        <span className="text-sm text-gray-600 ml-2">({closedDate.reason})</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteClosedDate(closedDate.id)}
+                      disabled={deleteClosedDateMutation.isPending}
+                      className="inline-flex items-center p-1 border border-transparent rounded-full text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
