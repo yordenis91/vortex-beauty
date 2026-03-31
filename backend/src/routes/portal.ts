@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth';
 import prisma from '../prismaClient';
+import notificationService from '../services/notificationService';
 
 const router = express.Router();
 
@@ -295,6 +296,25 @@ router.post('/appointments', authenticateToken, async (req: AuthRequest, res) =>
         },
       },
     });
+
+    // Crear notificación para admin
+    try {
+      await notificationService.createNotification({
+        type: 'SYSTEM',
+        recipient: 'ADMIN',
+        content: `Nueva cita agendada: cliente ${appointment.client.name} (${appointment.client.email}) - servicio ${appointment.product.name}, fecha ${new Date(appointment.date).toLocaleDateString('es-ES')} ${appointment.startTime}-${appointment.endTime}`,
+      });
+
+      // Notificación para el cliente
+      await notificationService.createNotification({
+        type: 'SYSTEM',
+        recipient: clientId,
+        clientId,
+        content: `Tu cita ha sido agendada correctamente: ${appointment.product.name} el ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime}.`,
+      });
+    } catch (notifError) {
+      console.error('Error creating appointment notifications:', notifError);
+    }
 
     res.status(201).json(appointment);
   } catch (error) {

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
+import notificationService from '../services/notificationService';
 
 const router = Router();
 
@@ -141,6 +142,23 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       },
     });
 
+    try {
+      await notificationService.createNotification({
+        type: 'SYSTEM',
+        recipient: 'ADMIN',
+        content: `Nueva cita agendada (admin): cliente ${appointment.client.name} - servicio ${appointment.product.name}, fecha ${new Date(appointment.date).toLocaleDateString('es-ES')} ${appointment.startTime}-${appointment.endTime}`,
+      });
+
+      await notificationService.createNotification({
+        type: 'SYSTEM',
+        recipient: appointment.clientId,
+        clientId: appointment.clientId,
+        content: `Tu cita para ${appointment.product.name} ha sido agendada para ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime}.`,
+      });
+    } catch (notifError) {
+      console.error('Error crearing appointment notifications:', notifError);
+    }
+
     res.status(201).json(appointment);
   } catch (error: any) {
     if (error?.name === 'ZodError') {
@@ -235,6 +253,29 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       },
     });
 
+    // Notificar a la clienta si la cita se cancela
+    const updatedStatus = dataToUpdate.status || existingAppointment.status;
+    if (updatedStatus === 'CANCELLED' && existingAppointment.status !== 'CANCELLED') {
+      try {
+        if (appointment.clientId) {
+          await notificationService.createNotification({
+            type: 'SYSTEM',
+            recipient: appointment.clientId,
+            clientId: appointment.clientId,
+            content: `Tu cita para ${appointment.product?.name ?? 'este servicio'} el ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime} ha sido cancelada.`,
+          });
+        }
+
+        await notificationService.createNotification({
+          type: 'SYSTEM',
+          recipient: 'ADMIN',
+          content: `La cita #${appointment.id} ha sido cancelada por el admin.`,
+        });
+      } catch (notifError) {
+        console.error('Error creating cancellation notifications:', notifError);
+      }
+    }
+
     res.json(appointment);
   } catch (error: any) {
     if (error?.name === 'ZodError') {
@@ -263,6 +304,25 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     await prisma.appointment.delete({
       where: { id },
     });
+
+    try {
+      if (appointment.clientId) {
+        await notificationService.createNotification({
+          type: 'SYSTEM',
+          recipient: appointment.clientId,
+          clientId: appointment.clientId,
+          content: `Tu cita programada para ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime} ha sido eliminada por el salón.`,
+        });
+      }
+
+      await notificationService.createNotification({
+        type: 'SYSTEM',
+        recipient: 'ADMIN',
+        content: `La cita #${appointment.id} ha sido eliminada del sistema.`,
+      });
+    } catch (notifError) {
+      console.error('Error creating delete notifications:', notifError);
+    }
 
     res.json({ message: 'Appointment deleted successfully' });
   } catch (error: any) {
