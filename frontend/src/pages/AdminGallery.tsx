@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { GalleryItem, Product } from '../types';
 import { useProducts, useAdminGalleryItems, useCreateGalleryItem, useUpdateGalleryItem, useDeleteGalleryItem } from '../hooks/useQueries';
+import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const AdminGallery: React.FC = () => {
@@ -67,11 +68,29 @@ const AdminGallery: React.FC = () => {
     updateMutation.mutate({ id: item.id, payload: { isActive: !item.isActive } });
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm('¿Eliminar este diseño de inspiración?')) return;
-    deleteMutation.mutate(id, {
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<GalleryItem | null>(null);
+
+  const openDeleteModal = (item: GalleryItem) => {
+    setItemToDelete(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setItemToDelete(null);
+    setIsDeleteModalOpen(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!itemToDelete) return;
+
+    deleteMutation.mutate(itemToDelete.id, {
       onSuccess: () => {
         toast.success('Elemento eliminado');
+        closeDeleteModal();
+      },
+      onError: (error: any) => {
+        toast.error(error?.response?.data?.error || 'Error eliminando elemento');
       },
     });
   };
@@ -180,7 +199,7 @@ const AdminGallery: React.FC = () => {
                   </button>
                   <button
                     className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700"
-                    onClick={() => handleDelete(item.id)}
+                    onClick={() => openDeleteModal(item)}
                     disabled={deleteMutation.isPending}
                   >
                     Eliminar
@@ -192,6 +211,14 @@ const AdminGallery: React.FC = () => {
           {galleryItems.length === 0 && <p className="text-gray-500">No hay diseños registrados aún.</p>}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isDeleteModalOpen}
+        title="Confirmar eliminación"
+        message={`¿Estás seguro de que deseas eliminar el diseño de inspiración '${itemToDelete?.title ?? ''}'? Esta acción no se puede deshacer.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={closeDeleteModal}
+      />
     </div>
   );
 };
