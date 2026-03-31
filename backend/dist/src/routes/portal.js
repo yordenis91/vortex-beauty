@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const auth_1 = require("../middleware/auth");
 const prismaClient_1 = __importDefault(require("../prismaClient"));
+const notificationService_1 = __importDefault(require("../services/notificationService"));
 const router = express_1.default.Router();
 /**
  * GET /api/portal/my-invoices
@@ -263,6 +264,24 @@ router.post('/appointments', auth_1.authenticateToken, async (req, res) => {
                 },
             },
         });
+        // Crear notificación para admin
+        try {
+            await notificationService_1.default.createNotification({
+                type: 'SYSTEM',
+                recipient: 'ADMIN',
+                content: `Nueva cita agendada: cliente ${appointment.client.name} (${appointment.client.email}) - servicio ${appointment.product.name}, fecha ${new Date(appointment.date).toLocaleDateString('es-ES')} ${appointment.startTime}-${appointment.endTime}`,
+            });
+            // Notificación para el cliente
+            await notificationService_1.default.createNotification({
+                type: 'SYSTEM',
+                recipient: clientId,
+                clientId,
+                content: `Tu cita ha sido agendada correctamente: ${appointment.product.name} el ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime}.`,
+            });
+        }
+        catch (notifError) {
+            console.error('Error creating appointment notifications:', notifError);
+        }
         res.status(201).json(appointment);
     }
     catch (error) {

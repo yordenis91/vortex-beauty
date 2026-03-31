@@ -8,6 +8,7 @@ const zod_1 = require("zod");
 const client_1 = require("@prisma/client");
 const prismaClient_1 = __importDefault(require("../prismaClient"));
 const auth_1 = require("../middleware/auth");
+const notificationService_1 = __importDefault(require("../services/notificationService"));
 const router = (0, express_1.Router)();
 // Validation schemas
 const createAppointmentSchema = zod_1.z.object({
@@ -124,6 +125,22 @@ router.post('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res)
                 product: true,
             },
         });
+        try {
+            await notificationService_1.default.createNotification({
+                type: 'SYSTEM',
+                recipient: 'ADMIN',
+                content: `Nueva cita agendada (admin): cliente ${appointment.client.name} - servicio ${appointment.product.name}, fecha ${new Date(appointment.date).toLocaleDateString('es-ES')} ${appointment.startTime}-${appointment.endTime}`,
+            });
+            await notificationService_1.default.createNotification({
+                type: 'SYSTEM',
+                recipient: appointment.clientId,
+                clientId: appointment.clientId,
+                content: `Tu cita para ${appointment.product.name} ha sido agendada para ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime}.`,
+            });
+        }
+        catch (notifError) {
+            console.error('Error crearing appointment notifications:', notifError);
+        }
         res.status(201).json(appointment);
     }
     catch (error) {
@@ -209,6 +226,28 @@ router.put('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, re
                 product: true,
             },
         });
+        // Notificar a la clienta si la cita se cancela
+        const updatedStatus = dataToUpdate.status || existingAppointment.status;
+        if (updatedStatus === 'CANCELLED' && existingAppointment.status !== 'CANCELLED') {
+            try {
+                if (appointment.clientId) {
+                    await notificationService_1.default.createNotification({
+                        type: 'SYSTEM',
+                        recipient: appointment.clientId,
+                        clientId: appointment.clientId,
+                        content: `Tu cita para ${appointment.product?.name ?? 'este servicio'} el ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime} ha sido cancelada.`,
+                    });
+                }
+                await notificationService_1.default.createNotification({
+                    type: 'SYSTEM',
+                    recipient: 'ADMIN',
+                    content: `La cita #${appointment.id} ha sido cancelada por el admin.`,
+                });
+            }
+            catch (notifError) {
+                console.error('Error creating cancellation notifications:', notifError);
+            }
+        }
         res.json(appointment);
     }
     catch (error) {
@@ -233,6 +272,24 @@ router.delete('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req,
         await prismaClient_1.default.appointment.delete({
             where: { id },
         });
+        try {
+            if (appointment.clientId) {
+                await notificationService_1.default.createNotification({
+                    type: 'SYSTEM',
+                    recipient: appointment.clientId,
+                    clientId: appointment.clientId,
+                    content: `Tu cita programada para ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime} ha sido eliminada por el salón.`,
+                });
+            }
+            await notificationService_1.default.createNotification({
+                type: 'SYSTEM',
+                recipient: 'ADMIN',
+                content: `La cita #${appointment.id} ha sido eliminada del sistema.`,
+            });
+        }
+        catch (notifError) {
+            console.error('Error creating delete notifications:', notifError);
+        }
         res.json({ message: 'Appointment deleted successfully' });
     }
     catch (error) {
