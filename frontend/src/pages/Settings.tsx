@@ -226,7 +226,7 @@ const Settings: React.FC = () => {
                     {/* Max Appointments Input */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Cupo Máximo de Citas (0 = Sin Límite)
+                        Límite de citas (0 = Sin límite)
                       </label>
                       <input
                         type="number"
@@ -235,10 +235,10 @@ const Settings: React.FC = () => {
                         onChange={(e) =>
                           handleTimeChange(dayOfWeek, 'maxAppointments', parseInt(e.target.value) || 0)
                         }
-                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        className="block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
                       />
                       <p className="mt-1 text-xs text-gray-500">
-                        Limita el número máximo de citas que se pueden agendar en este día. Ejemplo: 5 citas máximo por día.
+                        Número máximo de citas permitidas en este día.
                       </p>
                     </div>
 
