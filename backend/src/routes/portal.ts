@@ -363,6 +363,20 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
       return res.json([]);
     }
 
+    // ===== VALIDACIÓN DE CUPO MÁXIMO DIARIO =====
+    // Contar citas agendadas para esa fecha
+    const currentAppointmentsCount = await prisma.appointment.count({
+      where: {
+        date: appointmentDate,
+        status: 'SCHEDULED',
+      },
+    });
+
+    // Si se alcanzó el límite máximo de citas para el día, retornar array vacío
+    if (businessHour.maxAppointments > 0 && currentAppointmentsCount >= businessHour.maxAppointments) {
+      return res.json([]); // No hay más cupos disponibles para este día
+    }
+
     // Generar slots disponibles en bloques de 1 hora
     const availableSlots: string[] = [];
     const [startHour, startMin] = businessHour.startTime.split(':').map(Number);

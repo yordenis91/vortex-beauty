@@ -295,3 +295,76 @@ router.get('/products', auth_1.authenticateToken, async (req, res) => {
     }
 });
 exports.default = router;
+/**
+ * GET /api/portal/available-slots
+ * Retorna los slots disponibles para una fecha específica
+ * Query params: date (YYYY-MM-DD)
+ */
+router.get('/available-slots', auth_1.authenticateToken, async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date || typeof date !== 'string') {
+            return res.status(400).json({ error: 'Fecha requerida (formato YYYY-MM-DD)' });
+        }
+        // Validar formato de fecha
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) {
+            return res.status(400).json({ error: 'Formato de fecha inválido (YYYY-MM-DD)' });
+        }
+        // Convertir string a Date y obtener día de la semana
+        const appointmentDate = new Date(date + 'T00:00:00');
+        const dayOfWeek = appointmentDate.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+        // Buscar horario comercial para ese día
+        const businessHour = await prismaClient_1.default.businessHour.findUnique({
+            where: { dayOfWeek },
+        });
+        // Si no hay horario comercial o el día está cerrado, retornar array vacío
+        if (!businessHour || !businessHour.isOpen) {
+            return res.json([]);
+        }
+        // ===== VALIDACIÓN DE CUPO MÁXIMO DIARIO =====
+        // Contar citas agendadas para esa fecha
+        const currentAppointmentsCount = await prismaClient_1.default.appointment.count({
+            where: {
+                date: appointmentDate,
+                status: 'SCHEDULED',
+            },
+        });
+        // Si se alcanzó el límite máximo de citas para el día, retornar array vacío
+        if (businessHour.maxAppointments > 0 && currentAppointmentsCount >= businessHour.maxAppointments) {
+            return res.json([]); // No hay más cupos disponibles para este día
+        }
+        // Generar slots disponibles en bloques de 1 hora
+        const availableSlots = [];
+        const [startHour, startMin] = businessHour.startTime.split(':').map(Number);
+        const [endHour, endMin] = businessHour.endTime.split(':').map(Number);
+        const startMinutes = startHour * 60 + startMin;
+        const endMinutes = endHour * 60 + endMin;
+        // Generar slots cada 60 minutos (1 hora)
+        for (let minutes = startMinutes; minutes < endMinutes; minutes += 60) {
+            const hour = Math.floor(minutes / 60);
+            const min = minutes % 60;
+            const slotTime = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+            availableSlots.push(slotTime);
+        }
+        // Buscar citas agendadas para esa fecha
+        const scheduledAppointments = await prismaClient_1.default.appointment.findMany({
+            where: {
+                date: appointmentDate,
+                status: 'SCHEDULED',
+            },
+            select: {
+                startTime: true,
+            },
+        });
+        // Crear set de horas ocupadas
+        const occupiedSlots = new Set(scheduledAppointments.map(apt => apt.startTime));
+        // Filtrar slots disponibles (excluir los ocupados)
+        const finalAvailableSlots = availableSlots.filter(slot => !occupiedSlots.has(slot));
+        res.json(finalAvailableSlots);
+    }
+    catch (error) {
+        console.error('Error fetching available slots:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});

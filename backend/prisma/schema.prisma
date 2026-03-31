@@ -458,6 +458,7 @@ model BusinessHour {
   startTime String   // Ej: "09:00"
   endTime   String   // Ej: "18:00"
   isOpen    Boolean  @default(true) // Si es false, ese día está cerrado
+  maxAppointments Int @default(0)  // 0 = sin límite, >0 = límite máximo de citas por día
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

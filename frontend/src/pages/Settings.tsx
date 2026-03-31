@@ -9,6 +9,7 @@ interface BusinessHour {
   startTime: string;
   endTime: string;
   isOpen: boolean;
+  maxAppointments: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -31,7 +32,7 @@ const useUpdateBusinessHour = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { dayOfWeek: number; startTime: string; endTime: string; isOpen: boolean }) => {
+    mutationFn: async (data: { dayOfWeek: number; startTime: string; endTime: string; isOpen: boolean; maxAppointments: number }) => {
       const response = await api.put(`/settings/business-hours/${data.dayOfWeek}`, data);
       return response.data;
     },
@@ -76,10 +77,11 @@ const Settings: React.FC = () => {
       startTime: updatedData.startTime,
       endTime: updatedData.endTime,
       isOpen: updatedData.isOpen,
+      maxAppointments: updatedData.maxAppointments,
     });
   };
 
-  const handleTimeChange = (dayOfWeek: number, field: 'startTime' | 'endTime', value: string) => {
+  const handleTimeChange = (dayOfWeek: number, field: 'startTime' | 'endTime' | 'maxAppointments', value: string | number) => {
     setFormData((prev) => ({
       ...prev,
       [dayOfWeek]: {
@@ -115,6 +117,7 @@ const Settings: React.FC = () => {
       startTime: dayData.startTime,
       endTime: dayData.endTime,
       isOpen: dayData.isOpen,
+      maxAppointments: dayData.maxAppointments || 0,
     });
 
     setEditingDay(null);
@@ -218,6 +221,25 @@ const Settings: React.FC = () => {
                           className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
                         />
                       </div>
+                    </div>
+
+                    {/* Max Appointments Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Cupo Máximo de Citas (0 = Sin Límite)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={dayData.maxAppointments || 0}
+                        onChange={(e) =>
+                          handleTimeChange(dayOfWeek, 'maxAppointments', parseInt(e.target.value) || 0)
+                        }
+                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        Limita el número máximo de citas que se pueden agendar en este día. Ejemplo: 5 citas máximo por día.
+                      </p>
                     </div>
 
                     {/* Save Button */}
