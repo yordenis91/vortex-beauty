@@ -1,15 +1,27 @@
 import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
-import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots } from '../../hooks/useQueries';
+import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots, useClosedDates } from '../../hooks/useQueries';
 import { Calendar, CheckCircle, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
 import { startOfWeek, getDay, parse } from 'date-fns';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import { api } from '../../lib/api';
+
+interface BusinessHour {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  isOpen: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface Appointment {
   id: string;
@@ -64,6 +76,17 @@ const localizer = dateFnsLocalizer({
 const withDragAndDropFn = (withDragAndDrop as any).default || withDragAndDrop;
 const DnDCalendar = withDragAndDropFn(BigCalendar as any);
 
+// Hook para obtener horarios comerciales
+const useBusinessHours = () => {
+  return useQuery<BusinessHour[]>({
+    queryKey: ['businessHours'],
+    queryFn: async () => {
+      const response = await api.get('/settings/business-hours');
+      return response.data;
+    },
+  });
+};
+
 const ClientAppointments: React.FC = () => {
   const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
@@ -81,6 +104,8 @@ const ClientAppointments: React.FC = () => {
   const { data: appointments = [], isLoading: appointmentsLoading } = useClientAppointments();
   const { data: products = [] } = useClientProducts();
   const { data: availableSlots = [], isLoading: slotsLoading } = useAvailableSlots(formData.date);
+  const { data: businessHours = [] } = useBusinessHours();
+  const { data: closedDates = [] } = useClosedDates();
 
   const createMutation = useCreateClientAppointment({
     onSuccess: () => {
@@ -88,6 +113,59 @@ const ClientAppointments: React.FC = () => {
       resetForm();
     },
   });
+
+  // Función auxiliar para verificar si una fecha específica está bloqueada
+  const isSpecificClosedDay = (date: Date, closedDates: any[]): boolean => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return closedDates.some(cd => cd.date === dateStr);
+  };
+
+  // Función para verificar si un día está bloqueado
+  const isDayBlocked = (date: Date): boolean => {
+    // Verificar si es una fecha pasada
+    if (isBefore(startOfDay(date), startOfDay(new Date()))) {
+      return true;
+    }
+
+    // Verificar si el día de la semana está desactivado
+    const dayOfWeek = date.getDay();
+    const businessHour = businessHours.find((bh: BusinessHour) => bh.dayOfWeek === dayOfWeek);
+    if (businessHour && !businessHour.isOpen) {
+      return true;
+    }
+
+    // Verificar si es un día cerrado específico
+    if (isSpecificClosedDay(date, closedDates)) {
+      return true;
+    }
+
+    return false;
+  };
+
+  // Función para propiedades personalizadas del día en el calendario
+  const customDayPropGetter = (date: Date) => {
+    if (isDayBlocked(date)) {
+      return {
+        style: {
+          backgroundColor: '#cbd5e1',
+          opacity: 0.7,
+          cursor: 'not-allowed',
+        },
+      };
+    }
+    return {};
+  };
+
+  // Componente personalizado para las celdas de fecha en el calendario
+  const CustomDateCell = ({ date, label }: { date: Date; label: string }) => {
+    const isBlocked = isDayBlocked(date);
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <span>{label}</span>
+        {isBlocked && <span className="text-xs text-red-600 font-medium">No disponible</span>}
+      </div>
+    );
+  };
 
   // Filtrar citas de la clienta actual
   const clientAppointments = useMemo(() => {
@@ -134,6 +212,18 @@ const ClientAppointments: React.FC = () => {
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
+    if (isDayBlocked(slotInfo.start)) {
+      toast('¡Día de descanso! Por favor, elige otra fecha para consentirte. 💅', {
+        icon: '😴',
+        style: {
+          borderRadius: '10px',
+          background: '#333',
+          color: '#fff',
+        },
+      });
+      return;
+    }
+
     const newDate = format(slotInfo.start, 'yyyy-MM-dd');
     const newStartTime = format(slotInfo.start, 'HH:mm');
     const newEndTime = format(slotInfo.end, 'HH:mm');
@@ -250,6 +340,12 @@ const ClientAppointments: React.FC = () => {
             selectable
             onSelectSlot={handleSelectSlot}
             eventPropGetter={eventPropGetter}
+            dayPropGetter={customDayPropGetter}
+            components={{
+              month: {
+                date: CustomDateCell,
+              },
+            }}
             resizable={false}
             popup
             culture="es"
@@ -389,6 +485,12 @@ const ClientAppointments: React.FC = () => {
                           {slot}
                         </button>
                       ))}
+                    </div>
+                  ) : isDayBlocked(new Date(formData.date)) ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>No hay horarios disponibles para esta fecha</p>
+                      <p className="text-sm mt-1">Este día no está disponible</p>
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">

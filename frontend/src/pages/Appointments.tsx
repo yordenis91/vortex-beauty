@@ -157,9 +157,9 @@ const customDayPropGetter = (date: Date, closedDates: any[]) => {
   if (!isAvailable) {
     return {
       style: {
-        backgroundColor: '#f3f4f6',
+        backgroundColor: 'rgb(171, 175, 182)',
         cursor: 'not-allowed',
-        opacity: 0.6,
+        opacity: 0.8,
       },
     };
   }
@@ -233,6 +233,18 @@ const Appointments: React.FC = () => {
       };
     });
   }, [appointments]);
+
+  // Componente personalizado para las celdas de fecha en el calendario
+  const CustomDateCell = ({ date, label }: { date: Date; label: string }) => {
+    const isAvailable = isDayAvailable(date, closedDates);
+
+    return (
+      <div className="flex flex-col items-center justify-center h-full">
+        <span>{label}</span>
+        {!isAvailable && <span className="text-xs text-red-600 font-medium">No Disponible</span>}
+      </div>
+    );
+  };
 
   // Funciones de Modal
   const openModal = (appointment?: Appointment, slotStart?: Date, slotEnd?: Date) => {
@@ -474,6 +486,11 @@ const Appointments: React.FC = () => {
             onEventDrop={handleEventDrop}
             eventPropGetter={eventPropGetter}
             dayPropGetter={(date: Date) => customDayPropGetter(date, closedDates)}
+            components={{
+              month: {
+                date: CustomDateCell,
+              },
+            }}
             resizable={false}
             popup
             culture="es"

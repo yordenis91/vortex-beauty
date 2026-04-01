@@ -11,7 +11,7 @@ const createClosedDateSchema = z.object({
 });
 
 // GET /api/closed-dates
-router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const closedDates = await prisma.closedDate.findMany({
       orderBy: { date: 'asc' },

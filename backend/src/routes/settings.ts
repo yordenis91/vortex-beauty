@@ -65,7 +65,7 @@
     };
 
     // GET /api/settings/business-hours - Get all business hours
-    router.get('/business-hours', authenticateToken, requireAdmin, async (req, res) => {
+    router.get('/business-hours', authenticateToken, async (req, res) => {
     try {
         console.log('GET /api/settings/business-hours called');
 
@@ -90,7 +90,7 @@
     });
 
     // GET /api/settings/business-hours/:dayOfWeek - Get business hours for a specific day
-    router.get('/business-hours/:dayOfWeek', authenticateToken, requireAdmin, async (req, res) => {
+    router.get('/business-hours/:dayOfWeek', authenticateToken, async (req, res) => {
     try {
         const { dayOfWeek } = req.params;
         const day = parseInt(dayOfWeek as string);
