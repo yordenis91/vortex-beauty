@@ -4,10 +4,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots, useClosedDates } from '../../hooks/useQueries';
 import { Calendar, CheckCircle, Clock } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { format, parseISO, isBefore, startOfDay } from 'date-fns';
+import { format, parseISO, isBefore, startOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parse } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
-import { startOfWeek, getDay, parse } from 'date-fns';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
@@ -19,6 +18,8 @@ interface BusinessHour {
   startTime: string;
   endTime: string;
   isOpen: boolean;
+  timeSlots?: string[];
+  maxAppointments?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -264,6 +265,58 @@ const ClientAppointments: React.FC = () => {
     });
   }, [appointments]);
 
+  // Marca de disponibilidad (eventos fantasma)
+  const availabilityMarks = useMemo(() => {
+    if (!businessHours || !appointments) return [];
+
+    const marks: any[] = [];
+    const start = startOfWeek(startOfMonth(currentDate));
+    const end = endOfWeek(endOfMonth(currentDate));
+
+    let loopDate = start;
+    while (loopDate <= end) {
+      const isPast = isBefore(startOfDay(loopDate), startOfDay(new Date()));
+      const isSunday = loopDate.getDay() === 0;
+      const formattedLoopDate = format(loopDate, 'yyyy-MM-dd');
+      const isSpecificClosed = closedDates?.some((cd: any) => cd.date === formattedLoopDate);
+
+      if (!isPast && !isSunday && !isSpecificClosed) {
+        const dayOfWeek = loopDate.getDay();
+        const dayConfig = businessHours.find((bh: any) => bh.dayOfWeek === dayOfWeek);
+
+        if (dayConfig && dayConfig.isOpen && dayConfig.timeSlots && dayConfig.timeSlots.length > 0) {
+          const dailyAppointments = appointments.filter(
+            (apt: any) => apt.date.startsWith(formattedLoopDate) && apt.status === 'SCHEDULED'
+          );
+          const busyTimes = dailyAppointments.map((apt: any) => apt.startTime);
+
+          const availableTimes = dayConfig.timeSlots.filter(
+            (time: string) => !busyTimes.includes(time)
+          );
+
+          availableTimes.forEach((time: string) => {
+            const [hours, minutes] = time.split(':');
+            const startDateTime = new Date(loopDate);
+            startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            const endDateTime = new Date(startDateTime);
+            endDateTime.setHours(startDateTime.getHours() + 1);
+
+            marks.push({
+              id: `avail-${formattedLoopDate}-${time}`,
+              title: 'Disponible',
+              start: startDateTime,
+              end: endDateTime,
+              isAvailabilityMark: true,
+            });
+          });
+        }
+      }
+      loopDate = addDays(loopDate, 1);
+    }
+
+    return marks;
+  }, [businessHours, appointments, currentDate, closedDates]);
+
   const formatDate = (date: string, time: string) => {
     try {
       const dateTime = parseISO(`${date}T${time}`);
@@ -400,12 +453,25 @@ const ClientAppointments: React.FC = () => {
     setShowForm(false);
   };
 
-  // Colorear eventos según el status
-  const eventPropGetter = (event: CalendarEvent) => {
-    const status = event.resource.status;
-    
+  // Colorear eventos según el status y slots disponibles (eventos fantasma)
+  const eventPropGetter = (event: any) => {
+    if (event.isAvailabilityMark) {
+      return {
+        style: {
+          backgroundColor: '#ecfdf5',
+          border: '2px dashed #10b981',
+          color: '#047857',
+          pointerEvents: 'none',
+          opacity: 0.8,
+          borderRadius: '4px',
+        },
+      };
+    }
+
+    const status = event.resource?.status;
+
     let style = {
-      backgroundColor: '#3b82f6', // Azul por defecto (SCHEDULED)
+      backgroundColor: '#3b82f6',
       borderRadius: '5px',
       opacity: 0.8,
       color: 'white',
@@ -414,9 +480,9 @@ const ClientAppointments: React.FC = () => {
     };
 
     if (status === 'COMPLETED') {
-      style.backgroundColor = '#10b981'; // Verde
+      style.backgroundColor = '#10b981';
     } else if (status === 'CANCELLED') {
-      style.backgroundColor = '#ef4444'; // Rojo
+      style.backgroundColor = '#ef4444';
     }
 
     return { style };
@@ -439,7 +505,7 @@ const ClientAppointments: React.FC = () => {
         ) : (
           <DnDCalendar
             localizer={localizer}
-            events={calendarEvents}
+            events={[...calendarEvents, ...availabilityMarks]}
             startAccessor="start"
             endAccessor="end"
             style={{ height: 'calc(100vh - 400px)' }}
