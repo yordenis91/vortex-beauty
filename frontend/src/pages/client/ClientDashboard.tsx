@@ -39,11 +39,17 @@ const ClientDashboard: React.FC = () => {
 
   // Encontrar la próxima cita (SCHEDULED y en el futuro)
   const nextAppointment = useMemo(() => {
-    const scheduled = clientAppointments.filter(
-      (apt: Appointment) => 
-        apt.status === 'SCHEDULED' && 
-        isFuture(parseISO(`${apt.date}T${apt.startTime}`))
-    );
+    const scheduled = clientAppointments
+      .filter((apt: Appointment) => {
+        const justDate = apt.date.split('T')[0];
+        const aptDateTime = parseISO(`${justDate}T${apt.startTime}`);
+        return apt.status === 'SCHEDULED' && isFuture(aptDateTime);
+      })
+      .sort((a: Appointment, b: Appointment) => {
+        const dateA = parseISO(`${a.date.split('T')[0]}T${a.startTime}`);
+        const dateB = parseISO(`${b.date.split('T')[0]}T${b.startTime}`);
+        return dateA.getTime() - dateB.getTime();
+      });
     return scheduled.length > 0 ? scheduled[0] : null;
   }, [clientAppointments]);
 
@@ -52,8 +58,8 @@ const ClientDashboard: React.FC = () => {
     return clientAppointments
       .filter((apt: Appointment) => apt.status === 'COMPLETED')
       .sort((a: Appointment, b: Appointment) => {
-        const dateA = parseISO(`${a.date}T${a.startTime}`);
-        const dateB = parseISO(`${b.date}T${b.startTime}`);
+        const dateA = parseISO(`${a.date.split('T')[0]}T${a.startTime}`);
+        const dateB = parseISO(`${b.date.split('T')[0]}T${b.startTime}`);
         return dateB.getTime() - dateA.getTime();
       })
       .slice(0, 3);
@@ -61,8 +67,9 @@ const ClientDashboard: React.FC = () => {
 
   const formatDate = (date: string, time: string) => {
     try {
-      const dateTime = parseISO(`${date}T${time}`);
-      return format(dateTime, 'EEEE d MMMM yyyy - HH:mm', { locale: es });
+      const justDate = date.split('T')[0];
+      const dateTime = parseISO(`${justDate}T${time}`);
+      return format(dateTime, "EEEE d 'de' MMMM yyyy - HH:mm", { locale: es });
     } catch {
       return 'Fecha no válida';
     }
@@ -70,7 +77,8 @@ const ClientDashboard: React.FC = () => {
 
   const formatDateShort = (date: string, time: string) => {
     try {
-      const dateTime = parseISO(`${date}T${time}`);
+      const justDate = date.split('T')[0];
+      const dateTime = parseISO(`${justDate}T${time}`);
       return format(dateTime, 'd MMM yyyy', { locale: es });
     } catch {
       return 'Fecha no válida';
