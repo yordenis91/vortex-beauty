@@ -280,6 +280,12 @@ const ClientAppointments: React.FC = () => {
       const formattedLoopDate = format(loopDate, 'yyyy-MM-dd');
       const isSpecificClosed = closedDates?.some((cd: any) => cd.date === formattedLoopDate);
 
+      // No mostrar marcas de disponibilidad si ya sabemos que está completamente ocupado
+      if (fullyBookedDays.has(formattedLoopDate)) {
+        loopDate = addDays(loopDate, 1);
+        continue;
+      }
+
       if (!isPast && !isSunday && !isSpecificClosed) {
         const dayOfWeek = loopDate.getDay();
         const dayConfig = businessHours.find((bh: any) => bh.dayOfWeek === dayOfWeek);
@@ -315,7 +321,7 @@ const ClientAppointments: React.FC = () => {
     }
 
     return marks;
-  }, [businessHours, appointments, currentDate, closedDates]);
+  }, [businessHours, appointments, currentDate, closedDates, fullyBookedDays]);
 
   const formatDate = (date: string, time: string) => {
     try {
