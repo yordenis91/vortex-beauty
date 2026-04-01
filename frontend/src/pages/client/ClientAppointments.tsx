@@ -116,26 +116,34 @@ const ClientAppointments: React.FC = () => {
 
   // Estado para rastrear días completamente ocupados
   const [fullyBookedDays, setFullyBookedDays] = useState<Set<string>>(new Set());
+  // Función para verificar disponibilidad de todos los días del mes actual
+  const checkAllDaysInMonth = async (monthDate: Date) => {
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+
+    // Obtener el último día del mes
+    const lastDay = new Date(year, month + 1, 0);
+    const totalDays = lastDay.getDate();
+
+    // Crear array de promesas para verificar cada día en paralelo
+    const promises = [];
+    for (let day = 1; day <= totalDays; day++) {
+      const date = new Date(year, month, day);
+      if (!isDayBlocked(date)) {
+        promises.push(checkDayAvailability(date));
+      }
+    }
+
+    // Ejecutar todas las verificaciones en paralelo
+    await Promise.all(promises);
+  };
+
   useEffect(() => {
     const checkInitialDays = async () => {
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-      
-      // Verificar algunos días representativos del mes actual
-      const daysToCheck = [
-        new Date(currentYear, currentMonth, 1), // Primer día
-        new Date(currentYear, currentMonth, 10), // Día 10
-        new Date(currentYear, currentMonth, 20), // Día 20
-        new Date(currentYear, currentMonth + 1, 0), // Último día
-      ];
-      
-      for (const date of daysToCheck) {
-        if (!isDayBlocked(date)) {
-          await checkDayAvailability(date);
-        }
-      }
+      // Verificar TODOS los días del mes actual para detectar días completamente ocupados
+      await checkAllDaysInMonth(currentDate);
     };
-    
+
     checkInitialDays();
   }, [currentDate, businessHours, closedDates]);
 
@@ -180,7 +188,9 @@ const ClientAppointments: React.FC = () => {
   const customDayPropGetter = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const isFullyBooked = fullyBookedDays.has(dateStr);
-    
+
+    console.log(`Day ${dateStr} - isFullyBooked: ${isFullyBooked}, fullyBookedDays size: ${fullyBookedDays.size}`);
+
     if (isDayBlocked(date)) {
       return {
         style: {
@@ -190,7 +200,7 @@ const ClientAppointments: React.FC = () => {
         },
       };
     }
-    
+
     if (isFullyBooked) {
       return {
         style: {
@@ -200,7 +210,7 @@ const ClientAppointments: React.FC = () => {
         },
       };
     }
-    
+
     return {};
   };
 
@@ -323,13 +333,17 @@ const ClientAppointments: React.FC = () => {
     try {
       const response = await api.get<string[]>(`/portal/available-slots?date=${dateStr}`);
       const isFullyBooked = response.data.length === 0;
-      
+
+      console.log(`Checking availability for ${dateStr}: ${response.data.length} slots available, fully booked: ${isFullyBooked}`);
+
       setFullyBookedDays(prev => {
         const newSet = new Set(prev);
         if (isFullyBooked) {
           newSet.add(dateStr);
+          console.log(`Marked ${dateStr} as fully booked`);
         } else {
           newSet.delete(dateStr);
+          console.log(`Removed ${dateStr} from fully booked (has available slots)`);
         }
         return newSet;
       });
@@ -341,23 +355,9 @@ const ClientAppointments: React.FC = () => {
   // Verificar disponibilidad cuando cambia la vista del calendario
   const handleNavigate = (newDate: Date) => {
     setCurrentDate(newDate);
-    
-    // Verificar disponibilidad de los días visibles en la nueva vista
-    const startOfMonth = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
-    const endOfMonth = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
-    
-    // Verificar algunos días clave del mes para optimización
-    const daysToCheck = [
-      startOfMonth,
-      new Date(newDate.getFullYear(), newDate.getMonth(), 15), // Mitad del mes
-      endOfMonth,
-    ];
-    
-    daysToCheck.forEach(date => {
-      if (!isDayBlocked(date)) {
-        checkDayAvailability(date);
-      }
-    });
+
+    // Verificar disponibilidad de TODOS los días del mes nuevo
+    checkAllDaysInMonth(newDate);
   };
 
   const handleViewChange = (newView: string) => {

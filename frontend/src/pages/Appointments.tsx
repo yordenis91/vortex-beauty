@@ -155,8 +155,10 @@ const isDayAvailable = (date: Date, closedDates: any[], businessHours: BusinessH
 };
 
 // Función para propiedades personalizadas del día en el calendario
-const customDayPropGetter = (date: Date, closedDates: any[], businessHours: BusinessHour[]) => {
+const customDayPropGetter = (date: Date, closedDates: any[], businessHours: BusinessHour[], fullyBookedDays: Set<string>) => {
   const isAvailable = isDayAvailable(date, closedDates, businessHours);
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const isFullyBooked = fullyBookedDays.has(dateStr);
 
   if (!isAvailable) {
     return {
@@ -168,9 +170,67 @@ const customDayPropGetter = (date: Date, closedDates: any[], businessHours: Busi
     };
   }
 
+  if (isFullyBooked) {
+    return {
+      style: {
+        backgroundColor: '#fbbf24', // Amarillo para días completamente ocupados
+        opacity: 0.8,
+        cursor: 'not-allowed',
+      },
+    };
+  }
+
   return {
     style: {},
   };
+};
+
+// Función para verificar disponibilidad de un día específico
+const checkDayAvailability = async (date: Date, setFullyBookedDays: React.Dispatch<React.SetStateAction<Set<string>>>) => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  try {
+    const response = await api.get<string[]>(`/portal/available-slots?date=${dateStr}`);
+    const isFullyBooked = response.data.length === 0;
+
+    console.log(`Checking availability for ${dateStr}: ${response.data.length} slots available, fully booked: ${isFullyBooked}`);
+
+    setFullyBookedDays(prev => {
+      const newSet = new Set(prev);
+      if (isFullyBooked) {
+        newSet.add(dateStr);
+        console.log(`Marked ${dateStr} as fully booked`);
+      } else {
+        newSet.delete(dateStr);
+        console.log(`Removed ${dateStr} from fully booked (has available slots)`);
+      }
+      return newSet;
+    });
+  } catch (error) {
+    console.error('Error checking day availability:', error);
+  }
+};
+
+// Función para verificar disponibilidad de todos los días del mes actual
+const checkAllDaysInMonth = async (monthDate: Date, closedDates: any[], businessHours: BusinessHour[], setFullyBookedDays: React.Dispatch<React.SetStateAction<Set<string>>>) => {
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+
+  // Obtener el último día del mes
+  const lastDay = new Date(year, month + 1, 0);
+  const totalDays = lastDay.getDate();
+
+  // Crear array de promesas para verificar cada día en paralelo
+  const promises = [];
+  for (let day = 1; day <= totalDays; day++) {
+    const date = new Date(year, month, day);
+    // Solo verificar días que están disponibles (no bloqueados)
+    if (isDayAvailable(date, closedDates, businessHours)) {
+      promises.push(checkDayAvailability(date, setFullyBookedDays));
+    }
+  }
+
+  // Ejecutar todas las verificaciones en paralelo
+  await Promise.all(promises);
 };
 
 const Appointments: React.FC = () => {
@@ -179,6 +239,7 @@ const Appointments: React.FC = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState('month');
+  const [fullyBookedDays, setFullyBookedDays] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
@@ -219,6 +280,43 @@ const Appointments: React.FC = () => {
     },
   });
 
+  // Verificar disponibilidad cuando se crea una nueva cita
+  React.useEffect(() => {
+    if (createMutation.isSuccess) {
+      // Re-verificar la disponibilidad del día de la cita creada
+      const appointmentDate = new Date(formData.date);
+      checkDayAvailability(appointmentDate, setFullyBookedDays);
+    }
+  }, [createMutation.isSuccess]);
+
+  // Verificar disponibilidad cuando se actualiza una cita
+  React.useEffect(() => {
+    if (updateMutation.isSuccess && editingAppointment) {
+      // Re-verificar la disponibilidad del día de la cita actualizada
+      const appointmentDate = new Date(editingAppointment.date);
+      checkDayAvailability(appointmentDate, setFullyBookedDays);
+    }
+  }, [updateMutation.isSuccess, editingAppointment]);
+
+  // Verificar disponibilidad cuando se elimina una cita
+  React.useEffect(() => {
+    if (deleteMutation.isSuccess && itemToDelete) {
+      // Encontrar la cita eliminada para re-verificar su día
+      const deletedAppointment = appointments.find(apt => apt.id === itemToDelete);
+      if (deletedAppointment) {
+        const appointmentDate = new Date(deletedAppointment.date);
+        checkDayAvailability(appointmentDate, setFullyBookedDays);
+      }
+    }
+  }, [deleteMutation.isSuccess, itemToDelete, appointments]);
+
+  // Verificar disponibilidad inicial cuando se cargan los datos
+  React.useEffect(() => {
+    if (businessHours.length > 0 && closedDates.length >= 0) {
+      checkAllDaysInMonth(currentDate, closedDates, businessHours, setFullyBookedDays);
+    }
+  }, [businessHours, closedDates, currentDate]);
+
   // Mapeo de Datos - Transformar appointments al formato del calendario
   const calendarEvents: CalendarEvent[] = useMemo(() => {
     return appointments.map((appointment) => {
@@ -241,11 +339,14 @@ const Appointments: React.FC = () => {
   // Componente personalizado para las celdas de fecha en el calendario
   const CustomDateCell = ({ date, label }: { date: Date; label: string }) => {
     const isAvailable = isDayAvailable(date, closedDates, businessHours);
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const isFullyBooked = fullyBookedDays.has(dateStr);
 
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <span>{label}</span>
         {!isAvailable && <span className="text-xs text-red-600 font-medium">No Disponible</span>}
+        {isFullyBooked && isAvailable && <span className="text-xs text-orange-700 font-medium">Completo</span>}
       </div>
     );
   };
@@ -369,6 +470,9 @@ const Appointments: React.FC = () => {
 
   const handleNavigate = (newDate: Date) => {
     setCurrentDate(newDate);
+
+    // Verificar disponibilidad de TODOS los días del mes nuevo
+    checkAllDaysInMonth(newDate, closedDates, businessHours, setFullyBookedDays);
   };
 
   const handleViewChange = (newView: string) => {
@@ -496,7 +600,7 @@ const Appointments: React.FC = () => {
             onSelectEvent={handleSelectEvent}
             onEventDrop={handleEventDrop}
             eventPropGetter={eventPropGetter}
-            dayPropGetter={(date: Date) => customDayPropGetter(date, closedDates, businessHours)}
+            dayPropGetter={(date: Date) => customDayPropGetter(date, closedDates, businessHours, fullyBookedDays)}
             components={{
               month: {
                 date: CustomDateCell,
