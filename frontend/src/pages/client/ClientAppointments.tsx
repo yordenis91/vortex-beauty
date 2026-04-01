@@ -99,7 +99,7 @@ const ClientAppointments: React.FC = () => {
 
   const [showForm, setShowForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState('month');
+  const [currentView, setCurrentView] = useState('week');
 
   // Hooks
   const { data: appointments = [], isLoading: appointmentsLoading } = useClientAppointments();
