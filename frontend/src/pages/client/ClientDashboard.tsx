@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientAppointments } from '../../hooks/useQueries';
-import { Calendar, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, Image, CreditCard, User } from 'lucide-react';
 import { format, parseISO, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 
@@ -216,6 +216,45 @@ const ClientDashboard: React.FC = () => {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Sección de enlaces rápidos */}
+      <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+        <h3 className="text-2xl font-bold text-gray-900">Enlaces rápidos</h3>
+        <p className="text-gray-600 mt-2">Navega rápido a las secciones más usadas</p>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <button
+            onClick={() => navigate('/portal/appointments')}
+            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+          >
+            <Calendar className="h-5 w-5 text-purple-600" />
+            Mis citas
+          </button>
+
+          <button
+            onClick={() => navigate('/portal/gallery')}
+            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+          >
+            <Image className="h-5 w-5 text-purple-600" />
+            Galería
+          </button>
+
+          <button
+            onClick={() => navigate('/portal/my-invoices')}
+            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+          >
+            <CreditCard className="h-5 w-5 text-purple-600" />
+            Mis facturas
+          </button>
+
+          <button
+            onClick={() => navigate('/portal/my-profile')}
+            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+          >
+            <User className="h-5 w-5 text-purple-600" />
+            Mi perfil
+          </button>
+        </div>
       </div>
     </div>
   );
