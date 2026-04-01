@@ -28,6 +28,7 @@ const updateBusinessHourSchema = zod_1.z.object({
     dayOfWeek: zod_1.z.number().min(0).max(6),
     startTime: zod_1.z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in format HH:mm'),
     endTime: zod_1.z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm'),
+    timeSlots: zod_1.z.array(zod_1.z.string().regex(/^\d{2}:\d{2}$/, 'Time slots must be in format HH:mm')).default([]),
     isOpen: zod_1.z.boolean().default(true),
     maxAppointments: zod_1.z.number().min(0).default(0),
 });
@@ -39,13 +40,13 @@ const initializeDefaultBusinessHours = async () => {
         if (existingCount === 0) {
             console.log('No business hours found, creating defaults...');
             const defaultHours = [
-                { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', isOpen: false, maxAppointments: 0 }, // Domingo (cerrado)
-                { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 }, // Lunes
-                { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 }, // Martes
-                { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 }, // Miércoles
-                { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 }, // Jueves
-                { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 }, // Viernes
-                { dayOfWeek: 6, startTime: '09:00', endTime: '18:00', isOpen: false, maxAppointments: 0 }, // Sábado (cerrado)
+                { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0 }, // Domingo (cerrado)
+                { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 }, // Lunes
+                { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 }, // Martes
+                { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 }, // Miércoles
+                { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 }, // Jueves
+                { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 }, // Viernes
+                { dayOfWeek: 6, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0 }, // Sábado (cerrado)
             ];
             await prismaClient_1.default.businessHour.createMany({
                 data: defaultHours,
@@ -62,7 +63,7 @@ const initializeDefaultBusinessHours = async () => {
     }
 };
 // GET /api/settings/business-hours - Get all business hours
-router.get('/business-hours', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+router.get('/business-hours', auth_1.authenticateToken, async (req, res) => {
     try {
         console.log('GET /api/settings/business-hours called');
         // Initialize default hours if they don't exist
@@ -84,7 +85,7 @@ router.get('/business-hours', auth_1.authenticateToken, auth_1.requireAdmin, asy
     }
 });
 // GET /api/settings/business-hours/:dayOfWeek - Get business hours for a specific day
-router.get('/business-hours/:dayOfWeek', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+router.get('/business-hours/:dayOfWeek', auth_1.authenticateToken, async (req, res) => {
     try {
         const { dayOfWeek } = req.params;
         const day = parseInt(dayOfWeek);

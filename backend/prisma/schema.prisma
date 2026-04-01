@@ -469,8 +469,9 @@ model Notification {
 model BusinessHour {
   id        String   @id @default(uuid())
   dayOfWeek Int      // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-  startTime String   // Ej: "09:00"
-  endTime   String   // Ej: "18:00"
+  startTime String   // Ej: "09:00" (retrocompatibilidad)
+  endTime   String   // Ej: "18:00" (retrocompatibilidad)
+  timeSlots String[] @default([]) // Horarios explícitos definidos por el administrador
   isOpen    Boolean  @default(true) // Si es false, ese día está cerrado
   maxAppointments Int @default(0)  // 0 = sin límite, >0 = límite máximo de citas por día
 

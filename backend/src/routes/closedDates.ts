@@ -53,7 +53,10 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 // DELETE /api/closed-dates/:id
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
 
     const existing = await prisma.closedDate.findUnique({ where: { id } });
     if (!existing) {

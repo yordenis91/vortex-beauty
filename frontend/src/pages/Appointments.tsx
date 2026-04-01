@@ -127,8 +127,8 @@ const isSpecificClosedDay = (date: Date, closedDates: any[]): boolean => {
   return closedDates.some(cd => cd.date === dateStr);
 };
 
-// Función para verificar si un día está disponible (no es pasado, domingo, ni día cerrado específico)
-const isDayAvailable = (date: Date, closedDates: any[]): boolean => {
+// Función para verificar si un día está disponible (no es pasado, no está cerrado, y tiene horario comercial)
+const isDayAvailable = (date: Date, closedDates: any[], businessHours: BusinessHour[]): boolean => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -137,13 +137,17 @@ const isDayAvailable = (date: Date, closedDates: any[]): boolean => {
     return false;
   }
 
-  // Verificar si es domingo
-  if (date.getDay() === 0) {
+  // Verificar si es un día cerrado específico
+  if (isSpecificClosedDay(date, closedDates)) {
     return false;
   }
 
-  // Verificar si es un día cerrado específico
-  if (isSpecificClosedDay(date, closedDates)) {
+  // Verificar si el día de la semana tiene horario comercial configurado y está abierto
+  const dayOfWeek = date.getDay();
+  const businessHour = businessHours.find((bh) => bh.dayOfWeek === dayOfWeek);
+
+  // Si no hay horario comercial configurado para este día, o está cerrado, no está disponible
+  if (!businessHour || !businessHour.isOpen) {
     return false;
   }
 
@@ -151,8 +155,8 @@ const isDayAvailable = (date: Date, closedDates: any[]): boolean => {
 };
 
 // Función para propiedades personalizadas del día en el calendario
-const customDayPropGetter = (date: Date, closedDates: any[]) => {
-  const isAvailable = isDayAvailable(date, closedDates);
+const customDayPropGetter = (date: Date, closedDates: any[], businessHours: BusinessHour[]) => {
+  const isAvailable = isDayAvailable(date, closedDates, businessHours);
 
   if (!isAvailable) {
     return {
@@ -236,7 +240,7 @@ const Appointments: React.FC = () => {
 
   // Componente personalizado para las celdas de fecha en el calendario
   const CustomDateCell = ({ date, label }: { date: Date; label: string }) => {
-    const isAvailable = isDayAvailable(date, closedDates);
+    const isAvailable = isDayAvailable(date, closedDates, businessHours);
 
     return (
       <div className="flex flex-col items-center justify-center h-full">
@@ -298,6 +302,13 @@ const Appointments: React.FC = () => {
       return;
     }
 
+    // Validar que las horas seleccionadas estén dentro del horario comercial
+    const appointmentDate = new Date(formData.date);
+    if (!isTimeWithinBusinessHours(appointmentDate, formData.startTime, formData.endTime, businessHours)) {
+      toast.error('Las horas seleccionadas están fuera del horario comercial');
+      return;
+    }
+
     const appointmentData = {
       ...formData,
       date: new Date(formData.date).toISOString(),
@@ -342,21 +353,13 @@ const Appointments: React.FC = () => {
 
   // Manejadores del calendario
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
-    // Verificar si el día está disponible (no es pasado, domingo, ni día cerrado específico)
-    if (!isDayAvailable(slotInfo.start, closedDates)) {
+    // Verificar si el día está disponible (no es pasado, no está cerrado, y tiene horario comercial)
+    if (!isDayAvailable(slotInfo.start, closedDates, businessHours)) {
       toast.error('Este día no está disponible para agendar');
       return;
     }
 
-    // Validar que la hora seleccionada esté dentro del horario comercial
-    const startTimeStr = format(slotInfo.start, 'HH:mm');
-    const endTimeStr = format(slotInfo.end, 'HH:mm');
-
-    if (!isTimeWithinBusinessHours(slotInfo.start, startTimeStr, endTimeStr, businessHours)) {
-      toast.error('Horario fuera de servicio');
-      return;
-    }
-
+    // Nota: La validación de horas específicas se hace en el formulario cuando el usuario ingresa las horas
     openModal(undefined, slotInfo.start, slotInfo.end);
   };
 
@@ -384,13 +387,21 @@ const Appointments: React.FC = () => {
       return;
     }
 
+    // Validar que las nuevas horas estén dentro del horario comercial
+    const startTimeStr = format(newStart, 'HH:mm');
+    const endTimeStr = format(newEnd, 'HH:mm');
+    if (!isTimeWithinBusinessHours(newStart, startTimeStr, endTimeStr, businessHours)) {
+      toast.error('No se puede mover la cita a un horario fuera de servicio');
+      return;
+    }
+
     try {
       const updatedAppointment = {
         clientId: appointment.clientId,
         productId: appointment.productId,
         date: newStart.toISOString(),
-        startTime: format(newStart, 'HH:mm'),
-        endTime: format(newEnd, 'HH:mm'),
+        startTime: startTimeStr,
+        endTime: endTimeStr,
         notes: appointment.notes || '',
         status: appointment.status,
       };
@@ -485,7 +496,7 @@ const Appointments: React.FC = () => {
             onSelectEvent={handleSelectEvent}
             onEventDrop={handleEventDrop}
             eventPropGetter={eventPropGetter}
-            dayPropGetter={(date: Date) => customDayPropGetter(date, closedDates)}
+            dayPropGetter={(date: Date) => customDayPropGetter(date, closedDates, businessHours)}
             components={{
               month: {
                 date: CustomDateCell,

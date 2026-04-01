@@ -97,7 +97,14 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'El salón está cerrado en este horario' });
     }
 
-    // Convert request times to minutes for comparison
+    // Si el admin configuró timeSlots explícitos, el inicio de la cita debe coincidir con uno de ellos.
+    if (Array.isArray(businessHour.timeSlots) && businessHour.timeSlots.length > 0) {
+      if (!businessHour.timeSlots.includes(validatedData.startTime)) {
+        return res.status(400).json({ error: 'El horario seleccionado no está permitido para este día' });
+      }
+    }
+
+    // Convert request times to minutes para comparaciones de rango (compatibilidad retro)
     const [reqStartHour, reqStartMin] = validatedData.startTime.split(':').map(Number);
     const [reqEndHour, reqEndMin] = validatedData.endTime.split(':').map(Number);
     const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
@@ -113,17 +120,39 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'El salón está cerrado en este horario' });
     }
 
-    // Check for conflicting appointments
+    // Check for conflicting appointments: mismo día, misma hora (startTime) y no canceladas
+    const startOfDay = new Date(`${validatedData.date.split('T')[0]}T00:00:00.000`);
+    const endOfDay = new Date(`${validatedData.date.split('T')[0]}T23:59:59.999`);
+
+    const conflictingSameTime = await prisma.appointment.findFirst({
+      where: {
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        startTime: validatedData.startTime,
+        status: 'SCHEDULED',
+      },
+    });
+
+    if (conflictingSameTime) {
+      return res.status(400).json({ error: 'Ya existe una cita en ese horario' });
+    }
+
+    // Check whether same client already has appointment on that day (opcional)
     const conflictingAppointment = await prisma.appointment.findFirst({
       where: {
         clientId: validatedData.clientId,
-        date: appointmentDate,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
         status: { not: 'CANCELLED' },
       },
     });
 
     if (conflictingAppointment) {
-      return res.status(400).json({ error: 'Client already has an appointment on this date' });
+      return res.status(400).json({ error: 'El cliente ya tiene una cita para ese día' });
     }
 
     const appointment = await prisma.appointment.create({

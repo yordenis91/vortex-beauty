@@ -10,6 +10,7 @@ interface BusinessHour {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
+  timeSlots: string[];
   isOpen: boolean;
   maxAppointments: number;
   createdAt: string;
@@ -34,7 +35,7 @@ const useUpdateBusinessHour = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { dayOfWeek: number; startTime: string; endTime: string; isOpen: boolean; maxAppointments: number }) => {
+    mutationFn: async (data: { dayOfWeek: number; startTime: string; endTime: string; timeSlots: string[]; isOpen: boolean; maxAppointments: number }) => {
       const response = await api.put(`/settings/business-hours/${data.dayOfWeek}`, data);
       return response.data;
     },
@@ -53,6 +54,7 @@ const Settings: React.FC = () => {
   const updateMutation = useUpdateBusinessHour();
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [formData, setFormData] = useState<{ [key: number]: BusinessHour }>({});
+  const [newSlotInput, setNewSlotInput] = useState<{ [key: number]: string }>({});
 
   // Estados para días de cierre
   const [newClosedDate, setNewClosedDate] = useState('');
@@ -87,19 +89,76 @@ const Settings: React.FC = () => {
       dayOfWeek,
       startTime: updatedData.startTime,
       endTime: updatedData.endTime,
+      timeSlots: updatedData.timeSlots || [],
       isOpen: updatedData.isOpen,
       maxAppointments: updatedData.maxAppointments,
     });
   };
 
-  const handleTimeChange = (dayOfWeek: number, field: 'startTime' | 'endTime' | 'maxAppointments', value: string | number) => {
+  const sortTimeSlots = (slots: string[]) =>
+    [...slots].slice().sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  const handleTimeChange = (
+    dayOfWeek: number,
+    field: 'startTime' | 'endTime' | 'maxAppointments' | 'timeSlots',
+    value: string | number
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [dayOfWeek]: {
         ...prev[dayOfWeek],
-        [field]: value,
+        [field]: field === 'timeSlots'
+          ? sortTimeSlots((value as string).split(',').map(str => str.trim()).filter(Boolean))
+          : value,
       },
     }));
+    setEditingDay(dayOfWeek);
+  };
+
+  const handleAddTimeSlot = (dayOfWeek: number) => {
+    const dayData = formData[dayOfWeek];
+    const slotValue = newSlotInput[dayOfWeek]?.trim();
+    if (!dayData || !slotValue) return;
+
+    const slotFormat = /^\d{2}:\d{2}$/;
+    if (!slotFormat.test(slotValue)) {
+      toast.error('El slot debe tener formato HH:mm');
+      return;
+    }
+
+    if (dayData.timeSlots.includes(slotValue)) {
+      toast.error('El slot ya existe');
+      return;
+    }
+
+    const updatedSlots = sortTimeSlots([...dayData.timeSlots, slotValue]);
+
+    setFormData(prev => ({
+      ...prev,
+      [dayOfWeek]: {
+        ...prev[dayOfWeek],
+        timeSlots: updatedSlots,
+      },
+    }));
+
+    setNewSlotInput(prev => ({ ...prev, [dayOfWeek]: '' }));
+    setEditingDay(dayOfWeek);
+  };
+
+  const handleRemoveTimeSlot = (dayOfWeek: number, slot: string) => {
+    const dayData = formData[dayOfWeek];
+    if (!dayData) return;
+
+    const updatedSlots = dayData.timeSlots.filter(ts => ts !== slot);
+
+    setFormData(prev => ({
+      ...prev,
+      [dayOfWeek]: {
+        ...prev[dayOfWeek],
+        timeSlots: updatedSlots,
+      },
+    }));
+
     setEditingDay(dayOfWeek);
   };
 
@@ -123,10 +182,21 @@ const Settings: React.FC = () => {
       }
     }
 
+    if (dayData.timeSlots && dayData.timeSlots.length > 0) {
+      const slotFormat = /^\d{2}:\d{2}$/;
+      for (const slot of dayData.timeSlots) {
+        if (!slotFormat.test(slot)) {
+          toast.error('Los slots deben tener formato HH:mm');
+          return;
+        }
+      }
+    }
+
     updateMutation.mutate({
       dayOfWeek,
       startTime: dayData.startTime,
       endTime: dayData.endTime,
+      timeSlots: sortTimeSlots(dayData.timeSlots || []),
       isOpen: dayData.isOpen,
       maxAppointments: dayData.maxAppointments || 0,
     });
@@ -277,6 +347,49 @@ const Settings: React.FC = () => {
                       <p className="mt-1 text-xs text-gray-500">
                         Número máximo de citas permitidas en este día.
                       </p>
+                    </div>
+
+                    {/* Time Slots Management */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Agregar horario exacto (HH:mm)
+                      </label>
+                      <div className="flex gap-2 items-center">
+                        <input
+                          type="time"
+                          value={newSlotInput[dayOfWeek] || ''}
+                          onChange={(e) =>
+                            setNewSlotInput((prev) => ({ ...prev, [dayOfWeek]: e.target.value }))
+                          }
+                          className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        />
+                        <button
+                          onClick={() => handleAddTimeSlot(dayOfWeek)}
+                          className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Pulsa + para añadir cada slot. Se requiere formato HH:mm.
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {sortTimeSlots(dayData.timeSlots || []).map((slot) => (
+                          <span
+                            key={`${dayOfWeek}-${slot}`}
+                            className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 text-xs px-2 py-1"
+                          >
+                            {slot}
+                            <button
+                              onClick={() => handleRemoveTimeSlot(dayOfWeek, slot)}
+                              className="ml-1 text-blue-800 hover:text-blue-900"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Save Button */}

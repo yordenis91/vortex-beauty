@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots, useClosedDates } from '../../hooks/useQueries';
@@ -114,6 +114,40 @@ const ClientAppointments: React.FC = () => {
     },
   });
 
+  // Estado para rastrear días completamente ocupados
+  const [fullyBookedDays, setFullyBookedDays] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const checkInitialDays = async () => {
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      
+      // Verificar algunos días representativos del mes actual
+      const daysToCheck = [
+        new Date(currentYear, currentMonth, 1), // Primer día
+        new Date(currentYear, currentMonth, 10), // Día 10
+        new Date(currentYear, currentMonth, 20), // Día 20
+        new Date(currentYear, currentMonth + 1, 0), // Último día
+      ];
+      
+      for (const date of daysToCheck) {
+        if (!isDayBlocked(date)) {
+          await checkDayAvailability(date);
+        }
+      }
+    };
+    
+    checkInitialDays();
+  }, [currentDate, businessHours, closedDates]);
+
+  // Actualizar días ocupados cuando se crea una nueva cita
+  useEffect(() => {
+    if (createMutation.isSuccess) {
+      // Re-verificar la disponibilidad del día de la cita creada
+      const appointmentDate = new Date(formData.date);
+      checkDayAvailability(appointmentDate);
+    }
+  }, [createMutation.isSuccess]);
+
   // Función auxiliar para verificar si una fecha específica está bloqueada
   const isSpecificClosedDay = (date: Date, closedDates: any[]): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -144,6 +178,9 @@ const ClientAppointments: React.FC = () => {
 
   // Función para propiedades personalizadas del día en el calendario
   const customDayPropGetter = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const isFullyBooked = fullyBookedDays.has(dateStr);
+    
     if (isDayBlocked(date)) {
       return {
         style: {
@@ -153,16 +190,31 @@ const ClientAppointments: React.FC = () => {
         },
       };
     }
+    
+    if (isFullyBooked) {
+      return {
+        style: {
+          backgroundColor: '#fbbf24', // Amarillo para días completamente ocupados
+          opacity: 0.8,
+          cursor: 'not-allowed',
+        },
+      };
+    }
+    
     return {};
   };
 
   // Componente personalizado para las celdas de fecha en el calendario
   const CustomDateCell = ({ date, label }: { date: Date; label: string }) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
     const isBlocked = isDayBlocked(date);
+    const isFullyBooked = fullyBookedDays.has(dateStr);
+    
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <span>{label}</span>
         {isBlocked && <span className="text-xs text-red-600 font-medium">No disponible</span>}
+        {isFullyBooked && !isBlocked && <span className="text-xs text-orange-700 font-medium">Completo</span>}
       </div>
     );
   };
@@ -212,12 +264,27 @@ const ClientAppointments: React.FC = () => {
   };
 
   const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
+    const dateStr = format(slotInfo.start, 'yyyy-MM-dd');
+    const isFullyBooked = fullyBookedDays.has(dateStr);
+    
     if (isDayBlocked(slotInfo.start)) {
       toast('¡Día de descanso! Por favor, elige otra fecha para consentirte. 💅', {
         icon: '😴',
         style: {
           borderRadius: '10px',
           background: '#333',
+          color: '#fff',
+        },
+      });
+      return;
+    }
+
+    if (isFullyBooked) {
+      toast('¡Día completamente ocupado! Todos los horarios están reservados. 💅', {
+        icon: '😔',
+        style: {
+          borderRadius: '10px',
+          background: '#f59e0b',
           color: '#fff',
         },
       });
@@ -250,8 +317,47 @@ const ClientAppointments: React.FC = () => {
     });
   };
 
+  // Función para verificar disponibilidad de un día y actualizar el estado
+  const checkDayAvailability = async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    try {
+      const response = await api.get<string[]>(`/portal/available-slots?date=${dateStr}`);
+      const isFullyBooked = response.data.length === 0;
+      
+      setFullyBookedDays(prev => {
+        const newSet = new Set(prev);
+        if (isFullyBooked) {
+          newSet.add(dateStr);
+        } else {
+          newSet.delete(dateStr);
+        }
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error checking day availability:', error);
+    }
+  };
+
+  // Verificar disponibilidad cuando cambia la vista del calendario
   const handleNavigate = (newDate: Date) => {
     setCurrentDate(newDate);
+    
+    // Verificar disponibilidad de los días visibles en la nueva vista
+    const startOfMonth = new Date(newDate.getFullYear(), newDate.getMonth(), 1);
+    const endOfMonth = new Date(newDate.getFullYear(), newDate.getMonth() + 1, 0);
+    
+    // Verificar algunos días clave del mes para optimización
+    const daysToCheck = [
+      startOfMonth,
+      new Date(newDate.getFullYear(), newDate.getMonth(), 15), // Mitad del mes
+      endOfMonth,
+    ];
+    
+    daysToCheck.forEach(date => {
+      if (!isDayBlocked(date)) {
+        checkDayAvailability(date);
+      }
+    });
   };
 
   const handleViewChange = (newView: string) => {

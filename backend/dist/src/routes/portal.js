@@ -244,6 +244,93 @@ router.post('/appointments', auth_1.authenticateToken, async (req, res) => {
         if (!product) {
             return res.status(400).json({ error: 'Servicio no encontrado' });
         }
+        // ===== VALIDACIÓN DE HORARIOS COMERCIALES =====
+        const appointmentDate = new Date(date);
+        const dayOfWeek = appointmentDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        const businessHour = await prismaClient_1.default.businessHour.findUnique({
+            where: { dayOfWeek },
+        });
+        if (!businessHour || !businessHour.isOpen) {
+            return res.status(400).json({ error: 'El salón está cerrado en ese horario' });
+        }
+        // Si el admin configuró timeSlots explícitos, el inicio de la cita debe coincidir con uno de ellos.
+        if (Array.isArray(businessHour.timeSlots) && businessHour.timeSlots.length > 0) {
+            if (!businessHour.timeSlots.includes(startTime)) {
+                return res.status(400).json({ error: 'El horario seleccionado no está permitido para este día' });
+            }
+        }
+        // Convert request times to minutes para comparaciones de rango (compatibilidad retro)
+        const [reqStartHour, reqStartMin] = startTime.split(':').map(Number);
+        const [reqEndHour, reqEndMin] = endTime.split(':').map(Number);
+        const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
+        const [shopEndHour, shopEndMin] = businessHour.endTime.split(':').map(Number);
+        const reqStartMinutes = reqStartHour * 60 + reqStartMin;
+        const reqEndMinutes = reqEndHour * 60 + reqEndMin;
+        const shopStartMinutes = shopStartHour * 60 + shopStartMin;
+        const shopEndMinutes = shopEndHour * 60 + shopEndMin;
+        // Verify requested time is within business hours
+        if (reqStartMinutes < shopStartMinutes || reqEndMinutes > shopEndMinutes) {
+            return res.status(400).json({ error: 'El salón está cerrado en este horario' });
+        }
+        // ===== VALIDACIÓN DE CUPO MÁXIMO DIARIO =====
+        const startOfDay = new Date(`${date.split('T')[0]}T00:00:00.000`);
+        const endOfDay = new Date(`${date.split('T')[0]}T23:59:59.999`);
+        const currentAppointmentsCount = await prismaClient_1.default.appointment.count({
+            where: {
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
+                status: 'SCHEDULED',
+            },
+        });
+        if (businessHour.maxAppointments > 0 && currentAppointmentsCount >= businessHour.maxAppointments) {
+            return res.status(400).json({ error: 'No hay cupos disponibles para ese día' });
+        }
+        // ===== VALIDACIÓN DE CONFLICTOS DE HORARIOS =====
+        // Convert times to minutes for range comparison
+        const newAppointmentStartMinutes = reqStartMinutes;
+        const newAppointmentEndMinutes = reqEndMinutes;
+        // Check for overlapping appointments on the same day
+        const overlappingAppointments = await prismaClient_1.default.appointment.findFirst({
+            where: {
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
+                status: 'SCHEDULED',
+            },
+            select: {
+                id: true,
+                startTime: true,
+                endTime: true,
+            },
+        });
+        if (overlappingAppointments) {
+            // Convert existing appointment times to minutes
+            const [existingStartHour, existingStartMin] = overlappingAppointments.startTime.split(':').map(Number);
+            const [existingEndHour, existingEndMin] = overlappingAppointments.endTime.split(':').map(Number);
+            const existingStartMinutes = existingStartHour * 60 + existingStartMin;
+            const existingEndMinutes = existingEndHour * 60 + existingEndMin;
+            // Check if there's an overlap: new appointment starts before existing ends AND new appointment ends after existing starts
+            if (newAppointmentStartMinutes < existingEndMinutes && newAppointmentEndMinutes > existingStartMinutes) {
+                return res.status(400).json({ error: 'Ya existe una cita en ese horario. Por favor selecciona otro horario.' });
+            }
+        }
+        // Check whether same client already has appointment on that day (opcional)
+        const conflictingAppointment = await prismaClient_1.default.appointment.findFirst({
+            where: {
+                clientId: clientId,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
+                status: { not: 'CANCELLED' },
+            },
+        });
+        if (conflictingAppointment) {
+            return res.status(400).json({ error: 'Ya tienes una cita agendada para ese día' });
+        }
         // Crear la cita
         const appointment = await prismaClient_1.default.appointment.create({
             data: {
@@ -342,10 +429,16 @@ router.get('/available-slots', auth_1.authenticateToken, async (req, res) => {
             return res.json([]);
         }
         // ===== VALIDACIÓN DE CUPO MÁXIMO DIARIO =====
-        // Contar citas agendadas para esa fecha
+        // Calcular rango de fecha completo (para DateTime) del día solicitado
+        const startOfDay = new Date(`${date}T00:00:00.000`);
+        const endOfDay = new Date(`${date}T23:59:59.999`);
+        // Contar citas agendadas para ese día
         const currentAppointmentsCount = await prismaClient_1.default.appointment.count({
             where: {
-                date: appointmentDate,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
                 status: 'SCHEDULED',
             },
         });
@@ -353,33 +446,43 @@ router.get('/available-slots', auth_1.authenticateToken, async (req, res) => {
         if (businessHour.maxAppointments > 0 && currentAppointmentsCount >= businessHour.maxAppointments) {
             return res.json([]); // No hay más cupos disponibles para este día
         }
-        // Generar slots disponibles en bloques de 1 hora
-        const availableSlots = [];
-        const [startHour, startMin] = businessHour.startTime.split(':').map(Number);
-        const [endHour, endMin] = businessHour.endTime.split(':').map(Number);
-        const startMinutes = startHour * 60 + startMin;
-        const endMinutes = endHour * 60 + endMin;
-        // Generar slots cada 60 minutos (1 hora)
-        for (let minutes = startMinutes; minutes < endMinutes; minutes += 60) {
-            const hour = Math.floor(minutes / 60);
-            const min = minutes % 60;
-            const slotTime = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
-            availableSlots.push(slotTime);
-        }
-        // Buscar citas agendadas para esa fecha
+        // Los slots de disponibilidad se basan en la lista explícita de timeSlots definidos en el horario comercial
+        const availableSlots = Array.isArray(businessHour.timeSlots) ? businessHour.timeSlots : [];
+        // Buscar citas agendadas para ese día (rango completo de fecha)
         const scheduledAppointments = await prismaClient_1.default.appointment.findMany({
             where: {
-                date: appointmentDate,
+                date: {
+                    gte: startOfDay,
+                    lte: endOfDay,
+                },
                 status: 'SCHEDULED',
             },
             select: {
                 startTime: true,
+                endTime: true,
             },
         });
-        // Crear set de horas ocupadas
-        const occupiedSlots = new Set(scheduledAppointments.map(apt => apt.startTime));
-        // Filtrar slots disponibles (excluir los ocupados)
-        const finalAvailableSlots = availableSlots.filter(slot => !occupiedSlots.has(slot));
+        // Helper function to convert time string to minutes
+        const timeToMinutes = (timeStr) => {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        };
+        // Filter available slots by checking for overlaps with existing appointments
+        const finalAvailableSlots = availableSlots.filter((slot) => {
+            const slotStartMinutes = timeToMinutes(slot);
+            // Check if this slot overlaps with any existing appointment
+            // Assuming each slot has a fixed duration, we need to check if the slot start time
+            // falls within any existing appointment
+            const conflict = scheduledAppointments.some(apt => {
+                const aptStartMinutes = timeToMinutes(apt.startTime);
+                const aptEndMinutes = timeToMinutes(apt.endTime);
+                // A slot is unavailable if it falls within an existing appointment
+                // We check if the slot start time is before the appointment end time
+                // and if the appointment start time is before or at the slot start time
+                return slotStartMinutes >= aptStartMinutes && slotStartMinutes < aptEndMinutes;
+            });
+            return !conflict;
+        });
         res.json(finalAvailableSlots);
     }
     catch (error) {

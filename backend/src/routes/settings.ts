@@ -26,6 +26,7 @@
       dayOfWeek: z.number().min(0).max(6),
       startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in format HH:mm'),
       endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm'),
+      timeSlots: z.array(z.string().regex(/^\d{2}:\d{2}$/, 'Time slots must be in format HH:mm')).default([]),
       isOpen: z.boolean().default(true),
       maxAppointments: z.number().min(0).default(0),
     });
@@ -41,13 +42,13 @@
           console.log('No business hours found, creating defaults...');
 
           const defaultHours = [
-            { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', isOpen: false, maxAppointments: 0 }, // Domingo (cerrado)
-            { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 },  // Lunes
-            { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 },  // Martes
-            { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 },  // Miércoles
-            { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 },  // Jueves
-            { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true, maxAppointments: 0 },  // Viernes
-            { dayOfWeek: 6, startTime: '09:00', endTime: '18:00', isOpen: false, maxAppointments: 0 }, // Sábado (cerrado)
+            { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0 }, // Domingo (cerrado)
+            { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Lunes
+            { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Martes
+            { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Miércoles
+            { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Jueves
+            { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Viernes
+            { dayOfWeek: 6, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0 }, // Sábado (cerrado)
           ];
 
           await prisma.businessHour.createMany({
