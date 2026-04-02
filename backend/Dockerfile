@@ -16,6 +16,6 @@ RUN npx prisma migrate deploy
 # Run seed
 RUN npm run seed
 
-EXPOSE 3001
+EXPOSE 3000
 
 CMD ["npm", "run", "dev"]
