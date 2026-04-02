@@ -110,14 +110,17 @@ const AdminGallery: React.FC = () => {
         <p className="text-sm text-gray-500">Gestión de diseños para la página de clientes.</p>
       </div>
 
-      <form onSubmit={handleCreate} className="bg-white p-5 rounded-lg shadow-md space-y-4">
-        <h3 className="text-lg font-semibold">Agregar nuevo diseño</h3>
+      <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-lg p-8 space-y-8">
+        <div className="flex items-center justify-between">
+          <h3 className="text-2xl font-bold text-gray-900">Agregar nuevo diseño</h3>
+          <span className="text-sm text-gray-500">Admin Gallery</span>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block text-sm font-medium">Título</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Título <span className="text-red-500">*</span></label>
             <input
-              className="mt-1 block w-full border-gray-300 rounded-md"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               required
@@ -125,9 +128,9 @@ const AdminGallery: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Servicio</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Servicio <span className="text-red-500">*</span></label>
             <select
-              className="mt-1 block w-full border-gray-300 rounded-md"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               value={form.productId}
               onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))}
               required
@@ -142,14 +145,19 @@ const AdminGallery: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Imagen</label>
-            <input
-              type="file"
-              accept="image/*"
-              className="mt-1"
-              onChange={onFileChange}
-              required
-            />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Imagen <span className="text-red-500">*</span></label>
+            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full px-4 py-8 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+              <p className="text-sm font-medium text-gray-700">Arrastra y suelta tu imagen aquí, o haz clic para seleccionar</p>
+              <p className="text-xs text-gray-500 mt-1">(JPG, PNG, GIF, máximo 10MB)</p>
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={onFileChange}
+                required
+              />
+            </label>
           </div>
         </div>
 
@@ -158,18 +166,18 @@ const AdminGallery: React.FC = () => {
         )}
 
         <div className="flex items-center gap-3">
-          <label className="inline-flex items-center gap-1">
+          <label className="inline-flex items-center gap-2">
             <input
               type="checkbox"
               checked={form.isActive}
               onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
-              className="h-4 w-4"
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
             />
-            <span className="text-sm">Activo</span>
+            <span className="text-sm font-medium text-gray-700">Activo</span>
           </label>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-8 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={createMutation.isPending}
           >
             {createMutation.isPending ? 'Guardando...' : 'Agregar diseño'}
@@ -177,13 +185,13 @@ const AdminGallery: React.FC = () => {
         </div>
       </form>
 
-      <div className="bg-white p-5 rounded-lg shadow-md">
-        <h3 className="text-lg font-semibold mb-4">Diseños existentes</h3>
+      <div className="bg-white rounded-2xl shadow-lg p-8">
+        <h3 className="text-2xl font-bold mb-4">Diseños existentes</h3>
 
         <div className="grid grid-cols-1 gap-4">
           {galleryItems.map((item) => (
-            <div key={item.id} className="border rounded-lg p-4 flex flex-col md:flex-row gap-4 items-start">
-              <img src={item.imageUrl} alt={item.title} className="w-full md:w-40 h-28 object-cover rounded" />
+            <div key={item.id} className="border border-gray-200 rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-start bg-white">
+              <img src={item.imageUrl} alt={item.title} className="w-full md:w-40 h-28 object-cover rounded-xl" />
               <div className="flex-1">
                 <h4 className="font-semibold text-lg">{item.title}</h4>
                 <p className="text-sm text-gray-600">Servicio: {item.product?.name || '—'}</p>
@@ -191,14 +199,14 @@ const AdminGallery: React.FC = () => {
                 <p className="text-sm text-gray-600">Estado: {item.isActive ? 'Activo' : 'Inactivo'}</p>
                 <div className="mt-3 flex gap-2">
                   <button
-                    className="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                     onClick={() => handleToggleActive(item)}
                     disabled={updateMutation.isPending}
                   >
                     {item.isActive ? 'Desactivar' : 'Activar'}
                   </button>
                   <button
-                    className="px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700"
+                    className="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
                     onClick={() => openDeleteModal(item)}
                     disabled={deleteMutation.isPending}
                   >
