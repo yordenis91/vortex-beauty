@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates } from '../hooks/useQueries';
+import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
 import { Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -243,6 +243,14 @@ const Appointments: React.FC = () => {
   const [currentView, setCurrentView] = useState('month');
   const [fullyBookedDays, setFullyBookedDays] = useState<Set<string>>(new Set());
 
+  // Estados para pestañas del modal
+  const [activeTab, setActiveTab] = useState<'appointment' | 'schedule'>('appointment');
+
+  // Estados para gestión de schedule overrides
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [overrideTimeSlots, setOverrideTimeSlots] = useState<string[]>([]);
+  const [newSlotInput, setNewSlotInput] = useState<string>('');
+
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
     productId: '',
@@ -259,6 +267,34 @@ const Appointments: React.FC = () => {
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
   const { data: closedDates = [], isLoading: closedDatesLoading } = useClosedDates();
+
+  // Hooks para schedule overrides
+  const { data: scheduleOverride, isLoading: overrideLoading } = useScheduleOverride(selectedDate);
+  const upsertOverrideMutation = useUpsertScheduleOverride({
+    onSuccess: () => {
+      toast.success('Excepción de horario guardada correctamente');
+      setActiveTab('appointment');
+    },
+  });
+  const deleteOverrideMutation = useDeleteScheduleOverride({
+    onSuccess: () => {
+      toast.success('Horario restaurado al estado normal');
+      setOverrideTimeSlots([]);
+    },
+  });
+
+  // Inicializar timeSlots cuando se carga un override
+  React.useEffect(() => {
+    if (scheduleOverride) {
+      setOverrideTimeSlots(scheduleOverride.timeSlots || []);
+    } else if (selectedDate) {
+      // Si no hay override, mostrar los slots por defecto del día de semana
+      const dateObj = new Date(selectedDate + 'T00:00:00');
+      const dayOfWeek = dateObj.getDay();
+      const dayConfig = businessHours.find(bh => bh.dayOfWeek === dayOfWeek);
+      setOverrideTimeSlots(dayConfig?.timeSlots || []);
+    }
+  }, [scheduleOverride, selectedDate, businessHours]);
 
   const createMutation = useCreateAppointment({
     onSuccess: () => {
@@ -420,6 +456,7 @@ const Appointments: React.FC = () => {
         notes: appointment.notes || '',
         status: appointment.status,
       });
+      setSelectedDate(appointment.date.split('T')[0]);
     } else {
       setEditingAppointment(null);
       let newDate = new Date().toISOString().split('T')[0];
@@ -430,6 +467,7 @@ const Appointments: React.FC = () => {
         newDate = format(slotStart, 'yyyy-MM-dd');
         newStartTime = format(slotStart, 'HH:mm');
         newEndTime = format(slotEnd, 'HH:mm');
+        setSelectedDate(newDate);
       }
 
       setFormData({
@@ -442,12 +480,61 @@ const Appointments: React.FC = () => {
         status: 'SCHEDULED',
       });
     }
+    setActiveTab('appointment');
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
     setEditingAppointment(null);
+    setActiveTab('appointment');
+    setSelectedDate('');
+    setOverrideTimeSlots([]);
+    setNewSlotInput('');
+  };
+
+  // Funciones para gestión de schedule overrides
+  const sortTimeSlots = (slots: string[]) =>
+    [...slots].slice().sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+  const handleAddTimeSlot = () => {
+    const slotValue = newSlotInput.trim();
+    if (!slotValue) return;
+
+    const slotFormat = /^\d{2}:\d{2}$/;
+    if (!slotFormat.test(slotValue)) {
+      toast.error('El slot debe tener formato HH:mm');
+      return;
+    }
+
+    if (overrideTimeSlots.includes(slotValue)) {
+      toast.error('El slot ya existe');
+      return;
+    }
+
+    const updatedSlots = sortTimeSlots([...overrideTimeSlots, slotValue]);
+    setOverrideTimeSlots(updatedSlots);
+    setNewSlotInput('');
+  };
+
+  const handleRemoveTimeSlot = (slot: string) => {
+    const updatedSlots = overrideTimeSlots.filter(ts => ts !== slot);
+    setOverrideTimeSlots(updatedSlots);
+  };
+
+  const handleSaveScheduleOverride = () => {
+    if (!selectedDate) return;
+
+    upsertOverrideMutation.mutate({
+      date: selectedDate,
+      timeSlots: overrideTimeSlots,
+    });
+  };
+
+  const handleRestoreDefaultSchedule = () => {
+    if (!selectedDate) return;
+
+    deleteOverrideMutation.mutate(selectedDate);
   };
 
   // Funciones de Formulario
@@ -718,176 +805,313 @@ const Appointments: React.FC = () => {
             <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 
-                {/* Header del Modal */}
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    {editingAppointment ? 'Editar Cita' : 'Nueva Cita'}
-                  </h3>
-                  <button
-                    onClick={closeModal}
-                    className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                  >
-                    <span className="sr-only">Cerrar</span>
-                    <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                {/* Header del Modal con Pestañas */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Gestión del Día: {selectedDate ? format(new Date(selectedDate), 'dd/MM/yyyy', { locale: es }) : ''}
+                    </h3>
+                    <button
+                      onClick={closeModal}
+                      className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                    >
+                      <span className="sr-only">Cerrar</span>
+                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Pestañas */}
+                  <div className="border-b border-gray-200">
+                    <nav className="-mb-px flex space-x-8">
+                      <button
+                        onClick={() => setActiveTab('appointment')}
+                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                          activeTab === 'appointment'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        Agendar Cita
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('schedule')}
+                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                          activeTab === 'schedule'
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        Gestionar Horario del Día
+                      </button>
+                    </nav>
+                  </div>
                 </div>
 
-                {/* Formulario */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label htmlFor="client" className="block text-sm font-medium text-gray-700">
-                      Clienta <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="client"
-                      value={formData.clientId}
-                      onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                    >
-                      <option value="">-- Selecciona una clienta --</option>
-                      {clients.map((client) => (
-                        <option key={client.id} value={client.id}>
-                          {client.name} ({client.email})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Servicio */}
-                  <div>
-                    <label htmlFor="product" className="block text-sm font-medium text-gray-700">
-                      Servicio <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="product"
-                      value={formData.productId}
-                      onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                    >
-                      <option value="">-- Selecciona un servicio --</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name} (${Number(product.price).toFixed(2)})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Fecha */}
-                  <div>
-                    <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-                      Fecha de la Cita <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="date"
-                      type="date"
-                      value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                      required
-                    />
-                  </div>
-
-                  {/* Hora Inicio */}
-                  <div className="grid grid-cols-2 gap-4">
+                {/* Contenido del Modal */}
+                {activeTab === 'appointment' ? (
+                  /* Formulario de Cita */
+                  <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                      <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
-                        Hora de Inicio <span className="text-red-500">*</span>
+                      <label htmlFor="client" className="block text-sm font-medium text-gray-700">
+                        Clienta <span className="text-red-500">*</span>
                       </label>
-                      <input
-                        id="startTime"
-                        type="time"
-                        value={formData.startTime}
-                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      <select
+                        id="client"
+                        value={formData.clientId}
+                        onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
                         className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                        required
-                      />
-                    </div>
-
-                    {/* Hora Fin */}
-                    <div>
-                      <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
-                        Hora de Fin <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="endTime"
-                        type="time"
-                        value={formData.endTime}
-                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  {/* Notas */}
-                  <div>
-                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                      Notas (opcional)
-                    </label>
-                    <textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      rows={3}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                      placeholder="Ej: Cliente prefiere lado izquierdo, alergia a ciertos productos..."
-                    />
-                  </div>
-
-                  {/* Estado */}
-                  <div>
-                    <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                      Estado <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="status"
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                    >
-                      <option value="SCHEDULED">Agendada</option>
-                      <option value="COMPLETED">Completada</option>
-                      <option value="CANCELLED">Cancelada</option>
-                    </select>
-                  </div>
-
-                  {/* Botones */}
-                  <div className="flex justify-between gap-3 pt-6 border-t mt-6">
-                    {/* Botón de eliminar, solo si estamos editando */}
-                    {editingAppointment ? (
-                      <button
-                        type="button"
-                        onClick={() => setItemToDelete(editingAppointment.id)}
-                        className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-transparent rounded-md shadow-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Eliminar
-                      </button>
+                        <option value="">-- Selecciona una clienta --</option>
+                        {clients.map((client) => (
+                          <option key={client.id} value={client.id}>
+                            {client.name} ({client.email})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Servicio */}
+                    <div>
+                      <label htmlFor="product" className="block text-sm font-medium text-gray-700">
+                        Servicio <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="product"
+                        value={formData.productId}
+                        onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                      >
+                        <option value="">-- Selecciona un servicio --</option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name} (${Number(product.price).toFixed(2)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Fecha */}
+                    <div>
+                      <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+                        Fecha de la Cita <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="date"
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        required
+                      />
+                    </div>
+
+                    {/* Hora Inicio */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
+                          Hora de Inicio <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="startTime"
+                          type="time"
+                          value={formData.startTime}
+                          onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                          required
+                        />
+                      </div>
+
+                      {/* Hora Fin */}
+                      <div>
+                        <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
+                          Hora de Fin <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="endTime"
+                          type="time"
+                          value={formData.endTime}
+                          onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Notas */}
+                    <div>
+                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+                        Notas (opcional)
+                      </label>
+                      <textarea
+                        id="notes"
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        rows={3}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        placeholder="Ej: Cliente prefiere lado izquierdo, alergia a ciertos productos..."
+                      />
+                    </div>
+
+                    {/* Estado */}
+                    <div>
+                      <label htmlFor="status" className="block text-sm font-medium text-gray-700">
+                        Estado <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="status"
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' })}
+                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                      >
+                        <option value="SCHEDULED">Agendada</option>
+                        <option value="COMPLETED">Completada</option>
+                        <option value="CANCELLED">Cancelada</option>
+                      </select>
+                    </div>
+
+                    {/* Botones */}
+                    <div className="flex justify-between gap-3 pt-6 border-t mt-6">
+                      {/* Botón de eliminar, solo si estamos editando */}
+                      {editingAppointment ? (
+                        <button
+                          type="button"
+                          onClick={() => setItemToDelete(editingAppointment.id)}
+                          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-transparent rounded-md shadow-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Eliminar
+                        </button>
+                      ) : (
+                        <div></div>
+                      )}
+
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={closeModal}
+                          className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={createMutation.isPending || updateMutation.isPending}
+                          className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar Cita'}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                ) : (
+                  /* Gestión de Horario del Día */
+                  <div className="space-y-4">
+                    {overrideLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      </div>
                     ) : (
-                      <div></div>
-                    )}
+                      <>
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                          <div className="flex">
+                            <div className="flex-shrink-0">
+                              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                              </svg>
+                            </div>
+                            <div className="ml-3">
+                              <h3 className="text-sm font-medium text-blue-800">
+                                {scheduleOverride ? 'Horario Personalizado' : 'Horario General'}
+                              </h3>
+                              <div className="mt-2 text-sm text-blue-700">
+                                <p>
+                                  {scheduleOverride
+                                    ? 'Este día tiene una excepción de horario personalizada.'
+                                    : 'Este día usa el horario general configurado. Haz clic en "Modificar" para crear una excepción.'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={createMutation.isPending || updateMutation.isPending}
-                        className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar Cita'}
-                      </button>
-                    </div>
+                        {/* Time Slots Management */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Horarios disponibles para este día
+                          </label>
+                          <div className="flex gap-2 items-center mb-3">
+                            <input
+                              type="time"
+                              value={newSlotInput}
+                              onChange={(e) => setNewSlotInput(e.target.value)}
+                              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                            />
+                            <button
+                              onClick={handleAddTimeSlot}
+                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            >
+                              +
+                            </button>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500 mb-3">
+                            Agrega horarios específicos para este día. Se ordenarán automáticamente.
+                          </p>
+
+                          <div className="flex flex-wrap gap-2">
+                            {sortTimeSlots(overrideTimeSlots).map((slot) => (
+                              <span
+                                key={slot}
+                                className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 text-xs px-2 py-1"
+                              >
+                                {slot}
+                                <button
+                                  onClick={() => handleRemoveTimeSlot(slot)}
+                                  className="ml-1 text-blue-800 hover:text-blue-900"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Botones de Acción */}
+                        <div className="flex justify-between gap-3 pt-6 border-t mt-6">
+                          {scheduleOverride && (
+                            <button
+                              type="button"
+                              onClick={handleRestoreDefaultSchedule}
+                              disabled={deleteOverrideMutation.isPending}
+                              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-transparent rounded-md shadow-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                            >
+                              {deleteOverrideMutation.isPending ? 'Restaurando...' : 'Restaurar Horario Normal'}
+                            </button>
+                          )}
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab('appointment')}
+                              className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              Volver
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleSaveScheduleOverride}
+                              disabled={upsertOverrideMutation.isPending}
+                              className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {upsertOverrideMutation.isPending ? 'Guardando...' : 'Guardar Excepción'}
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-                </form>
+                )}
               </div>
             </div>
           </div>

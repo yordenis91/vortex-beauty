@@ -108,6 +108,15 @@ export interface ClosedDate {
   updatedAt: string;
 }
 
+// ScheduleOverride types
+export interface ScheduleOverride {
+  id: string;
+  date: string; // YYYY-MM-DD
+  timeSlots: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // API types
 export interface ApiError {
   error: string | string[];

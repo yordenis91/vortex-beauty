@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem, ClosedDate } from '../types';
+import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem, ClosedDate, ScheduleOverride } from '../types';
 
 // Clients
 export const useClients = () => {
@@ -1000,6 +1000,86 @@ export const useMarkNotificationAsRead = (options?: any) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['client-notifications'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+// ==================== SCHEDULE OVERRIDE HOOKS ====================
+
+/**
+ * Hook para obtener todas las excepciones de horario
+ * Usa endpoint /api/overrides
+ */
+export const useScheduleOverrides = () => {
+  return useQuery({
+    queryKey: ['schedule-overrides'],
+    queryFn: async () => {
+      const response = await api.get<ScheduleOverride[]>('/overrides');
+      return response.data;
+    },
+  });
+};
+
+/**
+ * Hook para obtener una excepción de horario específica por fecha
+ * Usa endpoint /api/overrides/:date
+ */
+export const useScheduleOverride = (date: string) => {
+  return useQuery({
+    queryKey: ['schedule-override', date],
+    queryFn: async () => {
+      const response = await api.get<ScheduleOverride>(`/overrides/${date}`);
+      return response.data;
+    },
+    enabled: !!date,
+  });
+};
+
+/**
+ * Hook para crear o actualizar una excepción de horario
+ * Usa endpoint PUT /api/overrides/:date
+ */
+export const useUpsertScheduleOverride = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async ({ date, timeSlots }: { date: string; timeSlots: string[] }) => {
+      const response = await api.put(`/overrides/${date}`, { date, timeSlots });
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al guardar la excepción de horario.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['schedule-overrides'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule-override', variables.date] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+/**
+ * Hook para eliminar una excepción de horario
+ * Usa endpoint DELETE /api/overrides/:date
+ */
+export const useDeleteScheduleOverride = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (date: string) => {
+      await api.delete(`/overrides/${date}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al eliminar la excepción de horario.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['schedule-overrides'] });
+      queryClient.invalidateQueries({ queryKey: ['schedule-override', variables] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
