@@ -135,7 +135,7 @@ const Layout: React.FC = () => {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <div className="sticky top-0 z-10 flex h-16 bg-white border-b border-gray-200">
+        <div className="sticky top-0 z-50 w-full flex h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
           <button
             type="button"
             className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"

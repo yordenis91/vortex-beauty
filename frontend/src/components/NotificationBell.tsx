@@ -96,7 +96,7 @@ const NotificationBell: React.FC = () => {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden">
+        <div className="absolute -right-2 sm:right-0 mt-2 w-[calc(100vw-2rem)] max-w-[340px] sm:max-w-none sm:w-96 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden origin-top-right">
           {/* Header */}
           <div className="px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
             <h3 className="text-sm font-semibold">Notificaciones</h3>

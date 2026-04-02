@@ -200,8 +200,6 @@ const ClientAppointments: React.FC = () => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const isFullyBooked = fullyBookedDays.has(dateStr);
 
-    console.log(`Day ${dateStr} - isFullyBooked: ${isFullyBooked}, fullyBookedDays size: ${fullyBookedDays.size}`);
-
     if (isDayBlocked(date)) {
       return {
         style: {
