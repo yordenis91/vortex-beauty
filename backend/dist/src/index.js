@@ -31,7 +31,7 @@ const PORT = process.env.PORT || 3001;
 app.use((0, cors_1.default)({
     origin: [
         'http://localhost:5173', // Para cuando desarrollas en tu PC
-        'http://localhost:4000', // Para cuando desarrollas en tu PC
+        'http://localhost:3002', // Para cuando desarrollas en tu PC
         'https://deploy-vortex-frontend.wgteoi.easypanel.host' // ¡Tu frontend en producción!
     ],
     credentials: true,
