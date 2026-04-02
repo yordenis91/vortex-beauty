@@ -829,6 +829,33 @@ export const useClientAppointments = () => {
 };
 
 /**
+ * Hook para cancelar una cita del cliente autenticado
+ * Usa endpoint PATCH /api/portal/appointments/:id/cancel
+ */
+export const useCancelAppointment = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (appointmentId: string) => {
+      const response = await api.patch(`/portal/appointments/${appointmentId}/cancel`);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage =
+        error?.response?.data?.error || error?.message || 'No se pudo cancelar la cita. Intenta nuevamente.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
+      toast.success('Cita cancelada exitosamente');
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+/**
  * Hook para obtener los productos/servicios disponibles para clientes
  * Usa endpoint /api/portal/products
  */

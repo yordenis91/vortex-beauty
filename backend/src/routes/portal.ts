@@ -451,6 +451,85 @@ router.get('/products', authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
+/**
+ * PATCH /api/portal/appointments/:id/cancel
+ * Permite al cliente cancelar su propia cita
+ */
+router.patch('/appointments/:id/cancel', authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params as { id: string };
+    const clientId = req.user?.clientId;
+    const userId = req.user?.userId;
+
+    if (!clientId || !userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    // Verificar que la cita existe y pertenece al cliente autenticado
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        product: true,
+      },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ error: 'Cita no encontrada' });
+    }
+
+    if (appointment.clientId !== clientId) {
+      return res.status(403).json({ error: 'No tienes permiso para cancelar esta cita' });
+    }
+
+    // No permitir cancelar citas ya canceladas
+    if (appointment.status === 'CANCELLED') {
+      return res.status(400).json({ error: 'Esta cita ya ha sido cancelada' });
+    }
+
+    // No permitir cancelar citas completadas
+    if (appointment.status === 'COMPLETED') {
+      return res.status(400).json({ error: 'No puedes cancelar una cita completada' });
+    }
+
+    // Actualizar estado a CANCELLED
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id },
+      data: { status: 'CANCELLED' as const },
+      include: {
+        client: true,
+        product: true,
+      },
+    });
+
+    // Enviar notificación al cliente y admin
+    try {
+      await notificationService.createNotification({
+        type: 'SYSTEM',
+        recipient: clientId,
+        clientId: clientId,
+        content: `Tu cita para ${updatedAppointment.product?.name ?? 'este servicio'} el ${new Date(updatedAppointment.date).toLocaleDateString('es-ES')} a las ${updatedAppointment.startTime} ha sido cancelada exitosamente.`,
+      });
+
+      await notificationService.createNotification({
+        type: 'SYSTEM',
+        recipient: 'ADMIN',
+        content: `La cita #${updatedAppointment.id} del cliente ${updatedAppointment.client?.name ?? 'desconocido'} para ${updatedAppointment.product?.name ?? 'este servicio'} el ${new Date(updatedAppointment.date).toLocaleDateString('es-ES')} a las ${updatedAppointment.startTime} ha sido cancelada por el cliente.`,
+      });
+    } catch (notifError) {
+      console.error('Error creating cancellation notifications:', notifError);
+    }
+
+    res.json({
+      message: 'Cita cancelada exitosamente',
+      appointment: updatedAppointment,
+    });
+  } catch (error: any) {
+    console.error('Error cancelling appointment:', error);
+    res.status(500).json({ error: 'Error al cancelar la cita' });
+  }
+});
+
 export default router;
 
 /**
