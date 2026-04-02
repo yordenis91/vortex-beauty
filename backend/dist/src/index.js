@@ -27,10 +27,19 @@ const gallery_1 = __importDefault(require("./routes/gallery"));
 const closedDates_1 = __importDefault(require("./routes/closedDates"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
-app.use((0, cors_1.default)());
+// 1. Configuramos CORS explícitamente para tu frontend
+app.use((0, cors_1.default)({
+    origin: [
+        'http://localhost:5173', // Para cuando desarrollas en tu PC
+        'http://localhost:4000', // Para cuando desarrollas en tu PC
+        'https://deploy-vortex-frontend.wgteoi.easypanel.host' // ¡Tu frontend en producción!
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+// 2. Parseo de body
 app.use(express_1.default.json({ limit: '50mb', strict: true }));
-// Middleware
-app.use((0, cors_1.default)());
 app.use(express_1.default.urlencoded({ limit: '50mb', extended: true }));
 // Routes
 app.use('/api/auth', auth_1.default);

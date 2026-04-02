@@ -1,5 +1,5 @@
 import { PrismaClient, Role } from '@prisma/client';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -56,41 +56,62 @@ async function seed() {
       console.log('✅ Client user created:', client.email);
     }
 
-    // Crear productos/servicios
+    // Asegurar categoría y productos de ejemplo
+    const defaultCategory = await prisma.category.upsert({
+      where: { name_type: { name: 'Servicios', type: 'PRODUCT' } },
+      update: {},
+      create: {
+        name: 'Servicios',
+        description: 'Categoría de servicios de belleza',
+        type: 'PRODUCT',
+        color: '#6366f1',
+        icon: 'Star',
+        order: 1,
+      },
+    });
+
     const products = [
       {
         name: 'Manicura Básica',
         description: 'Servicio de manicura básica con esmaltado',
-        price: 25.00,
-        categoryId: null, // Se asignará después si hay categorías
+        price: 25.0,
       },
       {
         name: 'Manicura Francesa',
         description: 'Manicura con diseño francés elegante',
-        price: 35.00,
-        categoryId: null,
+        price: 35.0,
       },
       {
         name: 'Pedicura Completa',
         description: 'Servicio completo de pedicura con masaje',
-        price: 40.00,
-        categoryId: null,
+        price: 40.0,
       },
       {
         name: 'Tratamiento Facial',
         description: 'Tratamiento facial rejuvenecedor',
-        price: 60.00,
-        categoryId: null,
+        price: 60.0,
       },
     ];
 
     for (const productData of products) {
-      const product = await prisma.product.upsert({
-        where: { name: productData.name },
-        update: {},
-        create: productData,
-      });
-      console.log('✅ Product created:', product.name);
+      const existingProduct = await prisma.product.findFirst({ where: { name: productData.name } });
+      if (!existingProduct) {
+        const product = await prisma.product.create({
+          data: {
+            name: productData.name,
+            description: productData.description,
+            type: 'CUSTOM_DEVELOPMENT',
+            price: productData.price,
+            currency: 'USD',
+            billingCycle: 'ONE_TIME',
+            categoryId: defaultCategory.id,
+            userId: admin.id,
+          },
+        });
+        console.log('✅ Product created:', product.name);
+      } else {
+        console.log('⚪ Product exists:', existingProduct.name);
+      }
     }
 
     // Crear horarios de negocio por defecto

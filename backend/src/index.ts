@@ -22,11 +22,20 @@ import closedDatesRoutes from './routes/closedDates';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json({ limit: '50mb', strict: true }));
+// 1. Configuramos CORS explícitamente para tu frontend
+app.use(cors({
+  origin: [
+    'http://localhost:5173', // Para cuando desarrollas en tu PC
+    'http://localhost:4000', // Para cuando desarrollas en tu PC
+    'https://deploy-vortex-frontend.wgteoi.easypanel.host' // ¡Tu frontend en producción!
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// Middleware
-app.use(cors());
+// 2. Parseo de body
+app.use(express.json({ limit: '50mb', strict: true }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
