@@ -21,6 +21,7 @@ const knowledgeBase_1 = __importDefault(require("./routes/knowledgeBase"));
 const appointments_1 = __importDefault(require("./routes/appointments"));
 const notifications_1 = __importDefault(require("./routes/notifications"));
 const portal_1 = __importDefault(require("./routes/portal"));
+const overrides_1 = __importDefault(require("./routes/overrides"));
 const settings_1 = __importDefault(require("./routes/settings"));
 const gallery_1 = __importDefault(require("./routes/gallery"));
 const closedDates_1 = __importDefault(require("./routes/closedDates"));
@@ -45,6 +46,8 @@ app.use('/api/appointments', appointments_1.default);
 app.use('/api/notifications', notifications_1.default);
 // Portal routes (for CLIENT users)
 app.use('/api/portal', portal_1.default);
+// Schedule overrides routes
+app.use('/api/overrides', overrides_1.default);
 // Settings routes
 app.use('/api/settings', settings_1.default);
 // Gallery routes

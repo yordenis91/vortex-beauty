@@ -490,6 +490,14 @@ model ClosedDate {
   updatedAt DateTime @updatedAt
 }
 
+model ScheduleOverride {
+  id         String   @id @default(uuid())
+  date       String   @unique // YYYY-MM-DD
+  timeSlots  String[] @default([])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 
 // ================= Enums adicionales =================
 

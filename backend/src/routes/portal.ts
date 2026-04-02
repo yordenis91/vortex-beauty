@@ -476,13 +476,22 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
     const appointmentDate = new Date(date + 'T00:00:00');
     const dayOfWeek = appointmentDate.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
 
-    // Buscar horario comercial para ese día
+    // Validar fecha cerrada
+    const closedDate = await prisma.closedDate.findUnique({ where: { date } });
+    if (closedDate) {
+      return res.json([]);
+    }
+
+    // Buscar override para el día solicitado
+    const scheduleOverride = await prisma.scheduleOverride.findUnique({ where: { date } });
+
+    // Verificar si hay un horario comercial para el día de semana (fallback)
     const businessHour = await prisma.businessHour.findUnique({
       where: { dayOfWeek },
     });
 
-    // Si no hay horario comercial o el día está cerrado, retornar array vacío
-    if (!businessHour || !businessHour.isOpen) {
+    // Si el día no tiene horario comercial o está cerrado y no hay override, no slots
+    if (!scheduleOverride && (!businessHour || !businessHour.isOpen)) {
       return res.json([]);
     }
 
@@ -503,12 +512,13 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
     });
 
     // Si se alcanzó el límite máximo de citas para el día, retornar array vacío
-    if (businessHour.maxAppointments > 0 && currentAppointmentsCount >= businessHour.maxAppointments) {
+    if (businessHour && businessHour.maxAppointments > 0 && currentAppointmentsCount >= businessHour.maxAppointments) {
       return res.json([]); // No hay más cupos disponibles para este día
     }
 
-    // Los slots de disponibilidad se basan en la lista explícita de timeSlots definidos en el horario comercial
-    const availableSlots = Array.isArray(businessHour.timeSlots) ? businessHour.timeSlots : [];
+    const availableSlots = scheduleOverride
+      ? (Array.isArray(scheduleOverride.timeSlots) ? scheduleOverride.timeSlots : [])
+      : (Array.isArray(businessHour?.timeSlots) ? businessHour.timeSlots : []);
 
     // Buscar citas agendadas para ese día (rango completo de fecha)
     const scheduledAppointments = await prisma.appointment.findMany({

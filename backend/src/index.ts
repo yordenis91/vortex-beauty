@@ -14,6 +14,7 @@ import knowledgeBaseRoutes from './routes/knowledgeBase';
 import appointmentRoutes from './routes/appointments';
 import notificationRoutes from './routes/notifications';
 import portalRoutes from './routes/portal';
+import overridesRoutes from './routes/overrides';
 import settingsRoutes from './routes/settings';
 import galleryRoutes from './routes/gallery';
 import closedDatesRoutes from './routes/closedDates';
@@ -43,6 +44,9 @@ app.use('/api/notifications', notificationRoutes);
 
 // Portal routes (for CLIENT users)
 app.use('/api/portal', portalRoutes);
+
+// Schedule overrides routes
+app.use('/api/overrides', overridesRoutes);
 
 // Settings routes
 app.use('/api/settings', settingsRoutes);
