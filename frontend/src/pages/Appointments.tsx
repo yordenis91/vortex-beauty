@@ -793,75 +793,69 @@ const Appointments: React.FC = () => {
 
       {/* Modal - Crear/Editar Cita */}
       {showModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            {/* Overlay */}
-            <div
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity duration-300"
-              onClick={closeModal}
-            />
+        <div className="fixed inset-0 bg-black/50 transition-opacity flex items-center justify-center z-50 p-4">
+          <div className="absolute inset-0" onClick={closeModal} />
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden overflow-y-auto rounded-2xl bg-white shadow-2xl border border-gray-100">
 
-            {/* Modal */}
-            <div className="relative inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all duration-300 sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                
-                {/* Header del Modal con Pestañas */}
-                <div className="mb-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
-                      Gestión del Día: {selectedDate ? format(new Date(selectedDate), 'dd/MM/yyyy', { locale: es }) : ''}
-                    </h3>
-                    <button
-                      onClick={closeModal}
-                      className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                    >
-                      <span className="sr-only">Cerrar</span>
-                      <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-white truncate">
+                {editingAppointment ? 'Editar Cita' : 'Crear Cita'}
+                {selectedDate ? ` • ${format(new Date(selectedDate), 'dd/MM/yyyy', { locale: es })}` : ''}
+              </h3>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="text-white hover:text-blue-100 focus:outline-none"
+              >
+                <span className="sr-only">Cerrar</span>
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-                  {/* Pestañas */}
-                  <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8">
-                      <button
-                        onClick={() => setActiveTab('appointment')}
-                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                          activeTab === 'appointment'
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                      >
-                        Agendar Cita
-                      </button>
-                      <button
-                        onClick={() => setActiveTab('schedule')}
-                        className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                          activeTab === 'schedule'
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }`}
-                      >
-                        Gestionar Horario del Día
-                      </button>
-                    </nav>
-                  </div>
-                </div>
+            <div className="p-8 space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <nav className="flex flex-wrap gap-2 sm:gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('appointment')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                      activeTab === 'appointment'
+                        ? 'bg-white text-blue-700 border border-blue-200 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-white hover:border hover:border-gray-200'
+                    }`}
+                  >
+                    Agendar Cita
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('schedule')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                      activeTab === 'schedule'
+                        ? 'bg-white text-blue-700 border border-blue-200 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-800 hover:bg-white hover:border hover:border-gray-200'
+                    }`}
+                  >
+                    Gestionar Horario del Día
+                  </button>
+                </nav>
+              </div>
 
-                {/* Contenido del Modal */}
-                {activeTab === 'appointment' ? (
-                  /* Formulario de Cita */
-                  <form onSubmit={handleSubmit} className="space-y-4">
+              {activeTab === 'appointment' ? (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-gray-200 pb-4">
                     <div>
-                      <label htmlFor="client" className="block text-sm font-medium text-gray-700">
+                      <h4 className="text-sm font-semibold text-gray-900 mb-2 border-b border-gray-200 pb-2">Detalles de la Cita</h4>
+                      <label htmlFor="client" className="block text-sm font-medium text-gray-700 mb-1">
                         Clienta <span className="text-red-500">*</span>
                       </label>
                       <select
                         id="client"
                         value={formData.clientId}
                         onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        required
                       >
                         <option value="">-- Selecciona una clienta --</option>
                         {clients.map((client) => (
@@ -872,16 +866,16 @@ const Appointments: React.FC = () => {
                       </select>
                     </div>
 
-                    {/* Servicio */}
                     <div>
-                      <label htmlFor="product" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="product" className="block text-sm font-medium text-gray-700 mb-1">
                         Servicio <span className="text-red-500">*</span>
                       </label>
                       <select
                         id="product"
                         value={formData.productId}
                         onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        required
                       >
                         <option value="">-- Selecciona un servicio --</option>
                         {products.map((product) => (
@@ -891,10 +885,11 @@ const Appointments: React.FC = () => {
                         ))}
                       </select>
                     </div>
+                  </div>
 
-                    {/* Fecha */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-gray-200 pb-4">
                     <div>
-                      <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
                         Fecha de la Cita <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -902,223 +897,194 @@ const Appointments: React.FC = () => {
                         type="date"
                         value={formData.date}
                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                         required
                       />
                     </div>
-
-                    {/* Hora Inicio */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
-                          Hora de Inicio <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="startTime"
-                          type="time"
-                          value={formData.startTime}
-                          onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                          required
-                        />
-                      </div>
-
-                      {/* Hora Fin */}
-                      <div>
-                        <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
-                          Hora de Fin <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          id="endTime"
-                          type="time"
-                          value={formData.endTime}
-                          onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Notas */}
                     <div>
-                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                        Notas (opcional)
+                      <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
+                        Hora de Inicio <span className="text-red-500">*</span>
                       </label>
-                      <textarea
-                        id="notes"
-                        value={formData.notes}
-                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                        rows={3}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                        placeholder="Ej: Cliente prefiere lado izquierdo, alergia a ciertos productos..."
+                      <input
+                        id="startTime"
+                        type="time"
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        required
                       />
                     </div>
-
-                    {/* Estado */}
                     <div>
-                      <label htmlFor="status" className="block text-sm font-medium text-gray-700">
-                        Estado <span className="text-red-500">*</span>
+                      <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
+                        Hora de Fin <span className="text-red-500">*</span>
                       </label>
-                      <select
-                        id="status"
-                        value={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.value as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' })}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                      >
-                        <option value="SCHEDULED">Agendada</option>
-                        <option value="COMPLETED">Completada</option>
-                        <option value="CANCELLED">Cancelada</option>
-                      </select>
+                      <input
+                        id="endTime"
+                        type="time"
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        required
+                      />
                     </div>
-
-                    {/* Botones */}
-                    <div className="flex justify-between gap-3 pt-6 border-t mt-6">
-                      {/* Botón de eliminar, solo si estamos editando */}
-                      {editingAppointment ? (
-                        <button
-                          type="button"
-                          onClick={() => setItemToDelete(editingAppointment.id)}
-                          className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-transparent rounded-md shadow-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Eliminar
-                        </button>
-                      ) : (
-                        <div></div>
-                      )}
-
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={closeModal}
-                          className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        >
-                          Cancelar
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={createMutation.isPending || updateMutation.isPending}
-                          className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar Cita'}
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                ) : (
-                  /* Gestión de Horario del Día */
-                  <div className="space-y-4">
-                    {overrideLoading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                          <div className="flex">
-                            <div className="flex-shrink-0">
-                              <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                              </svg>
-                            </div>
-                            <div className="ml-3">
-                              <h3 className="text-sm font-medium text-blue-800">
-                                {scheduleOverride ? 'Horario Personalizado' : 'Horario General'}
-                              </h3>
-                              <div className="mt-2 text-sm text-blue-700">
-                                <p>
-                                  {scheduleOverride
-                                    ? 'Este día tiene una excepción de horario personalizada.'
-                                    : 'Este día usa el horario general configurado. Haz clic en "Modificar" para crear una excepción.'
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Time Slots Management */}
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Horarios disponibles para este día
-                          </label>
-                          <div className="flex gap-2 items-center mb-3">
-                            <input
-                              type="time"
-                              value={newSlotInput}
-                              onChange={(e) => setNewSlotInput(e.target.value)}
-                              className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
-                            />
-                            <button
-                              onClick={handleAddTimeSlot}
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                            >
-                              +
-                            </button>
-                          </div>
-                          <p className="mt-1 text-xs text-gray-500 mb-3">
-                            Agrega horarios específicos para este día. Se ordenarán automáticamente.
-                          </p>
-
-                          <div className="flex flex-wrap gap-2">
-                            {sortTimeSlots(overrideTimeSlots).map((slot) => (
-                              <span
-                                key={slot}
-                                className="inline-flex items-center rounded-full bg-blue-100 text-blue-800 text-xs px-2 py-1"
-                              >
-                                {slot}
-                                <button
-                                  onClick={() => handleRemoveTimeSlot(slot)}
-                                  className="ml-1 text-blue-800 hover:text-blue-900"
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Botones de Acción */}
-                        <div className="flex justify-between gap-3 pt-6 border-t mt-6">
-                          {scheduleOverride && (
-                            <button
-                              type="button"
-                              onClick={handleRestoreDefaultSchedule}
-                              disabled={deleteOverrideMutation.isPending}
-                              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-red-700 bg-red-100 border border-transparent rounded-md shadow-sm hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                            >
-                              {deleteOverrideMutation.isPending ? 'Restaurando...' : 'Restaurar Horario Normal'}
-                            </button>
-                          )}
-                          <div className="flex gap-3">
-                            <button
-                              type="button"
-                              onClick={() => setActiveTab('appointment')}
-                              className="inline-flex justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                              Volver
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleSaveScheduleOverride}
-                              disabled={upsertOverrideMutation.isPending}
-                              className="inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {upsertOverrideMutation.isPending ? 'Guardando...' : 'Guardar Excepción'}
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    )}
                   </div>
-                )}
-              </div>
+
+                  <div className="border-b border-gray-200 pb-4">
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                      Notas (opcional)
+                    </label>
+                    <textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      placeholder="Ej: Cliente prefiere lado izquierdo, alergia a productos sin perfume..."
+                    />
+                  </div>
+
+                  <div className="border-b border-gray-200 pb-4">
+                    <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                      Estado <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="status"
+                      value={formData.status}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="SCHEDULED">Agendada</option>
+                      <option value="COMPLETED">Completada</option>
+                      <option value="CANCELLED">Cancelada</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-between gap-3 pt-6 border-t border-gray-200">
+                    {editingAppointment ? (
+                      <button
+                        type="button"
+                        onClick={() => setItemToDelete(editingAppointment.id)}
+                        className="inline-flex items-center justify-center px-6 py-2 text-sm font-medium text-red-700 bg-red-100 border border-transparent rounded-lg transition hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />Eliminar
+                      </button>
+                    ) : (
+                      <div />
+                    )}
+
+                    <div className="flex flex-wrap justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={closeModal}
+                        className="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={createMutation.isPending || updateMutation.isPending}
+                        className="inline-flex items-center px-8 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar Cita'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  {overrideLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="border-b border-gray-200 pb-4">
+                        <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                          <div className="text-blue-500">
+                            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-medium text-blue-800">{scheduleOverride ? 'Horario Personalizado' : 'Horario General'}</h4>
+                            <p className="text-sm text-blue-700 mt-1">
+                              {scheduleOverride
+                                ? 'Este día tiene una excepción de horario personalizada.'
+                                : 'Este día usa el horario general configurado. Haz clic en "Modificar" para crear una excepción.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="border-b border-gray-200 pb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Horarios disponibles para este día</label>
+                        <div className="flex flex-wrap items-center gap-2 mb-3">
+                          <input
+                            type="time"
+                            value={newSlotInput}
+                            onChange={(e) => setNewSlotInput(e.target.value)}
+                            className="w-full md:w-auto px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                            placeholder="Ej: 10:00"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddTimeSlot}
+                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition"
+                          >
+                            + Agregar
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-500">Agrega horarios específicos para este día. Se ordenarán automáticamente.</p>
+
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {sortTimeSlots(overrideTimeSlots).map((slot) => (
+                            <span key={slot} className="inline-flex items-center gap-2 rounded-full bg-blue-100 text-blue-800 text-xs px-2 py-1">
+                              {slot}
+                              <button type="button" onClick={() => handleRemoveTimeSlot(slot)} className="font-bold rounded-full hover:text-blue-900">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap justify-between gap-3 pt-6 border-t border-gray-200">
+                        {scheduleOverride && (
+                          <button
+                            type="button"
+                            onClick={handleRestoreDefaultSchedule}
+                            disabled={deleteOverrideMutation.isPending}
+                            className="px-6 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-lg hover:bg-red-200 transition disabled:opacity-50"
+                          >
+                            {deleteOverrideMutation.isPending ? 'Restaurando...' : 'Restaurar Horario Normal'}
+                          </button>
+                        )}
+
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('appointment')}
+                            className="px-6 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+                          >
+                            Volver
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveScheduleOverride}
+                            disabled={upsertOverrideMutation.isPending}
+                            className="px-8 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {upsertOverrideMutation.isPending ? 'Guardando...' : 'Guardar Excepción'}
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-
-      {/* Delete Confirmation Modal */}
+{/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={itemToDelete !== null}
         title="Eliminar Cita"

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useInvoices, useClients, useProjects, useCreateInvoice, useUpdateInvoice, useDeleteInvoice } from '../hooks/useQueries';
+import { useInvoices, useClients, useProjects, useProducts, useCreateInvoice, useUpdateInvoice, useDeleteInvoice } from '../hooks/useQueries';
 import type { Invoice, InvoiceItem } from '../types';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -66,6 +66,7 @@ const Invoices: React.FC = () => {
   const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: products = [], isLoading: productsLoading } = useProducts();
   const createInvoice = useCreateInvoice({
     onSuccess: () => toast.success('Factura creada correctamente'),
   });
@@ -76,7 +77,7 @@ const Invoices: React.FC = () => {
     onSuccess: () => toast.success('Factura eliminada correctamente'),
   });
 
-  const loading = invoicesLoading || clientsLoading || projectsLoading;
+  const loading = invoicesLoading || clientsLoading || projectsLoading || productsLoading;
 
   const filteredInvoices = invoices.filter(invoice =>
     invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -275,44 +276,54 @@ const Invoices: React.FC = () => {
 
       {/* Invoice Detail Modal */}
       {selectedInvoice && (
-        <div className="fixed inset-0 bg-black/50 transition-opacity overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Invoice {selectedInvoice.invoiceNumber}
-                </h3>
-                <button
-                  onClick={() => setSelectedInvoice(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="h-6 w-6" />
-                </button>
+        <div className="fixed inset-0 bg-black/50 transition-opacity flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
+              <h3 className="text-2xl font-bold text-white">
+                Invoice {selectedInvoice.invoiceNumber}
+              </h3>
+              <button
+                onClick={() => setSelectedInvoice(null)}
+                className="text-blue-100 hover:text-white transition"
+              >
+                <XCircle className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-8">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Client & Invoice Information</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Client Information</h5>
+                    <p className="text-sm font-medium text-gray-900">{selectedInvoice.client?.name}</p>
+                    <p className="text-sm text-gray-600">{selectedInvoice.client?.email}</p>
+                    {selectedInvoice.client?.phone && (
+                      <p className="text-sm text-gray-600">{selectedInvoice.client.phone}</p>
+                    )}
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Invoice Details</h5>
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium text-gray-900">Issue Date:</span> {new Date(selectedInvoice.issueDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium text-gray-900">Due Date:</span> {new Date(selectedInvoice.dueDate).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium text-gray-900">Status:</span>{' '}
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(selectedInvoice.status)}`}>
+                          {selectedInvoice.status}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Client Information</h4>
-                  <p className="text-sm text-gray-600">{selectedInvoice.client?.name}</p>
-                  <p className="text-sm text-gray-600">{selectedInvoice.client?.email}</p>
-                  {selectedInvoice.client?.phone && (
-                    <p className="text-sm text-gray-600">{selectedInvoice.client.phone}</p>
-                  )}
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Invoice Details</h4>
-                  <p className="text-sm text-gray-600">
-                    Issue Date: {new Date(selectedInvoice.issueDate).toLocaleDateString()}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Due Date: {new Date(selectedInvoice.dueDate).toLocaleDateString()}
-                  </p>
-                  <p className="text-sm text-gray-600">Status: {selectedInvoice.status}</p>
-                </div>
-              </div>
-
-              <div className="mb-6">
-                <h4 className="font-medium text-gray-900 mb-4">Items</h4>
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Line Items</h4>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -320,13 +331,13 @@ const Invoices: React.FC = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Description
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Qty
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Unit Price
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Total
                         </th>
                       </tr>
@@ -337,13 +348,13 @@ const Invoices: React.FC = () => {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {item.description}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">
                             {item.quantity}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">
                             ${Number(item.unitPrice).toFixed(2)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-700">
                             ${(item.quantity * Number(item.unitPrice)).toFixed(2)}
                           </td>
                         </tr>
@@ -351,10 +362,10 @@ const Invoices: React.FC = () => {
                     </tbody>
                     <tfoot className="bg-gray-50">
                       <tr>
-                        <td colSpan={3} className="px-6 py-4 text-sm font-medium text-gray-900 text-right">
+                        <td colSpan={3} className="px-6 py-4 text-sm font-semibold text-gray-900 text-right">
                           Total:
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 text-right">
                           ${Number(selectedInvoice.totalAmount).toFixed(2)}
                         </td>
                       </tr>
@@ -364,11 +375,20 @@ const Invoices: React.FC = () => {
               </div>
 
               {selectedInvoice.notes && (
-                <div className="mb-6">
-                  <h4 className="font-medium text-gray-900 mb-2">Notes</h4>
-                  <p className="text-sm text-gray-600">{selectedInvoice.notes}</p>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Notes</h4>
+                  <p className="text-sm text-gray-700 leading-relaxed">{selectedInvoice.notes}</p>
                 </div>
               )}
+
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setSelectedInvoice(null)}
+                  className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -383,6 +403,7 @@ const Invoices: React.FC = () => {
         invoiceToEdit={editingInvoice}
         clients={clients}
         projects={projects}
+        products={products}
         onSubmitInvoice={handleInvoiceSubmit}
       />
 

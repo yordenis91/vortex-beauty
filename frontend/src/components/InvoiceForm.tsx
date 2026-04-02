@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Invoice } from '../types';
+import type { Invoice, Product } from '../types';
+import { Edit2, Copy, Trash2 } from 'lucide-react';
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -29,6 +30,7 @@ interface InvoiceFormProps {
   invoiceToEdit?: Invoice | null;
   clients: Array<{ id: string; name: string }>;
   projects: Array<{ id: string; name: string }>;
+  products: Product[];
   onSubmitInvoice: (data: InvoiceFormValues, editId?: string) => Promise<void>;
 }
 
@@ -38,6 +40,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
   invoiceToEdit,
   clients,
   projects,
+  products,
   onSubmitInvoice,
 }) => {
   const {
@@ -60,26 +63,73 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, update, insert } = useFieldArray({
     control,
     name: 'items',
   });
 
+  const [editingIndex, setEditingIndex] = React.useState<number | null>(null);
+  const [selectedProductId, setSelectedProductId] = React.useState('');
+  const [newItem, setNewItem] = React.useState({
+    description: '',
+    quantity: 1,
+    unitPrice: 0,
+  });
+  const [newItemError, setNewItemError] = React.useState<string | null>(null);
+
+  const addNewItem = () => {
+    if (!newItem.description.trim()) {
+      setNewItemError('Description is required');
+      return;
+    }
+    if (newItem.quantity < 1) {
+      setNewItemError('Quantity must be at least 1');
+      return;
+    }
+    if (newItem.unitPrice < 0) {
+      setNewItemError('Unit price must be 0 or greater');
+      return;
+    }
+
+    const itemToSave = {
+      description: newItem.description.trim(),
+      quantity: newItem.quantity,
+      unitPrice: newItem.unitPrice,
+    };
+
+    if (editingIndex !== null) {
+      update(editingIndex, itemToSave);
+      setEditingIndex(null);
+    } else {
+      append(itemToSave);
+    }
+
+    setNewItem({ description: '', quantity: 1, unitPrice: 0 });
+    setSelectedProductId('');
+    setNewItemError(null);
+  };
+
   useEffect(() => {
     if (invoiceToEdit) {
+      const formatDateForInput = (dateString: string): string => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toISOString().split('T')[0];
+      };
+
       reset({
         invoiceNumber: invoiceToEdit.invoiceNumber || '',
         clientId: invoiceToEdit.clientId || '',
         projectId: invoiceToEdit.projectId || '',
-        issueDate: invoiceToEdit.issueDate || '',
-        dueDate: invoiceToEdit.dueDate || '',
+        issueDate: formatDateForInput(invoiceToEdit.issueDate),
+        dueDate: formatDateForInput(invoiceToEdit.dueDate),
         status: invoiceToEdit.status || 'PENDING',
         notes: invoiceToEdit.notes || '',
         items: invoiceToEdit.items?.map((item) => ({
           description: item.description,
           quantity: item.quantity,
-          unitPrice: item.unitPrice,
-        })) || [{ description: '', quantity: 1, unitPrice: 0 }],
+          unitPrice: Number(item.unitPrice),
+        })) || [],
       });
     } else {
       reset({
@@ -90,7 +140,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         dueDate: '',
         status: 'PENDING',
         notes: '',
-        items: [{ description: '', quantity: 1, unitPrice: 0 }],
+        items: [],
       });
     }
   }, [invoiceToEdit, reset]);
@@ -200,58 +250,173 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Invoice Items</h4>
-            <div className="space-y-4">
-              {errors.items?.message && <span className="text-sm text-red-500 block">{errors.items.message}</span>}
-              {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="md:col-span-5">
-                    <input
-                      {...register(`items.${index}.description` as const)}
-                      placeholder="Description"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    />
-                    {errors.items?.[index]?.description && (<span className="text-sm text-red-500 mt-1 block">{errors.items[index]?.description?.message}</span>)}
-                  </div>
-                  <div className="md:col-span-2">
-                    <input
-                      type="number"
-                      {...register(`items.${index}.quantity` as const, { valueAsNumber: true })}
-                      min={1}
-                      placeholder="Qty"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    />
-                    {errors.items?.[index]?.quantity && (<span className="text-sm text-red-500 mt-1 block">{errors.items[index]?.quantity?.message}</span>)}
-                  </div>
-                  <div className="md:col-span-3">
-                    <input
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      {...register(`items.${index}.unitPrice` as const, { valueAsNumber: true })}
-                      placeholder="Unit Price"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    />
-                    {errors.items?.[index]?.unitPrice && (<span className="text-sm text-red-500 mt-1 block">{errors.items[index]?.unitPrice?.message}</span>)}
-                  </div>
-                  <div className="md:col-span-2 flex items-start">
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="px-3 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              ))}
 
-              <button
-                type="button"
-                onClick={() => append({ description: '', quantity: 1, unitPrice: 0 })}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Seleccionar producto existente o escribir manualmente</label>
+              <select
+                value={selectedProductId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedProductId(id);
+                  if (id) {
+                    const product = products.find((p) => p.id === id);
+                    if (product) {
+                      setNewItem({
+                        description: product.name,
+                        quantity: 1,
+                        unitPrice: Number(product.price) || 0,
+                      });
+                    }
+                  } else {
+                    setNewItem({ description: '', quantity: 1, unitPrice: 0 });
+                  }
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               >
-                Add Item
-              </button>
+                <option value="">Seleccionar producto existente o escribir manualmente...</option>
+                {products.map((product) => {
+                  const price = Number(product.price);
+                  return (
+                    <option key={product.id} value={product.id}>{`${product.name} - $${Number.isNaN(price) ? '0.00' : price.toFixed(2)}`}</option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-[5fr_1fr_1fr_auto] gap-3 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <input
+                  type="text"
+                  value={newItem.description}
+                  onChange={(e) => {
+                    setSelectedProductId('');
+                    setNewItem((prev) => ({ ...prev, description: e.target.value }));
+                  }}
+                  placeholder="New item description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Qty</label>
+                <input
+                  type="number"
+                  value={newItem.quantity}
+                  min={1}
+                  onChange={(e) => setNewItem((prev) => ({ ...prev, quantity: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
+                <input
+                  type="number"
+                  value={newItem.unitPrice}
+                  min={0}
+                  step={0.01}
+                  onChange={(e) => setNewItem((prev) => ({ ...prev, unitPrice: Number(e.target.value) }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addNewItem}
+                  className={`h-10 px-4 text-white rounded-lg transition ${editingIndex !== null ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                >
+                  {editingIndex !== null ? 'Update Item' : 'Add Item'}
+                </button>
+                {editingIndex !== null && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingIndex(null);
+                      setSelectedProductId('');
+                      setNewItem({ description: '', quantity: 1, unitPrice: 0 });
+                      setNewItemError(null);
+                    }}
+                    className="h-10 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+            </div>
+            {newItemError && <div className="text-sm text-red-500 mt-2">{newItemError}</div> }
+
+            <div className="overflow-x-auto mt-4">
+              <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-md">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {fields.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">No items added yet</td>
+                    </tr>
+                  ) : (
+                    fields.map((field, index) => {
+                      const item = field as { description: string; quantity: number; unitPrice: number };
+                      const unitPrice = Number(item.unitPrice);
+                      const total = item.quantity * unitPrice;
+                      return (
+                        <tr key={field.id}>
+                          <td className="px-4 py-3 text-sm text-gray-900">{item.description}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-700">{item.quantity}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-700">${unitPrice.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-700">${total.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right flex justify-end gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingIndex(index);
+                                setSelectedProductId('');
+                                setNewItem({
+                                  description: item.description,
+                                  quantity: item.quantity,
+                                  unitPrice: item.unitPrice,
+                                });
+                              }}
+                              className="p-1 rounded hover:bg-blue-50 text-blue-600"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => insert(index + 1, { ...item })}
+                              className="p-1 rounded hover:bg-green-50 text-green-600"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => remove(index)}
+                              className="p-1 rounded hover:bg-red-50 text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+                <tfoot className="bg-gray-50">
+                  <tr>
+                    <td colSpan={3}></td>
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      Total: ${fields.reduce((sum, item) => sum + item.quantity * Number(item.unitPrice), 0).toFixed(2)}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           </div>
 
