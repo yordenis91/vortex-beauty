@@ -10,11 +10,6 @@ COPY . .
 # Generate Prisma client
 RUN npx prisma generate
 
-# Run migrations
-RUN npx prisma migrate deploy
-
-# Run seed
-RUN npm run seed
 
 EXPOSE 3000
 
