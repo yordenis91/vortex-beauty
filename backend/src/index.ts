@@ -28,7 +28,8 @@ app.use(cors({
     'http://localhost:5173', // Para cuando desarrollas en tu PC
     'http://localhost:5174', // Para cuando desarrollas en tu PC (Vite default)
     'http://localhost:3002', // Para cuando desarrollas en tu PC
-    'https://deploy-vortex-frontend.wgteoi.easypanel.host' // ¡Tu frontend en producción!
+    'https://deploy-vortex-frontend.wgteoi.easypanel.host', // ¡Tu frontend en producción!
+    'https://deploy-vortex-backend.wgteoi.easypanel.host' // ¡Tu backend en producción!
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
