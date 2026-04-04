@@ -32,18 +32,18 @@ const AdminLayout: React.FC = () => {
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { section: 'Business', highlight: true },
-    { name: 'Clients', href: '/admin/clients', icon: Users },
-    { name: 'Invoices', href: '/admin/invoices', icon: FileText },
-    { section: 'Services & Scheduling', highlight: true },
-    { name: 'Appointments', href: '/admin/appointments', icon: Calendar },
-    { name: 'Products', href: '/admin/products', icon: Package },
-    { name: 'Categories', href: '/admin/categories', icon: Folder },
-    { section: 'Learning & Resources', highlight: true },
-    { name: 'Knowledge Base', href: '/admin/knowledge-base', icon: BookOpen },    { name: 'Galería', href: '/admin/gallery', icon: Sparkles },    { section: 'Operations', highlight: true },
-    { name: 'Notifications', href: '/admin/notifications', icon: Bell },
-    { name: 'Settings', href: '/admin/settings', icon: SettingsIcon },
+    { name: 'Panel de Control', href: '/admin/dashboard', icon: LayoutDashboard },
+    { section: 'Negocio', highlight: true },
+    { name: 'Clientes', href: '/admin/clients', icon: Users },
+    { name: 'Facturas', href: '/admin/invoices', icon: FileText },
+    { section: 'Servicios y Programación', highlight: true },
+    { name: 'Citas', href: '/admin/appointments', icon: Calendar },
+    { name: 'Productos', href: '/admin/products', icon: Package },
+    { name: 'Categorías', href: '/admin/categories', icon: Folder },
+    { section: 'Aprendizaje y Recursos', highlight: true },
+    { name: 'Base de Conocimientos', href: '/admin/knowledge-base', icon: BookOpen },    { name: 'Galería', href: '/admin/gallery', icon: Sparkles },    { section: 'Operaciones', highlight: true },
+    { name: 'Notificaciones', href: '/admin/notifications', icon: Bell },
+    { name: 'Configuraciones', href: '/admin/settings', icon: SettingsIcon },
   ];
 
   return (
@@ -54,7 +54,7 @@ const AdminLayout: React.FC = () => {
           <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileMenuOpen(false)} />
           <div className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
             <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-black">VortexB Admin</h3>
+              <h3 className="text-lg font-semibold text-black">Admin de VortexB</h3>
               <button
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="text-gray-400 hover:text-gray-600"
@@ -103,7 +103,7 @@ const AdminLayout: React.FC = () => {
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
           <div className="flex items-center flex-shrink-0 px-4 py-6 border-b border-gray-200">
-            <h1 className="text-lg font-bold text-black">VortexNails Admin</h1>
+            <h1 className="text-lg font-bold text-black">Admin de VortexNails</h1>
           </div>
           <nav className="mt-8 flex-1 px-2 space-y-8 overflow-y-auto">
             {navigation.map((item, idx) => {
@@ -157,7 +157,7 @@ const AdminLayout: React.FC = () => {
             <div className="flex flex-1">
               <div className="flex w-full md:ml-0">
                 <label htmlFor="search-field" className="sr-only">
-                  Search
+                  Buscar
                 </label>
                 <div className="relative w-full text-gray-400 focus-within:text-gray-600">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center">
@@ -168,7 +168,7 @@ const AdminLayout: React.FC = () => {
                   <input
                     id="search-field"
                     className="block h-full w-full border-0 py-2 pl-8 pr-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-transparent sm:text-sm"
-                    placeholder="Search..."
+                    placeholder="Buscar..."
                     type="search"
                     name="search"
                   />

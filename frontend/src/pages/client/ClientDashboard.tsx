@@ -1,8 +1,8 @@
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientAppointments } from '../../hooks/useQueries';
-import { Calendar, Clock, CheckCircle, AlertCircle, Image, CreditCard, User } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, Image, Sparkles, CreditCard, User } from 'lucide-react';
 import { format, parseISO, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 
@@ -216,6 +216,31 @@ const ClientDashboard: React.FC = () => {
             </p>
           </div>
         )}
+      </div>
+
+      {/* CTA de Inspiración */}
+      <div className="mt-8 rounded-3xl border border-purple-200 bg-gradient-to-r from-purple-50 to-white p-6 shadow-lg">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl bg-purple-100 p-4 text-purple-700">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                ¿Buscas inspiración para tu próxima visita?
+              </h3>
+              <p className="mt-2 text-gray-600">
+                Explora nuestra galería de trabajos y encuentra el estilo perfecto para ti.
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/portal/gallery"
+            className="inline-flex items-center justify-center rounded-full bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700"
+          >
+            Ver Galería
+          </Link>
+        </div>
       </div>
 
       {/* Sección de enlaces rápidos */}

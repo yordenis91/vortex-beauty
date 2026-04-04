@@ -116,7 +116,7 @@ const Clients: React.FC = () => {
     // Validación básica para contraseña (solo crea, no edit)
     if (!editingClient && formData.password) {
       if (formData.password !== formData.confirmPassword) {
-        toast.error('Password y Confirm Password deben coincidir');
+        toast.error('La contraseña y la confirnación de  contraseña deben coincidir');
         return;
       }
     }

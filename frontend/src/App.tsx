@@ -45,7 +45,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   if (user.role !== 'ADMIN') {
-    return <Navigate to="/portal/my-invoices" replace />;
+    return <Navigate to="/portal/dashboard" replace />;
   }
 
   return <>{children}</>;
@@ -98,7 +98,7 @@ const RootRedirect: React.FC = () => {
   // Redirige según el rol
   return user.role === 'ADMIN' 
     ? <Navigate to="/admin/dashboard" replace /> 
-    : <Navigate to="/portal/my-invoices" replace />;
+    : <Navigate to="/portal/dashboard" replace />;
 };
 
 function App() {

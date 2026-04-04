@@ -22,7 +22,7 @@ const Login: React.FC = () => {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError('Invalid email or password');
+      setError('Correo electrónico o contraseña inválidos');
     } finally {
       setIsLoading(false);
     }
@@ -33,12 +33,12 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to Vortex
+            Iniciar sesión en Vortex Nails
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
+            O{' '}
             <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              create a new account
+              crea una nueva cuenta
             </Link>
           </p>
         </div>
@@ -46,7 +46,7 @@ const Login: React.FC = () => {
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                Dirección de correo electrónico
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -59,7 +59,7 @@ const Login: React.FC = () => {
                   autoComplete="email"
                   required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Email address"
+                  placeholder="Dirección de correo electrónico"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -80,7 +80,7 @@ const Login: React.FC = () => {
                   autoComplete="current-password"
                   required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
+                  placeholder="Contraseña"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -109,7 +109,7 @@ const Login: React.FC = () => {
               disabled={isLoading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
           </div>
         </form>

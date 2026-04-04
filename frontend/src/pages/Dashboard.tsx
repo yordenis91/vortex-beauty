@@ -32,19 +32,19 @@ const Dashboard: React.FC = () => {
 
   const statCards = [
     {
-      name: 'Total Clients',
+      name: 'Clientes Totales',
       value: stats.clients,
       icon: Users,
       color: 'bg-blue-500',
     },
     {
-      name: 'Total Invoices',
+      name: 'Facturas',
       value: stats.invoices,
       icon: FileText,
       color: 'bg-purple-500',
     },
     {
-      name: 'Revenue',
+      name: 'Ingreso',
       value: `$${stats.totalRevenue.toLocaleString()}`,
       icon: DollarSign,
       color: 'bg-yellow-500',
@@ -80,10 +80,10 @@ const Dashboard: React.FC = () => {
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Dashboard
+            Panel de Control
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Overview of your business management system
+            Resumen de tu sistema de gestión empresarial
           </p>
         </div>
       </div>
@@ -153,7 +153,7 @@ const Dashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <BookOpen className="h-8 w-8 mb-2 opacity-90" />
-                  <h3 className="text-lg font-semibold">Knowledge Base</h3>
+                  <h3 className="text-lg font-semibold">Base de Conocimientos</h3>
                   <p className="text-purple-100 text-sm mt-1">
                     Gestiona artículos de ayuda y soporte
                   </p>
@@ -170,11 +170,11 @@ const Dashboard: React.FC = () => {
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Recent Invoices
+              Facturas Recientes
             </h3>
             <div className="flex items-center text-sm text-gray-500">
               <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-              Last 5 invoices
+              Últimas 5 facturas
             </div>
           </div>
         </div>
@@ -182,8 +182,8 @@ const Dashboard: React.FC = () => {
           {recentInvoices.length === 0 ? (
             <li className="px-4 py-8 text-center text-gray-500">
               <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No invoices</h3>
-              <p className="mt-1 text-sm text-gray-500">Get started by creating a new invoice.</p>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay facturas</h3>
+              <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva factura.</p>
             </li>
           ) : (
             recentInvoices.map((invoice) => (
@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
           <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Quick Actions
+            Acciones Rápidas
           </h3>
         </div>
         <div className="px-4 py-5 sm:p-6">
@@ -231,14 +231,14 @@ const Dashboard: React.FC = () => {
               className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <Users className="mr-2 h-5 w-5" />
-              Add Client
+              Agregar Cliente
             </Link>
             <Link
               to="/admin/invoices"
               className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
             >
               <FileText className="mr-2 h-5 w-5" />
-              Create Invoice
+              Crear Factura
             </Link>
           </div>
         </div>

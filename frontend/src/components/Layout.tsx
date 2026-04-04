@@ -25,15 +25,15 @@ const Layout: React.FC = () => {
   };
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { section: 'Beauty Salon' },
-    { name: 'Clients', href: '/clients', icon: Users },
-    { name: 'Invoices', href: '/invoices', icon: FileText },
-    { section: 'Services', highlight: true },
-    { name: 'Products', href: '/products', icon: Package, highlight: true },
-    { name: 'Categories', href: '/categories', icon: Folder },
-    { section: 'Learning & Resources', highlight: true },
-    { name: 'Knowledge Base', href: '/knowledge-base', icon: BookOpen, highlight: true },
+    { name: 'Panel de Control', href: '/dashboard', icon: LayoutDashboard },
+    { section: 'Salón de Belleza' },
+    { name: 'Clientes', href: '/clients', icon: Users },
+    { name: 'Facturas', href: '/invoices', icon: FileText },
+    { section: 'Servicios', highlight: true },
+    { name: 'Productos/Servicios', href: '/products', icon: Package, highlight: true },
+    { name: 'Categorías', href: '/categories', icon: Folder },
+    { section: 'Aprendizaje y Recursos', highlight: true },
+    { name: 'Base de Conocimientos', href: '/knowledge-base', icon: BookOpen, highlight: true },
   ];
 
   return (
@@ -147,7 +147,7 @@ const Layout: React.FC = () => {
             <div className="flex flex-1">
               <div className="flex w-full md:ml-0">
                 <label htmlFor="search-field" className="sr-only">
-                  Search
+                  Buscar
                 </label>
                 <div className="relative w-full text-gray-400 focus-within:text-gray-600">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center">
@@ -158,7 +158,7 @@ const Layout: React.FC = () => {
                   <input
                     id="search-field"
                     className="block h-full w-full border-0 py-2 pl-8 pr-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-transparent sm:text-sm"
-                    placeholder="Search..."
+                    placeholder="Buscar..."
                     type="search"
                     name="search"
                   />
@@ -173,7 +173,7 @@ const Layout: React.FC = () => {
                   className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+                  Cerrar sesión
                 </button>
               </div>
             </div>
