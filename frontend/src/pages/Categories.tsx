@@ -261,93 +261,133 @@ const Categories: React.FC = () => {
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingCategory) && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
-              </h3>
-              <form onSubmit={editingCategory ? handleEdit : handleCreate} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Type *</label>
-                  <select
-                    required
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="PRODUCT">Products</option>
-                    <option value="TICKET">Tickets</option>
-                    <option value="KNOWLEDGE_BASE">Knowledge Base</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Description</label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black/50 transition-opacity z-50 flex items-start justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl mt-12 rounded-2xl shadow-2xl bg-white overflow-hidden max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
+              <div>
+                <h3 className="text-2xl font-bold text-white">
+                  {editingCategory ? 'Editar Categoría' : 'Agregar Nueva Categoría'}
+                </h3>
+                <p className="mt-2 text-sm text-blue-100">
+                  {editingCategory
+                    ? 'Actualiza los datos de la categoría.'
+                    : 'Crea una nueva categoría para organizar tu contenido.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingCategory(null);
+                  resetForm();
+                }}
+                className="text-blue-100 hover:text-white transition"
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={editingCategory ? handleEdit : handleCreate} className="p-8 space-y-8">
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+                  Detalles de la categoría
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Color</label>
-                    <div className="mt-1 flex items-center">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Nombre de la categoría"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tipo <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    >
+                      <option value="PRODUCT">Products</option>
+                      <option value="TICKET">Tickets</option>
+                      <option value="KNOWLEDGE_BASE">Knowledge Base</option>
+                    </select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Descripción
+                    </label>
+                    <textarea
+                      placeholder="Descripción de la categoría"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+                  Configuración visual
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Color
+                    </label>
+                    <div className="mt-1 flex items-center gap-3">
                       <input
                         type="color"
                         value={formData.color}
                         onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                        className="h-10 border border-gray-300 rounded"
+                        className="h-10 w-14 border border-gray-300 rounded-lg"
                       />
-                      <span className="ml-3 text-sm text-gray-500">{formData.color}</span>
+                      <span className="text-sm text-gray-500">{formData.color}</span>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Order</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Orden
+                    </label>
                     <input
                       type="number"
                       value={formData.order}
                       onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     />
                   </div>
                 </div>
+              </div>
 
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCreateModal(false);
-                      setEditingCategory(null);
-                      resetForm();
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-                  >
-                    {editingCategory ? 'Update' : 'Create'} Category
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingCategory(null);
+                    resetForm();
+                  }}
+                  className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editingCategory ? 'Actualizar' : 'Crear'} Categoría
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

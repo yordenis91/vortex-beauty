@@ -18,6 +18,7 @@ import {
   ChevronDown,
   Settings as SettingsIcon,
 } from 'lucide-react';
+import AdminNotificationBell from './AdminNotificationBell';
 
 const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -175,8 +176,11 @@ const AdminLayout: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="ml-4 flex items-center md:ml-6">
-              <div className="relative">
+            <div className="ml-4 flex items-center gap-4 md:ml-6">
+              
+              <AdminNotificationBell />
+
+              <div className="relative border-l border-gray-200 pl-4">
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
