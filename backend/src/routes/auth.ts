@@ -30,14 +30,40 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.create({
-      data: { 
-        email, 
-        password: hashedPassword, 
-        name,
-        role: 'CLIENT', // Por defecto, nuevos usuarios son CLIENT
-      },
-      select: { id: true, email: true, name: true, role: true, clientId: true },
+    // Usar transacción para crear Client y User de forma atómica
+    const { user } = await prisma.$transaction(async (tx) => {
+      // Buscar usuario administrador
+      const adminUser = await tx.user.findFirst({
+        where: { role: 'ADMIN' }
+      });
+      
+      if (!adminUser) {
+        throw new Error('No admin user found to assign as client owner');
+      }
+      
+      // Crear registro en Client
+      const newClient = await tx.client.create({
+        data: {
+          name,
+          email,
+          type: 'CUSTOMER',
+          userId: adminUser.id, // Vinculado al admin
+        }
+      });
+      
+      // Crear registro en User con clientId del nuevo cliente
+      const newUser = await tx.user.create({
+        data: { 
+          email, 
+          password: hashedPassword, 
+          name,
+          role: 'CLIENT',
+          clientId: newClient.id, // Vinculado al cliente creado
+        },
+        select: { id: true, email: true, name: true, role: true, clientId: true },
+      });
+      
+      return { user: newUser };
     });
 
     const token = jwt.sign(
