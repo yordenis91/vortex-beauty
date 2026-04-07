@@ -10,7 +10,16 @@ const router = Router();
 const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  type: z.enum(['SAAS', 'WEB_DEVELOPMENT', 'SUPPORT', 'MAINTENANCE', 'CUSTOM_DEVELOPMENT', 'CONSULTING']),
+  type: z.enum([
+    'MANICURA_BASICA',
+    'DISENO_ARTISTICO',
+    'UÑAS_ACRILICAS',
+    'UÑAS_GEL',
+    'PEDICURA',
+    'REPARACION',
+    'EXTENSIONES',
+    'TRATAMIENTO_SPA',
+  ]),
   price: z.number().min(0, 'Price must be positive'),
   currency: z.string().default('USD'),
   billingCycle: z.enum(['ONE_TIME', 'MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'YEARLY']),

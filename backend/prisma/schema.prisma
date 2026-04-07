@@ -222,7 +222,7 @@ model Product {
   id          String        @id @default(uuid())
   name        String
   description String?       @db.Text
-  type        ProductType   // SAAS, WEB_DEVELOPMENT, SUPPORT, MAINTENANCE, CUSTOM_DEVELOPMENT
+  type        ProductType   // MANICURA_BASICA, DISENO_ARTISTICO, UÑAS_ACRILICAS, UÑAS_GEL, PEDICURA, REPARACION, EXTENSIONES, TRATAMIENTO_SPA
 
   // Precios
   price       Decimal       @db.Decimal(10, 2)
@@ -508,12 +508,14 @@ enum CategoryType {
 }
 
 enum ProductType {
-  SAAS
-  WEB_DEVELOPMENT
-  SUPPORT
-  MAINTENANCE
-  CUSTOM_DEVELOPMENT
-  CONSULTING
+  MANICURA_BASICA
+  DISENO_ARTISTICO
+  UÑAS_ACRILICAS
+  UÑAS_GEL
+  PEDICURA
+  REPARACION
+  EXTENSIONES
+  TRATAMIENTO_SPA
 }
 
 enum BillingCycle {

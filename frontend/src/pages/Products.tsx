@@ -23,10 +23,10 @@ const Products: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'SAAS' as any,
+    type: 'MANICURA_BASICA' as any,
     price: '',
-    currency: 'USD',
-    billingCycle: 'MONTHLY' as any,
+    currency: 'CUP',
+    billingCycle: 'ONE_TIME' as any,
     categoryId: '',
     isPublic: true,
     stock: '',
@@ -57,10 +57,10 @@ const Products: React.FC = () => {
     setFormData({
       name: '',
       description: '',
-      type: 'SAAS',
+      type: 'MANICURA_BASICA',
       price: '',
-      currency: 'USD',
-      billingCycle: 'MONTHLY',
+      currency: 'CUP',
+      billingCycle: 'ONE_TIME',
       categoryId: '',
       isPublic: true,
       stock: '',
@@ -162,18 +162,22 @@ const Products: React.FC = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'SAAS':
-        return 'bg-blue-100 text-blue-800';
-      case 'WEB_DEVELOPMENT':
-        return 'bg-purple-100 text-purple-800';
-      case 'SUPPORT':
-        return 'bg-green-100 text-green-800';
-      case 'MAINTENANCE':
-        return 'bg-orange-100 text-orange-800';
-      case 'CUSTOM_DEVELOPMENT':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'CONSULTING':
+      case 'MANICURA_BASICA':
         return 'bg-pink-100 text-pink-800';
+      case 'DISENO_ARTISTICO':
+        return 'bg-purple-100 text-purple-800';
+      case 'UÑAS_ACRILICAS':
+        return 'bg-blue-100 text-blue-800';
+      case 'UÑAS_GEL':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'PEDICURA':
+        return 'bg-green-100 text-green-800';
+      case 'REPARACION':
+        return 'bg-orange-100 text-orange-800';
+      case 'EXTENSIONES':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'TRATAMIENTO_SPA':
+        return 'bg-teal-100 text-teal-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -219,7 +223,7 @@ const Products: React.FC = () => {
             </div>
             <input
               type="text"
-              placeholder="Search products..."
+              placeholder="Buscar productos..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
@@ -241,7 +245,7 @@ const Products: React.FC = () => {
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Add Product
+                Agregar Producto
               </button>
             </div>
           </div>
@@ -327,7 +331,7 @@ const Products: React.FC = () => {
             <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-bold text-white">
-                  {editingProduct ? 'Edit Product' : 'Add New Product'}
+                  {editingProduct ? 'Editar Producto' : 'Agregar Nuevo Producto'}
                 </h3>
                 <p className="mt-2 text-sm text-blue-100">
                   {editingProduct
@@ -355,7 +359,7 @@ const Products: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Name <span className="text-red-500">*</span>
+                      Nombre <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -368,7 +372,7 @@ const Products: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Type <span className="text-red-500">*</span>
+                      Tipo <span className="text-red-500">*</span>
                     </label>
                     <select
                       required
@@ -376,17 +380,19 @@ const Products: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     >
-                      <option value="SAAS">SaaS</option>
-                      <option value="WEB_DEVELOPMENT">Web Development</option>
-                      <option value="SUPPORT">Support</option>
-                      <option value="MAINTENANCE">Maintenance</option>
-                      <option value="CUSTOM_DEVELOPMENT">Custom Development</option>
-                      <option value="CONSULTING">Consulting</option>
+                      <option value="MANICURA_BASICA">Manicura Básica</option>
+                      <option value="DISENO_ARTISTICO">Diseño Artístico</option>
+                      <option value="UÑAS_ACRILICAS">Uñas Acrílicas</option>
+                      <option value="UÑAS_GEL">Uñas de Gel</option>
+                      <option value="EXTENSIONES">Extensiones</option>
+                      <option value="PEDICURA">Pedicura</option>
+                      <option value="REPARACION">Reparación</option>
+                      <option value="TRATAMIENTO_SPA">Tratamiento SPA</option>
                     </select>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Description
+                      Descripción
                     </label>
                     <textarea
                       placeholder="Descripción breve del producto"
@@ -406,7 +412,7 @@ const Products: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price <span className="text-red-500">*</span>
+                      Precio <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -421,13 +427,14 @@ const Products: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Currency
+                      Moneda
                     </label>
                     <select
                       value={formData.currency}
                       onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     >
+                      <option value="CUP">CUP</option>
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
                       <option value="GBP">GBP</option>
@@ -435,7 +442,7 @@ const Products: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Billing Cycle <span className="text-red-500">*</span>
+                      Ciclo de Facturación <span className="text-red-500">*</span>
                     </label>
                     <select
                       required
@@ -443,11 +450,11 @@ const Products: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value as any })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     >
-                      <option value="ONE_TIME">One Time</option>
-                      <option value="MONTHLY">Monthly</option>
-                      <option value="QUARTERLY">Quarterly</option>
-                      <option value="SEMI_ANNUAL">Semi Annual</option>
-                      <option value="YEARLY">Yearly</option>
+                      <option value="ONE_TIME">Una Sola Vez</option>
+                      <option value="MONTHLY">Mensual</option>
+                      <option value="QUARTERLY">Trimestral</option>
+                      <option value="SEMI_ANNUAL">Semestral</option>
+                      <option value="YEARLY">Anual</option>
                     </select>
                   </div>
                 </div>
@@ -455,7 +462,7 @@ const Products: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Categoría <span className="text-red-500">*</span>
                     </label>
                     <select
                       required
@@ -463,7 +470,7 @@ const Products: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     >
-                      <option value="">Select a category</option>
+                      <option value="">Seleccionar categoría</option>
                       {categories.map((category) => (
                         <option key={category.id} value={category.id}>
                           {category.name} ({category.type.replace('_', ' ').toLowerCase()})
@@ -473,12 +480,12 @@ const Products: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stock <span className="text-gray-400">(optional)</span>
+                      Stock <span className="text-gray-400">(opcional)</span>
                     </label>
                     <input
                       type="number"
                       min="0"
-                      placeholder="Unlimited if empty"
+                      placeholder="Ilimitado si está vacío"
                       value={formData.stock}
                       onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
@@ -495,7 +502,7 @@ const Products: React.FC = () => {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="isPublic" className="text-sm font-medium text-gray-900">
-                    Public (visible in client portal)
+                    Público (visible en portal de clientes)
                   </label>
                 </div>
               </div>
@@ -510,13 +517,13 @@ const Products: React.FC = () => {
                   }}
                   className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {editingProduct ? 'Update' : 'Create'} Product
+                  {editingProduct ? 'Actualizar' : 'Crear'} Producto
                 </button>
               </div>
             </form>

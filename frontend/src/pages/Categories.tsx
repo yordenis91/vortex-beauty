@@ -127,10 +127,10 @@ const Categories: React.FC = () => {
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Categories
+            Categorías
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Organize your products, tickets, and knowledge base articles
+            Organice sus productos, servicios, y articulos de la base de conocimiento en categorías para una mejor gestión y navegación.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -139,7 +139,7 @@ const Categories: React.FC = () => {
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="h-5 w-5 mr-2" />
-            Add Category
+            Agregar Categoría
           </button>
         </div>
       </div>

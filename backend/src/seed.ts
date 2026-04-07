@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient, Role, ProductType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -96,13 +96,19 @@ async function seed() {
     for (const productData of products) {
       const existingProduct = await prisma.product.findFirst({ where: { name: productData.name } });
       if (!existingProduct) {
+
+        const productType: ProductType = productData.name.includes('Pedicura')
+          ? ProductType.PEDICURA
+          : productData.name.includes('Tratamiento')
+          ? ProductType.TRATAMIENTO_SPA
+          : ProductType.MANICURA_BASICA;
+
         const product = await prisma.product.create({
           data: {
             name: productData.name,
             description: productData.description,
-            type: 'CUSTOM_DEVELOPMENT',
+            type: productType,
             price: productData.price,
-            currency: 'USD',
             billingCycle: 'ONE_TIME',
             categoryId: defaultCategory.id,
             userId: admin.id,

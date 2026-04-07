@@ -155,10 +155,10 @@ const KnowledgeBasePage: React.FC = () => {
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Knowledge Base
+            Base de Conocimiento
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Create and manage help articles for your customers
+            Crea y gestiona artículos de ayuda para tus clientes
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -171,7 +171,7 @@ const KnowledgeBasePage: React.FC = () => {
             className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="h-5 w-5 mr-2" />
-            Add Article
+            Agregar Artículo
           </button>
         </div>
       </div>
@@ -186,7 +186,7 @@ const KnowledgeBasePage: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search articles..."
+                placeholder="Buscar artículos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
@@ -197,7 +197,7 @@ const KnowledgeBasePage: React.FC = () => {
               onChange={(e) => setCategoryFilter(e.target.value)}
               className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">All Categories</option>
+              <option value="">Todas las Categorías</option>
               {categories.map(cat => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -207,10 +207,10 @@ const KnowledgeBasePage: React.FC = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="">All Status</option>
-              <option value="PUBLISHED">Published</option>
-              <option value="DRAFT">Draft</option>
-              <option value="ARCHIVED">Archived</option>
+              <option value="">Todos los Estados</option>
+              <option value="PUBLISHED">Publicado</option>
+              <option value="DRAFT">Borrador</option>
+              <option value="ARCHIVED">Archivado</option>
             </select>
           </div>
         </div>
@@ -221,8 +221,8 @@ const KnowledgeBasePage: React.FC = () => {
         {filteredArticles.length === 0 ? (
           <div className="col-span-full bg-white rounded-lg shadow px-4 py-8 text-center text-gray-500">
             <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No articles</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating your first article.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Sin artículos</h3>
+            <p className="mt-1 text-sm text-gray-500">Comienza creando tu primer artículo.</p>
             <div className="mt-6">
               <button
                 onClick={() => {
@@ -280,14 +280,14 @@ const KnowledgeBasePage: React.FC = () => {
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
                     <Edit className="h-4 w-4 inline mr-1" />
-                    Edit
+                    Editar
                   </button>
                   <button
                     onClick={() => handleDelete(article.id)}
                     className="flex-1 px-3 py-2 border border-red-300 text-red-700 rounded-md text-sm font-medium hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4 inline mr-1" />
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </div>
@@ -301,29 +301,29 @@ const KnowledgeBasePage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 transition-opacity overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Article</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Crear Nuevo Artículo</h3>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Title *</label>
+                  <label className="block text-sm font-medium text-gray-700">Título *</label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Article title"
+                    placeholder="Título del artículo"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Category *</label>
+                  <label className="block text-sm font-medium text-gray-700">Categoría *</label>
                   <select
                     required
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">Select a category</option>
+                    <option value="">Selecciona una categoría</option>
                     {categories.filter(c => c.type === 'KNOWLEDGE_BASE').map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
@@ -365,13 +365,13 @@ const KnowledgeBasePage: React.FC = () => {
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
-                    Cancel
+                    Cancelar
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
-                    Create Article
+                    Actualizar Artículo
                   </button>
                 </div>
               </form>
@@ -385,28 +385,28 @@ const KnowledgeBasePage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 transition-opacity overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Article</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Artículo</h3>
               <form onSubmit={handleUpdate} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Title *</label>
+                  <label className="block text-sm font-medium text-gray-700">Título *</label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Article title"
+                    placeholder="Título del artículo"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <label className="block text-sm font-medium text-gray-700">Categoría</label>
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">Select a category</option>
+                    <option value="">Selecciona una categoría</option>
                     {categories.filter(c => c.type === 'KNOWLEDGE_BASE').map(cat => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
                     ))}
@@ -433,16 +433,16 @@ const KnowledgeBasePage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="DRAFT">Draft</option>
-                    <option value="PUBLISHED">Published</option>
-                    <option value="ARCHIVED">Archived</option>
+                    <option value="DRAFT">Borrador</option>
+                    <option value="PUBLISHED">Publicado</option>
+                    <option value="ARCHIVED">Archivado</option>
                   </select>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
                   <p className="text-xs text-gray-600">
-                    <strong>Views:</strong> {selectedArticle.views} | 
-                    <strong className="ml-4">Votes:</strong> {selectedArticle.helpful}
+                    <strong>Vistas:</strong> {selectedArticle.views} | 
+                    <strong className="ml-4">Votos:</strong> {selectedArticle.helpful}
                   </p>
                 </div>
 
@@ -456,13 +456,13 @@ const KnowledgeBasePage: React.FC = () => {
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                   >
-                    Cancel
+                    Cancelar
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
-                    Update Article
+                    Actualizar Artículo
                   </button>
                 </div>
               </form>

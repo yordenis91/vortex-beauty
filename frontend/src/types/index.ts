@@ -147,7 +147,7 @@ export interface Product {
   id: string;
   name: string;
   description?: string;
-  type: 'SAAS' | 'WEB_DEVELOPMENT' | 'SUPPORT' | 'MAINTENANCE' | 'CUSTOM_DEVELOPMENT' | 'CONSULTING';
+  type: 'MANICURA_BASICA' | 'DISENO_ARTISTICO' | 'UÑAS_ACRILICAS' | 'UÑAS_GEL' | 'PEDICURA' | 'REPARACION' | 'EXTENSIONES' | 'TRATAMIENTO_SPA';
   price: number;
   currency: string;
   billingCycle: 'ONE_TIME' | 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'YEARLY';
