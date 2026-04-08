@@ -115,29 +115,31 @@ router.put('/my-profile', authenticateToken, async (req: AuthRequest, res) => {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    const { name, phone, address, imageUrl } = req.body;
+    const { name, email, phone, address, imageUrl } = req.body;
 
     const result = await prisma.$transaction(async (tx) => {
-      // Actualizar User si name o imageUrl
+      // Actualizar User si name, email o imageUrl
       let updatedUser = null;
-      if (name !== undefined || imageUrl !== undefined) {
+      if (name !== undefined || email !== undefined || imageUrl !== undefined) {
         updatedUser = await tx.user.update({
           where: { id: userId },
           data: {
             ...(name !== undefined && { name }),
+            ...(email !== undefined && { email }),
             ...(imageUrl !== undefined && { imageUrl }),
           },
         });
       }
 
-      // Actualizar Client si phone o address o imageUrl
+      // Actualizar Client si phone, address, email o imageUrl
       let updatedClient = null;
-      if (clientId && (phone !== undefined || address !== undefined || imageUrl !== undefined)) {
+      if (clientId && (phone !== undefined || address !== undefined || email !== undefined || imageUrl !== undefined)) {
         updatedClient = await tx.client.update({
           where: { id: clientId },
           data: {
             ...(phone !== undefined && { phone }),
             ...(address !== undefined && { address }),
+            ...(email !== undefined && { email }),
             ...(imageUrl !== undefined && { imageUrl }),
           },
         });

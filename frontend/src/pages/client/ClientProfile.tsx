@@ -1,14 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { User, Phone, Mail, Heart, Loader, Upload, X } from 'lucide-react';
+import { User, Phone, Mail, Heart, Loader, Upload, X, Pencil } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useClientProfile, useUpdateClientProfile } from '../../hooks/useQueries';
 
 const ClientProfile: React.FC = () => {
   const { user, setUser } = useAuth();
   const { data: profileData, isLoading } = useClientProfile();
-  const updateProfileMutation = useUpdateClientProfile();
+  const updateProfileMutation = useUpdateClientProfile({
+    onSuccess: () => {
+      if (user && setUser) {
+        setUser({ ...user, email });
+      }
+    }
+  });
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+
+  useEffect(() => {
+    if (profileData?.client) {
+      setEmail(profileData.client.email || user?.email || '');
+      setPhone(profileData.client.phone || '');
+      setAddress(profileData.client.address || '');
+    }
+  }, [profileData, user]);
 
   const clientInfo = {
     name: profileData?.client?.name || user?.name || 'N/A',
@@ -114,30 +132,84 @@ const ClientProfile: React.FC = () => {
         </div>
 
         <div className="mt-6 pt-6 border-t border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Información de Contacto</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Información de Contacto</h3>
+            <button
+              onClick={() => setIsEditingContact(!isEditingContact)}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <Pencil className="h-5 w-5" />
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3">
               <Mail className="h-5 w-5 text-gray-400" />
               <div>
                 <label className="block text-sm font-medium text-gray-700">Email</label>
-                <p className="mt-1 text-gray-900">{clientInfo.email}</p>
+                {isEditingContact ? (
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-pink-500 outline-none"
+                  />
+                ) : (
+                  <p className="mt-1 text-gray-900">{clientInfo.email}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center space-x-3">
               <Phone className="h-5 w-5 text-gray-400" />
               <div>
                 <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-                <p className="mt-1 text-gray-900">{clientInfo.phone || 'No especificado'}</p>
+                {isEditingContact ? (
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-pink-500 outline-none"
+                  />
+                ) : (
+                  <p className="mt-1 text-gray-900">{clientInfo.phone || 'No especificado'}</p>
+                )}
               </div>
             </div>
             <div className="flex items-center space-x-3 md:col-span-2">
               <User className="h-5 w-5 text-gray-400" />
               <div>
                 <label className="block text-sm font-medium text-gray-700">Dirección</label>
-                <p className="mt-1 text-gray-900">{clientInfo.address || 'No especificada'}</p>
+                {isEditingContact ? (
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-pink-500 outline-none"
+                  />
+                ) : (
+                  <p className="mt-1 text-gray-900">{clientInfo.address || 'No especificada'}</p>
+                )}
               </div>
             </div>
           </div>
+          {isEditingContact && (
+            <div className="flex justify-end space-x-3 mt-4">
+              <button
+                onClick={() => setIsEditingContact(false)}
+                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  updateProfileMutation.mutate({ email, phone, address });
+                  setIsEditingContact(false);
+                }}
+                className="px-4 py-2 bg-pink-500 text-white rounded-md hover:bg-pink-600 transition-colors"
+              >
+                Guardar
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

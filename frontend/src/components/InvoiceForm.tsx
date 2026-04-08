@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import type { Invoice, Product } from '../types';
 import { Edit2, Copy, Trash2 } from 'lucide-react';
+import ProductCategorySelect from './ProductCategorySelect';
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -253,10 +254,9 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">Seleccionar producto existente o escribir manualmente</label>
-              <select
+              <ProductCategorySelect
                 value={selectedProductId}
-                onChange={(e) => {
-                  const id = e.target.value;
+                onChange={(id) => {
                   setSelectedProductId(id);
                   if (id) {
                     const product = products.find((p) => p.id === id);
@@ -271,16 +271,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     setNewItem({ description: '', quantity: 1, unitPrice: 0 });
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              >
-                <option value="">Seleccionar producto existente o escribir manualmente...</option>
-                {products.map((product) => {
-                  const price = Number(product.price);
-                  return (
-                    <option key={product.id} value={product.id}>{`${product.name} - $${Number.isNaN(price) ? '0.00' : price.toFixed(2)}`}</option>
-                  );
-                })}
-              </select>
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-[5fr_1fr_1fr_auto] gap-3 items-end">

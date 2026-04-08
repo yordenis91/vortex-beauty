@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Product } from '../types';
 import { useProducts, useCategories, useCreateProduct, useUpdateProduct, useDeleteProduct } from '../hooks/useQueries';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import Pagination from '../components/Pagination';
 import {
   Package,
   Plus,
@@ -16,7 +17,11 @@ import {
 } from 'lucide-react';
 
 const Products: React.FC = () => {
+  const ITEMS_PER_PAGE = 10;
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('ALL');
+  const [filterVisibility, setFilterVisibility] = useState<string>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -47,10 +52,30 @@ const Products: React.FC = () => {
 
   const loading = productsLoading || categoriesLoading;
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.category?.name.toLowerCase().includes(searchTerm.toLowerCase())
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCategory, filterVisibility]);
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category?.name.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCategory = filterCategory === 'ALL' || product.categoryId === filterCategory;
+
+    let matchesVisibility = true;
+    if (filterVisibility === 'PUBLIC') matchesVisibility = product.isPublic === true;
+    if (filterVisibility === 'HIDDEN') matchesVisibility = product.isPublic === false;
+
+    return matchesSearch && matchesCategory && matchesVisibility;
+  });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
   );
 
   const resetForm = () => {
@@ -217,17 +242,42 @@ const Products: React.FC = () => {
       {/* Search */}
       <div className="bg-white shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Buscar productos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Buscar productos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-            />
+            <div className="flex flex-col sm:flex-row gap-4">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="block w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="ALL">Todas las categorías</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filterVisibility}
+                onChange={(e) => setFilterVisibility(e.target.value)}
+                className="block w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="ALL">Toda visibilidad</option>
+                <option value="PUBLIC">Públicos</option>
+                <option value="HIDDEN">Ocultos</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -251,7 +301,7 @@ const Products: React.FC = () => {
           </div>
         ) : (
           <ul className="divide-y divide-gray-200">
-            {filteredProducts.map((product) => (
+            {paginatedProducts.map((product) => (
               <li key={product.id} className="px-4 py-4 sm:px-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-start sm:items-center w-full sm:w-auto">
@@ -323,6 +373,17 @@ const Products: React.FC = () => {
           </ul>
         )}
       </div>
+
+      {/* Pagination */}
+      {filteredProducts.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={filteredProducts.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {/* Create/Edit Modal */}
       {(showCreateModal || editingProduct) && (
@@ -521,9 +582,17 @@ const Products: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={createProduct.isPending || updateProduct.isPending}
+                  className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {editingProduct ? 'Actualizar' : 'Crear'} Producto
+                  {(createProduct.isPending || updateProduct.isPending) ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    <>{editingProduct ? 'Actualizar' : 'Crear'} Producto</>
+                  )}
                 </button>
               </div>
             </form>
