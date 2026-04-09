@@ -1,15 +1,27 @@
 import React from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Menu, X, Calendar, Sparkles, BarChart3, Home, User, ChevronDown } from 'lucide-react';
-import NotificationBell from './NotificationBell';
+import { Menu, Calendar, Sparkles, BarChart3, Home, User, ChevronDown } from 'lucide-react';
+import NotificationSidebar from './NotificationSidebar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const ClientLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
 
   const handleLogout = () => {
     logout();
@@ -26,133 +38,103 @@ const ClientLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile menu overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileMenuOpen(false)} />
-          <nav className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h2 className="text-lg font-semibold text-gray-900">Portal</h2>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="mt-4 space-y-2">
+      <header className="sticky top-0 z-40 w-full border-b bg-white">
+        <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-72 sm:w-80">
+                <div className="space-y-6 p-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-semibold">Portal</span>
+                  </div>
+                  <nav className="space-y-1">
+                    {navigation.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Link
+                          key={item.name}
+                          to={item.href}
+                          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                            location.pathname === item.href
+                              ? 'bg-blue-50 text-blue-700'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {item.name}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <h1 className="text-xl font-bold text-gray-900">Vortex</h1>
+          </div>
+
+          <div className="hidden md:flex items-center gap-6">
+            <nav className="hidden md:flex items-center gap-6">
               {navigation.map((item) => {
                 const Icon = item.icon;
                 return (
                   <Link
                     key={item.name}
                     to={item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium ${
+                    className={`inline-flex items-center gap-2 text-sm font-medium transition-colors ${
                       location.pathname === item.href
-                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Icon className="mr-3 h-5 w-5" />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </div>
-          </nav>
-        </div>
-      )}
-
-      {/* Top bar */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <button
-                type="button"
-                className="text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
-                onClick={() => setIsMobileMenuOpen(true)}
-              >
-                <Menu className="h-6 w-6" />
-              </button>
-              <h1 className="text-2xl font-bold text-gray-900">Vortex</h1>
-            </div>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex space-x-8 items-center">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      location.pathname === item.href
-                        ? 'border-blue-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                        ? 'text-gray-900'
+                        : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
-                    <Icon className="mr-2 h-5 w-5" />
+                    <Icon className="h-4 w-4" />
                     {item.name}
                   </Link>
                 );
               })}
             </nav>
+          </div>
 
-            {/* Notification Bell */}
-            <div className="flex items-center space-x-4">
-              <NotificationBell />
-            </div>
+          <div className="flex items-center gap-4">
+            <NotificationSidebar />
+            <ThemeToggle />
 
-            {/* User Menu */}
-            <div className="relative">
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
-              >
-                {user?.imageUrl ? (
-                  <img
-                    src={user.imageUrl}
-                    alt="Avatar"
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="h-8 w-8" />
-                )}
-                <span className="hidden sm:block">{user?.name}</span>
-                <ChevronDown className="h-4 w-4" />
-              </button>
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                  <Link
-                    to="/portal/my-profile"
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    Mi Perfil
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsUserMenuOpen(false);
-                    }}
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Cerrar Sesión
-                  </button>
-                </div>
-              )}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 text-sm">
+                  {user?.imageUrl ? (
+                    <img src={user.imageUrl} alt="Avatar" className="h-8 w-8 rounded-full object-cover" />
+                  ) : (
+                    <User className="h-8 w-8" />
+                  )}
+                  <span className="hidden sm:inline">{user?.name}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/portal/my-profile">Mi Perfil</Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => {
+                    handleLogout();
+                  }}
+                >
+                  Cerrar Sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main content */}
-      <main className="w-full h-full px-4 sm:px-6 lg:px-8 py-6">
+      <main className="p-4 sm:p-6 lg:p-8">
         <Outlet />
       </main>
     </div>

@@ -20,6 +20,7 @@ import MyInvoices from './pages/MyInvoices';
 import MySubscriptions from './pages/MySubscriptions';
 import MyProfile from './pages/MyProfile';
 import ClientDashboard from './pages/client/ClientDashboard';
+import DesignSystem from './pages/DesignSystem';
 import ClientGallery from './pages/client/ClientGallery';
 import ClientAppointments from './pages/client/ClientAppointments';
 import ClientProfile from './pages/client/ClientProfile';
@@ -110,6 +111,7 @@ function App() {
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/design-system" element={<DesignSystem />} />
 
             {/* Root redirect */}
             <Route path="/" element={<RootRedirect />} />

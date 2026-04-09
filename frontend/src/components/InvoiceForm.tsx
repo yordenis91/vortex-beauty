@@ -5,6 +5,7 @@ import * as z from 'zod';
 import type { Invoice, Product } from '../types';
 import { Edit2, Copy, Trash2 } from 'lucide-react';
 import ProductCategorySelect from './ProductCategorySelect';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, 'Description is required'),
@@ -151,26 +152,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 transition-opacity flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
-          <h3 className="text-2xl font-bold text-white">
-            {invoiceToEdit ? 'Edit Invoice' : 'Create New Invoice'}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-blue-100 hover:text-white transition"
-          >
-            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit(submitHandler)} className="p-8 space-y-8">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{invoiceToEdit ? 'Edit Invoice' : 'Create New Invoice'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(submitHandler)} className="space-y-8">
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Invoice Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -438,8 +426,8 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

@@ -1,160 +1,47 @@
 import React from 'react';
-import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { User, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
-  LayoutDashboard,
-  Users,
-  FileText,
-  LogOut,
-  Menu,
-  X,
-  Package,
-  BookOpen,
-  Calendar,
-  Folder,
-  Bell,
-  User,
-  Sparkles,
-  ChevronDown,
-  Settings as SettingsIcon,
-} from 'lucide-react';
-import AdminNotificationBell from './AdminNotificationBell';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import AdminSidebar from './AdminSidebar';
 
 const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const navigation = [
-    { name: 'Panel de Control', href: '/admin/dashboard', icon: LayoutDashboard },
-    { section: 'Negocio', highlight: true },
-    { name: 'Clientes', href: '/admin/clients', icon: Users },
-    { name: 'Facturas', href: '/admin/invoices', icon: FileText },
-    { section: 'Servicios y Programación', highlight: true },
-    { name: 'Citas', href: '/admin/appointments', icon: Calendar },
-    { name: 'Productos', href: '/admin/products', icon: Package },
-    { name: 'Categorías', href: '/admin/categories', icon: Folder },
-    { section: 'Aprendizaje y Recursos', highlight: true },
-    { name: 'Base de Conocimientos', href: '/admin/knowledge-base', icon: BookOpen },    { name: 'Galería', href: '/admin/gallery', icon: Sparkles },    { section: 'Operaciones', highlight: true },
-    { name: 'Notificaciones', href: '/admin/notifications', icon: Bell },
-    { name: 'Configuraciones', href: '/admin/settings', icon: SettingsIcon },
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile menu overlay */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setIsMobileMenuOpen(false)} />
-          <div className="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg">
-            <div className="flex items-center justify-between p-4 border-b">
-              <h3 className="text-lg font-semibold text-black">Admin de VortexB</h3>
-              <button
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-            <nav className="mt-4">
-              {navigation.map((item, idx) => {
-                if ('section' in item) {
-                  return (
-                    <div key={idx} className="px-4 py-3">
-                      <p className={`text-xs font-semibold uppercase tracking-wider ${
-                        item.highlight ? 'text-blue-600 font-bold' : 'text-gray-500'
-                      }`}>
-                        {item.section}
-                      </p>
-                    </div>
-                  );
-                }
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`flex items-center px-4 py-3 text-sm font-medium ${
-                      location.pathname === item.href
-                        ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                        : item.highlight
-                        ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-800 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <Icon className="mr-3 h-5 w-5" />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-      )}
+    <SidebarProvider>
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar />
 
-      {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-grow bg-white border-r border-gray-200">
-          <div className="flex items-center flex-shrink-0 px-4 py-6 border-b border-gray-200">
-            <h1 className="text-lg font-bold text-black">Admin de VortexNails</h1>
-          </div>
-          <nav className="mt-8 flex-1 px-2 space-y-8 overflow-y-auto">
-            {navigation.map((item, idx) => {
-              if ('section' in item) {
-                return (
-                  <div key={idx}>
-                    <p className={`px-2 text-xs font-semibold uppercase tracking-wider ${
-                      item.highlight ? 'text-blue-600 font-bold' : 'text-gray-500'
-                    }`}>
-                      {item.section}
-                    </p>
-                  </div>
-                );
-              }
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
-                    location.pathname === item.href
-                      ? 'bg-blue-50 text-blue-700'
-                      : item.highlight
-                      ? 'text-blue-600 hover:bg-blue-50 hover:text-blue-800 font-semibold'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <Icon className={`mr-3 h-5 w-5 ${
-                    location.pathname === item.href ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                  }`} />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </div>
+        <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+            <SidebarTrigger />
 
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top bar */}
-        <div className="sticky top-0 z-10 flex h-16 bg-white border-b border-gray-200">
-          <button
-            type="button"
-            className="px-4 border-r border-gray-200 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 lg:hidden"
-            onClick={() => setIsMobileMenuOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex flex-1 justify-between px-4">
             <div className="flex flex-1">
               <div className="flex w-full md:ml-0">
                 <label htmlFor="search-field" className="sr-only">
@@ -163,7 +50,11 @@ const AdminLayout: React.FC = () => {
                 <div className="relative w-full text-gray-400 focus-within:text-gray-600">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                      <path
+                        fillRule="evenodd"
+                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                   <input
@@ -176,64 +67,113 @@ const AdminLayout: React.FC = () => {
                 </div>
               </div>
             </div>
+
             <div className="ml-4 flex items-center gap-4 md:ml-6">
-              
-              <AdminNotificationBell />
-
-              <div className="relative border-l border-gray-200 pl-4">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
-                >
-                  {user?.imageUrl ? (
-                    <img
-                      src={user.imageUrl}
-                      alt="Avatar"
-                      className="h-8 w-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-8 w-8" />
-                  )}
-                  <span>{user?.name}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 border border-gray-200">
-                    <Link
-                      to="/admin/profile"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <User className="mr-2 h-4 w-4" />
-                      Mi Perfil
-                    </Link>
-                    <button
-                      onClick={() => {
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">Acciones</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent sideOffset={10}>
+                    <DropdownMenuLabel>Ir a</DropdownMenuLabel>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/clients">Clientes</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/products">Productos</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/settings">Configuraciones</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onSelect={() => {
                         handleLogout();
-                        setIsUserMenuOpen(false);
                       }}
-                      className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Cerrar Sesión
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+                      Cerrar sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="secondary" size="sm">Nuevo producto</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Crear producto</DialogTitle>
+                      <DialogDescription>
+                        Completa los campos rápidos para agregar un nuevo producto al catálogo.
+                      </DialogDescription>
+                    </DialogHeader>
 
-        {/* Page content */}
-        <main className="flex-1">
-          <div className="py-6">
-           <div className="w-full h-full px-4 sm:px-6 lg:px-8">
-            <Outlet />
+                    <div className="space-y-4">
+                      <label className="grid gap-2 text-sm">
+                        <span className="text-muted-foreground">Nombre del producto</span>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          placeholder="Corte + Manicura"
+                        />
+                      </label>
+                      <label className="grid gap-2 text-sm">
+                        <span className="text-muted-foreground">Precio</span>
+                        <input
+                          type="text"
+                          className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          placeholder="$49.99"
+                        />
+                      </label>
+                    </div>
+
+                    <DialogFooter>
+                      <Button variant="outline">Cancelar</Button>
+                      <Button>Guardar</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 text-sm border-l border-gray-200 pl-4">
+                    {user?.imageUrl ? (
+                      <img
+                        src={user.imageUrl}
+                        alt="Avatar"
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-8 w-8" />
+                    )}
+                    <span>{user?.name}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/profile">Mi Perfil</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      handleLogout();
+                    }}
+                  >
+                    Cerrar Sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-          </div>
-        </main>
+          </header>
+
+          <main className="flex-1 overflow-auto p-6 bg-gray-50">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
