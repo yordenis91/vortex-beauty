@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import {
   Select,
@@ -180,6 +181,12 @@ const ClientAppointments: React.FC = () => {
       });
   }, [clientAppointments]);
 
+  const cancelledAppointments = useMemo(() => {
+    return clientAppointments
+      .filter((apt: any) => apt.status === 'CANCELLED')
+      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [clientAppointments]);
+
   const formatDate = (date: string, time: string) => {
     try {
       const dateOnly = date.includes('T') ? date.split('T')[0] : date;
@@ -289,191 +296,221 @@ const ClientAppointments: React.FC = () => {
         <p className="text-gray-600 mt-2">Selecciona una fecha para agendar tu próxima cita</p>
       </div>
 
-      {/* Mis Próximas Citas */}
-      {appointmentsLoading ? (
-        <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <Card key={i} className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
-              <div className="animate-pulse p-6">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-slate-200 rounded-xl p-3 min-w-[70px] h-16"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="bg-slate-200 h-4 rounded w-3/4"></div>
-                    <div className="bg-slate-200 h-3 rounded w-1/2"></div>
-                  </div>
-                  <div className="bg-slate-200 rounded-full w-10 h-10"></div>
-                </div>
-              </div>
+      <Tabs defaultValue="agendar" className="w-full mt-6">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="agendar">Agendar Cita</TabsTrigger>
+          <TabsTrigger value="gestion">Mis Citas</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agendar" className="space-y-4">
+          {appointmentsLoading ? (
+            <div className="flex items-center justify-center h-96">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            </div>
+          ) : (
+            <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden mb-8 p-6">
+              <Calendar
+                mode="single"
+                selected={formData.date}
+                onSelect={handleDateSelect}
+                disabled={isDayBlocked}
+                className="rounded-lg"
+                classNames={{
+                  day_selected: "bg-indigo-600 text-white hover:bg-indigo-700 rounded-full",
+                  day_disabled: "text-gray-400 cursor-not-allowed",
+                }}
+              />
             </Card>
-          ))}
-        </div>
-      ) : upcomingAppointments.length > 0 ? (
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Mis Próximas Citas</h2>
-          {upcomingAppointments.map((appointment) => {
-            const appointmentDate = parseISO(appointment.date);
-            const day = format(appointmentDate, 'd', { locale: es });
-            const month = format(appointmentDate, 'MMM', { locale: es });
+          )}
 
-            return (
-              <Card key={appointment.id} className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden hover:shadow-md transition-shadow">
-                <div className="p-6">
-                  <div className="flex items-center space-x-4">
-                    {/* Recuadro con día y mes */}
-                    <div className="bg-indigo-50 text-indigo-700 rounded-xl p-3 text-center min-w-[70px]">
-                      <div className="text-lg font-bold">{day}</div>
-                      <div className="text-xs uppercase">{month}</div>
-                    </div>
+          {formData.date && !isDayBlocked(formData.date) && (
+            <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+              <DrawerTrigger asChild>
+                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl py-3 text-lg font-semibold">
+                  Ver horarios para {format(formData.date, 'EEEE d MMMM', { locale: es })}
+                </Button>
+              </DrawerTrigger>
+              <DrawerContent className="px-4 pb-10">
+                <DrawerHeader>
+                  <DrawerTitle>Selecciona tu horario y servicio</DrawerTitle>
+                </DrawerHeader>
 
-                    {/* Información de la cita */}
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-lg">
-                        {appointment.product?.name || 'Servicio'}
-                      </h3>
-                      <div className="flex items-center mt-1 text-gray-600">
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span className="text-sm">{appointment.startTime}</span>
+                <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+                  {/* Seleccionar Servicio */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 mb-3 block">
+                      Servicio <span className="text-red-500">*</span>
+                    </label>
+                    <Select value={formData.productId} onValueChange={(value) => setFormData({ ...formData, productId: value })}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona un servicio" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name} - ${Number(product.price).toFixed(2)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Horarios disponibles */}
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 mb-3 block">Hora <span className="text-red-500">*</span></label>
+                    {slotsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <span className="ml-3 text-gray-600">Cargando horarios...</span>
                       </div>
-                    </div>
+                    ) : availableSlots.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-3">
+                        {availableSlots.map((slot) => (
+                          <Button
+                            key={slot}
+                            type="button"
+                            variant={formData.startTime === slot ? "default" : "outline"}
+                            onClick={() => handleSelectSlot(slot)}
+                            className={formData.startTime === slot ? "bg-indigo-600" : "rounded-xl"}
+                          >
+                            {slot}
+                          </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                        <p className="font-medium">No hay horarios disponibles</p>
+                        <p className="text-sm mt-1">Intenta seleccionar otra fecha</p>
+                      </div>
+                    )}
+                  </div>
 
-                    {/* Botón de cancelar */}
+                  {/* Botones de acción */}
+                  <div className="flex gap-3 pt-6">
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full"
-                      onClick={handleCancelAppointmentClick}
-                      data-appointment-id={appointment.id}
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setDrawerOpen(false);
+                        resetForm();
+                      }}
+                      className="flex-1"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={createMutation.isPending || !formData.productId || !formData.startTime}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      {createMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Agendando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="h-5 w-5 mr-2" />
+                          Confirmar Cita
+                        </>
+                      )}
                     </Button>
                   </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      ) : null}
+                </form>
+              </DrawerContent>
+            </Drawer>
+          )}
+        </TabsContent>
 
-      {/* Calendar Card */}
-      {appointmentsLoading ? (
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-        </div>
-      ) : (
-        <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden mb-8 p-6">
-          <Calendar
-            mode="single"
-            selected={formData.date}
-            onSelect={handleDateSelect}
-            disabled={isDayBlocked}
-            className="rounded-lg"
-            classNames={{
-              day_selected: "bg-indigo-600 text-white hover:bg-indigo-700 rounded-full",
-              day_disabled: "text-gray-400 cursor-not-allowed",
-            }}
-          />
-        </Card>
-      )}
-
-      {/* Drawer para seleccionar hora y servicio */}
-      {formData.date && !isDayBlocked(formData.date) && (
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <DrawerTrigger asChild>
-            <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl py-3 text-lg font-semibold">
-              Ver horarios para {format(formData.date, 'EEEE d MMMM', { locale: es })}
-            </Button>
-          </DrawerTrigger>
-          <DrawerContent className="px-4 pb-10">
-            <DrawerHeader>
-              <DrawerTitle>Selecciona tu horario y servicio</DrawerTitle>
-            </DrawerHeader>
-
-            <form onSubmit={handleSubmit} className="space-y-6 mt-6">
-              {/* Seleccionar Servicio */}
-              <div>
-                <label className="text-sm font-semibold text-gray-900 mb-3 block">
-                  Servicio <span className="text-red-500">*</span>
-                </label>
-                <Select value={formData.productId} onValueChange={(value) => setFormData({ ...formData, productId: value })}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecciona un servicio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name} - ${Number(product.price).toFixed(2)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Horarios disponibles */}
-              <div>
-                <label className="text-sm font-semibold text-gray-900 mb-3 block">Hora <span className="text-red-500">*</span></label>
-                {slotsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                    <span className="ml-3 text-gray-600">Cargando horarios...</span>
+        <TabsContent value="gestion" className="space-y-8 mt-4">
+          {appointmentsLoading ? (
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <Card key={i} className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
+                  <div className="animate-pulse p-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-slate-200 rounded-xl p-3 min-w-[70px] h-16"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="bg-slate-200 h-4 rounded w-3/4"></div>
+                        <div className="bg-slate-200 h-3 rounded w-1/2"></div>
+                      </div>
+                      <div className="bg-slate-200 rounded-full w-10 h-10"></div>
+                    </div>
                   </div>
-                ) : availableSlots.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-3">
-                    {availableSlots.map((slot) => (
-                      <Button
-                        key={slot}
-                        type="button"
-                        variant={formData.startTime === slot ? "default" : "outline"}
-                        onClick={() => handleSelectSlot(slot)}
-                        className={formData.startTime === slot ? "bg-indigo-600" : "rounded-xl"}
-                      >
-                        {slot}
-                      </Button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                    <p className="font-medium">No hay horarios disponibles</p>
-                    <p className="text-sm mt-1">Intenta seleccionar otra fecha</p>
-                  </div>
-                )}
-              </div>
+                </Card>
+              ))}
+            </div>
+          ) : upcomingAppointments.length > 0 ? (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Mis Próximas Citas</h2>
+              {upcomingAppointments.map((appointment) => {
+                const appointmentDate = parseISO(appointment.date);
+                const day = format(appointmentDate, 'd', { locale: es });
+                const month = format(appointmentDate, 'MMM', { locale: es });
 
-              {/* Botones de acción */}
-              <div className="flex gap-3 pt-6">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setDrawerOpen(false);
-                    resetForm();
-                  }}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || !formData.productId || !formData.startTime}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700"
-                >
-                  {createMutation.isPending ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Agendando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="h-5 w-5 mr-2" />
-                      Confirmar Cita
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DrawerContent>
-        </Drawer>
-      )}
+                return (
+                  <Card key={appointment.id} className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden hover:shadow-md transition-shadow">
+                    <div className="p-6">
+                      <div className="flex items-center space-x-4">
+                        {/* Recuadro con día y mes */}
+                        <div className="bg-indigo-50 text-indigo-700 rounded-xl p-3 text-center min-w-[70px]">
+                          <div className="text-lg font-bold">{day}</div>
+                          <div className="text-xs uppercase">{month}</div>
+                        </div>
+
+                        {/* Información de la cita */}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 text-lg">
+                            {appointment.product?.name || 'Servicio'}
+                          </h3>
+                          <div className="flex items-center mt-1 text-gray-600">
+                            <Clock className="w-3 h-3 mr-1" />
+                            <span className="text-sm">{appointment.startTime}</span>
+                          </div>
+                        </div>
+
+                        {/* Botón de cancelar */}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full"
+                          onClick={handleCancelAppointmentClick}
+                          data-appointment-id={appointment.id}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {cancelledAppointments.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">Citas Canceladas</h2>
+              {cancelledAppointments.map((appointment) => (
+                <Card key={appointment.id} className="rounded-2xl border border-red-100 bg-red-50/50 shadow-sm overflow-hidden opacity-75">
+                  <div className="p-4 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 line-through decoration-red-300">
+                        {appointment.product?.name || 'Servicio'}
+                      </h3>
+                      <p className="text-sm text-gray-500 flex items-center mt-1">
+                        <Clock className="w-3 h-3 mr-1" />
+                        {formatDate(appointment.date, appointment.startTime)}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">Cancelada</Badge>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Modal de Detalles del Evento */}
       {selectedEventModal && !appointmentToCancel && (
