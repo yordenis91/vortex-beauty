@@ -155,23 +155,27 @@ const ClientAppointments: React.FC = () => {
     return false;
   };
 
-  // Filtrar citas de la clienta actual
-  const clientAppointments = useMemo(() => {
-    return appointments.filter((apt: Appointment) => apt.clientId === user?.id);
-  }, [appointments, user?.id]);
+  // Las citas ya están filtradas por cliente en el backend, no necesitamos filtro adicional
+  const clientAppointments = appointments;
 
   // Próximas citas (SCHEDULED) - solo futuras o de hoy
   const upcomingAppointments = useMemo(() => {
     const today = startOfDay(new Date());
     return clientAppointments
-      .filter((apt: Appointment) => {
+      .filter((apt: any) => {
         if (apt.status !== 'SCHEDULED') return false;
-        const appointmentDate = startOfDay(parseISO(apt.date));
-        return !isBefore(appointmentDate, today); // Fecha futura o igual a hoy
+        // Extraemos solo la fecha (YYYY-MM-DD) para evitar conflictos
+        const justDate = apt.date.includes('T') ? apt.date.split('T')[0] : apt.date;
+        const appointmentDate = startOfDay(parseISO(justDate));
+        return !isBefore(appointmentDate, today);
       })
-      .sort((a: Appointment, b: Appointment) => {
-        const dateA = parseISO(`${a.date}T${a.startTime}`);
-        const dateB = parseISO(`${b.date}T${b.startTime}`);
+      .sort((a: any, b: any) => {
+        const justDateA = a.date.includes('T') ? a.date.split('T')[0] : a.date;
+        const justDateB = b.date.includes('T') ? b.date.split('T')[0] : b.date;
+        
+        const dateA = parseISO(`${justDateA}T${a.startTime}`);
+        const dateB = parseISO(`${justDateB}T${b.startTime}`);
+        
         return dateA.getTime() - dateB.getTime();
       });
   }, [clientAppointments]);
@@ -188,9 +192,8 @@ const ClientAppointments: React.FC = () => {
 
   // Función para validar si se puede cancelar una cita (debe tener más de 24 horas)
   const canCancelAppointment = (appointmentDate: string, startTime: string): boolean => {
-    const appointmentDateTime = new Date(appointmentDate);
-    const [hours, minutes] = startTime.split(':').map(Number);
-    appointmentDateTime.setHours(hours, minutes, 0, 0);
+    const justDate = appointmentDate.includes('T') ? appointmentDate.split('T')[0] : appointmentDate;
+    const appointmentDateTime = parseISO(`${justDate}T${startTime}`);
 
     const now = new Date();
     const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -580,7 +583,7 @@ const ClientAppointments: React.FC = () => {
                     {appointment.product?.name}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {format(parseISO(`${appointment.date}T${appointment.startTime}`), 'EEEE d MMMM yyyy - HH:mm', { locale: es })}
+                    {formatDate(appointment.date, appointment.startTime)}
                   </p>
                 </div>
               </div>
