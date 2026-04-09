@@ -38,6 +38,56 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/appointments/fully-booked-dates - Get dates that are fully booked
+router.get('/fully-booked-dates', authenticateToken, async (req, res) => {
+  try {
+    // Obtener todas las citas SCHEDULED y COMPLETED
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        status: {
+          in: ['SCHEDULED', 'COMPLETED'],
+        },
+      },
+      select: {
+        date: true,
+      },
+    });
+
+    // Agrupar citas por fecha (formato YYYY-MM-DD)
+    const appointmentsByDate = new Map<string, number>();
+
+    appointments.forEach((apt) => {
+      const dateStr = apt.date.toISOString().split('T')[0]; // YYYY-MM-DD
+      appointmentsByDate.set(dateStr, (appointmentsByDate.get(dateStr) || 0) + 1);
+    });
+
+    // Array para almacenar fechas completamente reservadas
+    const fullyBookedDates: string[] = [];
+
+    // Para cada fecha agrupada, verificar si está llena
+    for (const [dateStr, appointmentCount] of appointmentsByDate.entries()) {
+      // Obtener el día de la semana de la fecha
+      const dateObj = new Date(`${dateStr}T00:00:00Z`);
+      const dayOfWeek = dateObj.getUTCDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+      // Obtener BusinessHour para ese día
+      const businessHour = await prisma.businessHour.findUnique({
+        where: { dayOfWeek },
+      });
+
+      // Si la fecha tiene maxAppointments configurado y está llena, agregar al array
+      if (businessHour && businessHour.maxAppointments > 0 && appointmentCount >= businessHour.maxAppointments) {
+        fullyBookedDates.push(dateStr);
+      }
+    }
+
+    res.json(fullyBookedDates);
+  } catch (error) {
+    console.error('Error fetching fully booked dates:', error);
+    res.status(500).json({ error: 'Failed to fetch fully booked dates' });
+  }
+});
+
 // GET /api/appointments/:id - Get a specific appointment
 router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {

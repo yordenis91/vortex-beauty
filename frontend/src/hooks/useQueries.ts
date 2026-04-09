@@ -1111,3 +1111,20 @@ export const useDeleteScheduleOverride = (options?: any) => {
     },
   });
 };
+
+// ==================== FULLY BOOKED DATES HOOKS ====================
+
+/**
+ * Hook para obtener las fechas que están 100% reservadas
+ * Usa endpoint /api/appointments/fully-booked-dates
+ * Devuelve array de strings en formato YYYY-MM-DD
+ */
+export const useFullyBookedDates = () => {
+  return useQuery({
+    queryKey: ['fully-booked-dates'],
+    queryFn: async () => {
+      const response = await api.get<string[]>('/appointments/fully-booked-dates');
+      return response.data;
+    },
+  });
+};
