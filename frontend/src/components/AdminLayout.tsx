@@ -5,19 +5,9 @@ import { User, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -71,68 +61,6 @@ const AdminLayout: React.FC = () => {
             <div className="ml-4 flex items-center gap-4 md:ml-6">
               <div className="flex items-center gap-2">
                 <ThemeToggle />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">Acciones</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent sideOffset={10}>
-                    <DropdownMenuLabel>Ir a</DropdownMenuLabel>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/clients">Clientes</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/products">Productos</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin/settings">Configuraciones</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onSelect={() => {
-                        handleLogout();
-                      }}
-                    >
-                      Cerrar sesión
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="secondary" size="sm">Nuevo producto</Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Crear producto</DialogTitle>
-                      <DialogDescription>
-                        Completa los campos rápidos para agregar un nuevo producto al catálogo.
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-4">
-                      <label className="grid gap-2 text-sm">
-                        <span className="text-muted-foreground">Nombre del producto</span>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                          placeholder="Corte + Manicura"
-                        />
-                      </label>
-                      <label className="grid gap-2 text-sm">
-                        <span className="text-muted-foreground">Precio</span>
-                        <input
-                          type="text"
-                          className="w-full rounded-xl border border-border bg-input px-3 py-2 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
-                          placeholder="$49.99"
-                        />
-                      </label>
-                    </div>
-
-                    <DialogFooter>
-                      <Button variant="outline">Cancelar</Button>
-                      <Button>Guardar</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
               </div>
 
               <DropdownMenu>
