@@ -693,6 +693,8 @@ export const useCreateAppointment = (options?: any) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['fully-booked-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
@@ -725,6 +727,8 @@ export const useUpdateAppointment = (options?: any) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['fully-booked-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
@@ -744,6 +748,8 @@ export const useDeleteAppointment = (options?: any) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['fully-booked-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
@@ -1083,6 +1089,8 @@ export const useUpsertScheduleOverride = (options?: any) => {
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['schedule-overrides'] });
       queryClient.invalidateQueries({ queryKey: ['schedule-override', variables.date] });
+      queryClient.invalidateQueries({ queryKey: ['fully-booked-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
@@ -1107,6 +1115,8 @@ export const useDeleteScheduleOverride = (options?: any) => {
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['schedule-overrides'] });
       queryClient.invalidateQueries({ queryKey: ['schedule-override', variables] });
+      queryClient.invalidateQueries({ queryKey: ['fully-booked-dates'] });
+      queryClient.invalidateQueries({ queryKey: ['available-slots'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });

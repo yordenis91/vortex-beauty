@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  db:
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-vortex}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    restart: always
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-vortex}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vortex}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=${BACKEND_PORT:-3000}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - vortex_network
+
+  frontend:
+    restart: always
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    networks:
+      - vortex_network

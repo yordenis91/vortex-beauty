@@ -28,16 +28,16 @@ const AdminLayout: React.FC = () => {
       <div className="flex min-h-screen bg-gray-50">
         <AdminSidebar />
 
-        <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6">
+        <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
             <SidebarTrigger />
 
-            <div className="flex flex-1">
-              <div className="flex w-full md:ml-0">
+            <div className="flex flex-1 min-w-0">
+              <div className="flex w-full min-w-0 md:ml-0">
                 <label htmlFor="search-field" className="sr-only">
                   Buscar
                 </label>
-                <div className="relative w-full text-gray-400 focus-within:text-gray-600">
+                <div className="relative w-full min-w-0 text-gray-400 focus-within:text-gray-600">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                       <path
@@ -58,14 +58,14 @@ const AdminLayout: React.FC = () => {
               </div>
             </div>
 
-            <div className="ml-4 flex items-center gap-4 md:ml-6">
-              <div className="flex items-center gap-2">
+            <div className="ml-4 flex shrink-0 items-center gap-4 md:ml-6">
+              <div className="flex shrink-0 items-center gap-2">
                 <ThemeToggle />
               </div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 text-sm border-l border-gray-200 pl-4">
+                  <Button variant="ghost" className="flex shrink-0 items-center gap-2 border-l border-gray-200 pl-4 text-sm">
                     {user?.imageUrl ? (
                       <img
                         src={user.imageUrl}
@@ -96,8 +96,10 @@ const AdminLayout: React.FC = () => {
             </div>
           </header>
 
-          <main className="flex-1 overflow-auto p-6 bg-gray-50">
-            <Outlet />
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 bg-gray-50">
+            <div className="mx-auto w-full max-w-7xl space-y-6">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

@@ -189,19 +189,19 @@ const Dashboard: React.FC = () => {
             recentInvoices.map((invoice) => (
               <li key={invoice.id} className="px-4 py-4 sm:px-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <FileText className="h-8 w-8 text-gray-400" />
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {invoice.invoiceNumber}
+                  <div className="flex items-center min-w-0 flex-1 pr-4">
+                      <div className="flex-shrink-0">
+                        <FileText className="h-8 w-8 text-gray-400" />
                       </div>
-                      <div className="text-sm text-gray-500">
-                        {invoice.client?.name} • {new Date(invoice.issueDate).toLocaleDateString()}
+                      <div className="ml-4 min-w-0 flex-1">
+                        <div className="text-sm font-medium text-gray-900 truncate">
+                          {invoice.invoiceNumber}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate">
+                          {invoice.client?.name} • {new Date(invoice.issueDate).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
-                  </div>
                   <div className="flex items-center space-x-4">
                     <div className="text-sm font-medium text-gray-900">
                       ${Number(invoice.totalAmount).toLocaleString()}

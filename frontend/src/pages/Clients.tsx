@@ -179,7 +179,7 @@ const Clients: React.FC = () => {
   return (
     <div className="space-y-6 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Clientes</h2>
           <p className="mt-1 text-sm text-gray-500">Gestiona tu cartera de clientes</p>
@@ -207,39 +207,42 @@ const Clients: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabla / Lista (Expandida) */}
-      <div className="bg-white shadow-sm border border-gray-100 rounded-lg flex-1 overflow-hidden">
+      {/* Grid de Clientes */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredClients.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
+          <div className="col-span-full bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-12 text-center text-gray-500">
             <Users className="mx-auto h-12 w-12 text-gray-300 mb-3" />
             <p>No se encontraron clientes.</p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-100">
-            {filteredClients.map((client) => (
-              <li key={client.id} className="p-4 hover:bg-gray-50 flex justify-between items-center transition">
-                <div className="flex items-center">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-                    {client.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="ml-4">
-                    <p className="font-medium text-gray-900">{client.name}</p>
-                    <div className="flex space-x-4 text-sm text-gray-500 mt-1">
-                      <span className="flex items-center"><Mail className="h-4 w-4 mr-1" /> {client.email}</span>
-                    </div>
-                  </div>
+          filteredClients.map((client) => (
+            <div key={client.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col transition hover:shadow-md">
+              <div className="flex justify-between items-start mb-4">
+                <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                  {client.name.charAt(0).toUpperCase()}
                 </div>
-                <div className="flex space-x-2">
-                  <button onClick={() => openEdit(client)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50">
-                    <Edit className="h-5 w-5" />
+                <div className="flex space-x-1 shrink-0">
+                  <button onClick={() => openEdit(client)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition">
+                    <Edit className="h-4 w-4" />
                   </button>
-                  <button onClick={() => handleDelete(client.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50">
-                    <Trash2 className="h-5 w-5" />
+                  <button onClick={() => handleDelete(client.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition">
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-bold text-gray-900 truncate">{client.name}</h3>
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center text-sm text-gray-500">
+                    <Mail className="h-4 w-4 shrink-0 mr-2 text-gray-400" />
+                    <span className="truncate">{client.email}</span>
+                  </div>
+                  {/* Puedes agregar aquí el teléfono si lo deseas, siguiendo el mismo patrón del Mail */}
+                </div>
+              </div>
+            </div>
+          ))
         )}
       </div>
 

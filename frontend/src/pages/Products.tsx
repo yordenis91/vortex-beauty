@@ -305,12 +305,12 @@ const Products: React.FC = () => {
             {paginatedProducts.map((product) => (
               <li key={product.id} className="px-4 py-4 sm:px-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center w-full sm:w-auto">
+                  <div className="flex items-start sm:items-center min-w-0 flex-1">
                     <div className="flex-shrink-0">
                       <Package className="h-8 w-8 text-gray-400" />
                     </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
+                    <div className="ml-4 min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">
                         {product.name}
                       </div>
                       <div className="text-sm text-gray-500">
@@ -321,7 +321,7 @@ const Products: React.FC = () => {
                           {product.description}
                         </div>
                       )}
-                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-xs text-gray-500">
                         <div className="flex items-center">
                           <DollarSign className="h-4 w-4 mr-1" />
                           ${product.price} {product.currency}
@@ -339,7 +339,7 @@ const Products: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 sm:space-x-3 w-full sm:w-auto">
+                  <div className="flex flex-wrap items-center gap-3 sm:space-x-3 w-full sm:w-auto shrink-0">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(product.type)}`}>
                       {product.type.replace('_', ' ')}
                     </span>

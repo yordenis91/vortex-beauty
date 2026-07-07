@@ -192,85 +192,84 @@ const Invoices: React.FC = () => {
         </div>
       </div>
 
-      {/* Invoices List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      {/* Grid de Facturas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredInvoices.length === 0 ? (
-          <div className="px-4 py-8 text-center text-gray-500">
-            <FileText className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No invoices</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new invoice.</p>
+          <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-12 text-center text-gray-500">
+            <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900">No hay facturas</h3>
+            <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva factura.</p>
             <div className="mt-6">
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => {
+                  setEditingInvoice(null);
+                  setShowCreateModal(true);
+                }}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Create Invoice
+                Crear Factura
               </button>
             </div>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200">
-            {filteredInvoices.map((invoice) => (
-              <li key={invoice.id} className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      {getStatusIcon(invoice.status)}
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {invoice.invoiceNumber}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {invoice.client?.name}
-                      </div>
-                      {invoice.project && (
-                        <div className="text-sm text-gray-500">
-                          {invoice.project.name}
-                        </div>
-                      )}
-                      <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          Due: {new Date(invoice.dueDate).toLocaleDateString()}
-                        </div>
-                        <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1" />
-                          ${Number(invoice.totalAmount).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
+          filteredInvoices.map((invoice) => (
+            <div key={invoice.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col transition hover:shadow-md relative overflow-hidden">
+              {/* Barra de color superior según estado */}
+              <div className={`absolute top-0 left-0 right-0 h-1 ${
+                invoice.status === 'PAID' ? 'bg-green-500' : 
+                invoice.status === 'OVERDUE' ? 'bg-red-500' : 
+                invoice.status === 'CANCELLED' ? 'bg-gray-400' : 'bg-yellow-400'
+              }`}></div>
+
+              <div className="flex justify-between items-start mb-4 mt-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="shrink-0 p-2 bg-gray-50 rounded-lg">
+                    {getStatusIcon(invoice.status)}
                   </div>
-                  <div className="flex items-center space-x-3">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                      {invoice.status}
-                    </span>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => setSelectedInvoice(invoice)}
-                        className="p-1 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-                      >
-                        <Eye className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => openEditModal(invoice)}
-                        className="p-1 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-                      >
-                        <Edit className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(invoice.id)}
-                        className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 truncate">{invoice.invoiceNumber}</h3>
+                    <p className="text-sm text-gray-500 truncate">{invoice.client?.name}</p>
                   </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+                <div className="flex space-x-1 shrink-0 ml-2">
+                  <button onClick={() => setSelectedInvoice(invoice)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition" title="Ver detalles">
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => openEditModal(invoice)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition" title="Editar">
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => handleDelete(invoice.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition" title="Eliminar">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 space-y-3">
+                {invoice.project && (
+                  <div className="text-sm text-gray-600 truncate bg-gray-50 px-3 py-2 rounded-md">
+                    <span className="font-medium text-gray-700">Proyecto:</span> {invoice.project.name}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Calendar className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                    Vence: {new Date(invoice.dueDate).toLocaleDateString()}
+                  </div>
+                  <div className="flex items-center text-lg font-bold text-gray-900">
+                    <DollarSign className="h-5 w-5 text-gray-400 shrink-0" />
+                    {Number(invoice.totalAmount).toLocaleString()}
+                  </div>
+                </div>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ${getStatusColor(invoice.status)}`}>
+                  {invoice.status}
+                </span>
+              </div>
+            </div>
+          ))
         )}
       </div>
 

@@ -1,19 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
-import { Plus, Trash2 } from 'lucide-react';
+import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useFullyBookedDates, useAvailableSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
+import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, isBefore, startOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay } from 'date-fns';
+import { format, isBefore, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { api } from '../lib/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
-// Importaciones necesarias para el Drag and Drop
-import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
+import { Calendar } from '@/components/ui/calendar';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface BusinessHour {
   id: string;
@@ -60,31 +58,48 @@ interface FormData {
   status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 }
 
-interface CalendarEvent {
-  title: string;
-  start: Date;
-  end: Date;
-  resource: Appointment;
+interface ClosedDate {
+  id: string;
+  date: string;
+  reason?: string;
 }
 
-// Configurar localizer del calendario
-const locales = {
-  es: es,
+const parseDateString = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
 };
 
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
+const isSpecificClosedDay = (date: Date, closedDates: ClosedDate[]): boolean => {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  return closedDates.some((cd) => cd.date === dateStr);
+};
 
-// Extraemos la función real en caso de que Vite la haya envuelto en un objeto 'default'
-const withDragAndDropFn = (withDragAndDrop as any).default || withDragAndDrop;
+const isDayAvailable = (
+  date: Date,
+  closedDates: ClosedDate[],
+  businessHours: BusinessHour[]
+): boolean => {
+  if (isBefore(startOfDay(date), startOfDay(new Date()))) {
+    return false;
+  }
 
-// Envolver el calendario usando la función extraída
-const DnDCalendar = withDragAndDropFn(Calendar as any);
+  if (isSpecificClosedDay(date, closedDates)) {
+    return false;
+  }
+
+  const dayOfWeek = date.getDay();
+  const businessHour = businessHours.find((bh) => bh.dayOfWeek === dayOfWeek);
+
+  if (!businessHour || !businessHour.isOpen) {
+    return false;
+  }
+
+  return true;
+};
+
+const isDayFullyBooked = (date: Date, fullyBookedDates: string[]): boolean => {
+  return fullyBookedDates.includes(format(date, 'yyyy-MM-dd'));
+};
 
 // Hook para obtener horarios comerciales
 const useBusinessHours = () => {
@@ -124,125 +139,12 @@ const isTimeWithinBusinessHours = (
   return reqStartMinutes >= shopStartMinutes && reqEndMinutes <= shopEndMinutes;
 };
 
-// Función para verificar si una fecha específica está bloqueada
-const isSpecificClosedDay = (date: Date, closedDates: any[]): boolean => {
-  const dateStr = format(date, 'yyyy-MM-dd');
-  return closedDates.some(cd => cd.date === dateStr);
-};
-
-// Función para verificar si un día está disponible (no es pasado, no está cerrado, y tiene horario comercial)
-const isDayAvailable = (date: Date, closedDates: any[], businessHours: BusinessHour[]): boolean => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Verificar si es una fecha pasada
-  if (date < today) {
-    return false;
-  }
-
-  // Verificar si es un día cerrado específico
-  if (isSpecificClosedDay(date, closedDates)) {
-    return false;
-  }
-
-  // Verificar si el día de la semana tiene horario comercial configurado y está abierto
-  const dayOfWeek = date.getDay();
-  const businessHour = businessHours.find((bh) => bh.dayOfWeek === dayOfWeek);
-
-  // Si no hay horario comercial configurado para este día, o está cerrado, no está disponible
-  if (!businessHour || !businessHour.isOpen) {
-    return false;
-  }
-
-  return true;
-};
-
-// Función para propiedades personalizadas del día en el calendario
-const customDayPropGetter = (date: Date, closedDates: any[], businessHours: BusinessHour[], fullyBookedDays: Set<string>) => {
-  const isAvailable = isDayAvailable(date, closedDates, businessHours);
-  const dateStr = format(date, 'yyyy-MM-dd');
-  const isFullyBooked = fullyBookedDays.has(dateStr);
-
-  if (!isAvailable) {
-    return {
-      style: {
-        backgroundColor: 'rgb(171, 175, 182)',
-        cursor: 'not-allowed',
-        opacity: 0.8,
-      },
-    };
-  }
-
-  if (isFullyBooked) {
-    return {
-      style: {
-        backgroundColor: '#fbbf24', // Amarillo para días completamente ocupados
-        opacity: 0.8,
-        cursor: 'not-allowed',
-      },
-    };
-  }
-
-  return {
-    style: {},
-  };
-};
-
-// Función para verificar disponibilidad de un día específico
-const checkDayAvailability = async (date: Date, setFullyBookedDays: React.Dispatch<React.SetStateAction<Set<string>>>) => {
-  const dateStr = format(date, 'yyyy-MM-dd');
-  try {
-    const response = await api.get<string[]>(`/portal/available-slots?date=${dateStr}`);
-    const isFullyBooked = response.data.length === 0;
-
-    console.log(`Checking availability for ${dateStr}: ${response.data.length} slots available, fully booked: ${isFullyBooked}`);
-
-    setFullyBookedDays(prev => {
-      const newSet = new Set(prev);
-      if (isFullyBooked) {
-        newSet.add(dateStr);
-        console.log(`Marked ${dateStr} as fully booked`);
-      } else {
-        newSet.delete(dateStr);
-        console.log(`Removed ${dateStr} from fully booked (has available slots)`);
-      }
-      return newSet;
-    });
-  } catch (error) {
-    console.error('Error checking day availability:', error);
-  }
-};
-
-// Función para verificar disponibilidad de todos los días del mes actual
-const checkAllDaysInMonth = async (monthDate: Date, closedDates: any[], businessHours: BusinessHour[], setFullyBookedDays: React.Dispatch<React.SetStateAction<Set<string>>>) => {
-  const year = monthDate.getFullYear();
-  const month = monthDate.getMonth();
-
-  // Obtener el último día del mes
-  const lastDay = new Date(year, month + 1, 0);
-  const totalDays = lastDay.getDate();
-
-  // Crear array de promesas para verificar cada día en paralelo
-  const promises = [];
-  for (let day = 1; day <= totalDays; day++) {
-    const date = new Date(year, month, day);
-    // Solo verificar días que están disponibles (no bloqueados)
-    if (isDayAvailable(date, closedDates, businessHours)) {
-      promises.push(checkDayAvailability(date, setFullyBookedDays));
-    }
-  }
-
-  // Ejecutar todas las verificaciones en paralelo
-  await Promise.all(promises);
-};
-
 const Appointments: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState('month');
-  const [fullyBookedDays, setFullyBookedDays] = useState<Set<string>>(new Set());
+  const [visibleMonth, setVisibleMonth] = useState(new Date());
 
   // Estados para pestañas del modal
   const [activeTab, setActiveTab] = useState<'appointment' | 'schedule'>('appointment');
@@ -268,6 +170,7 @@ const Appointments: React.FC = () => {
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
   const { data: closedDates = [], isLoading: closedDatesLoading } = useClosedDates();
+  const { data: fullyBookedDates = [], isLoading: fullyBookedLoading } = useFullyBookedDates();
 
   // Hooks para schedule overrides
   const { data: scheduleOverride, isLoading: overrideLoading } = useScheduleOverride(selectedDate);
@@ -319,129 +222,73 @@ const Appointments: React.FC = () => {
     },
   });
 
-  // Verificar disponibilidad cuando se crea una nueva cita
-  React.useEffect(() => {
-    if (createMutation.isSuccess) {
-      // Re-verificar la disponibilidad del día de la cita creada
-      const appointmentDate = new Date(formData.date);
-      checkDayAvailability(appointmentDate, setFullyBookedDays);
-    }
-  }, [createMutation.isSuccess]);
+  const selectedDateStr = format(currentDate, 'yyyy-MM-dd');
+  const canShowAvailableSlots = isDayAvailable(currentDate, closedDates, businessHours);
+  const { data: availableSlots = [], isLoading: slotsLoading } = useAvailableSlots(
+    canShowAvailableSlots ? selectedDateStr : ''
+  );
 
-  // Verificar disponibilidad cuando se actualiza una cita
-  React.useEffect(() => {
-    if (updateMutation.isSuccess && editingAppointment) {
-      // Re-verificar la disponibilidad del día de la cita actualizada
-      const appointmentDate = new Date(editingAppointment.date);
-      checkDayAvailability(appointmentDate, setFullyBookedDays);
-    }
-  }, [updateMutation.isSuccess, editingAppointment]);
+  const dailyAppointments = useMemo(() => {
+    return appointments
+      .filter((apt) => apt.date.split('T')[0] === selectedDateStr)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }, [appointments, selectedDateStr]);
 
-  // Verificar disponibilidad cuando se elimina una cita
-  React.useEffect(() => {
-    if (deleteMutation.isSuccess && itemToDelete) {
-      // Encontrar la cita eliminada para re-verificar su día
-      const deletedAppointment = appointments.find(apt => apt.id === itemToDelete);
-      if (deletedAppointment) {
-        const appointmentDate = new Date(deletedAppointment.date);
-        checkDayAvailability(appointmentDate, setFullyBookedDays);
-      }
-    }
-  }, [deleteMutation.isSuccess, itemToDelete, appointments]);
-
-  // Verificar disponibilidad inicial cuando se cargan los datos
-  React.useEffect(() => {
-    if (businessHours.length > 0 && closedDates.length >= 0) {
-      checkAllDaysInMonth(currentDate, closedDates, businessHours, setFullyBookedDays);
-    }
-  }, [businessHours, closedDates, currentDate]);
-
-  // Mapeo de Datos - Transformar appointments al formato del calendario
-  const calendarEvents: CalendarEvent[] = useMemo(() => {
-    return appointments.map((appointment) => {
-      const [year, month, day] = appointment.date.split('T')[0].split('-');
-      const [startHour, startMin] = appointment.startTime.split(':');
-      const [endHour, endMin] = appointment.endTime.split(':');
-
-      const start = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(startHour), parseInt(startMin));
-      const end = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(endHour), parseInt(endMin));
-
-      return {
-        title: `${appointment.client?.name || 'Sin asignar'} - ${appointment.product?.name || 'Sin servicio'}`,
-        start,
-        end,
-        resource: appointment,
-      };
-    });
+  const appointmentDays = useMemo(() => {
+    const uniqueDates = new Set(
+      appointments.map((apt) => apt.date.split('T')[0])
+    );
+    return Array.from(uniqueDates).map(parseDateString);
   }, [appointments]);
 
-  // Eventos fantasma de slots disponibles
-  const availabilityMarks = useMemo(() => {
-    if (!businessHours || !appointments) return [];
+  const unavailableDays = useMemo(() => {
+    if (!businessHours.length) return [];
 
-    const marks: any[] = [];
-    const start = startOfWeek(startOfMonth(currentDate));
-    const end = endOfWeek(endOfMonth(currentDate));
+    return eachDayOfInterval({
+      start: startOfMonth(visibleMonth),
+      end: endOfMonth(visibleMonth),
+    }).filter((date) => !isDayAvailable(date, closedDates, businessHours));
+  }, [visibleMonth, closedDates, businessHours]);
 
-    let loopDate = start;
-    while (loopDate <= end) {
-      const isPast = isBefore(startOfDay(loopDate), startOfDay(new Date()));
-      const isSunday = loopDate.getDay() === 0;
-      const formattedLoopDate = format(loopDate, 'yyyy-MM-dd');
-      const isSpecificClosed = closedDates?.some((cd: any) => cd.date === formattedLoopDate);
+  const fullyBookedDays = useMemo(
+    () => fullyBookedDates.map(parseDateString),
+    [fullyBookedDates]
+  );
 
-      if (!isPast && !isSunday && !isSpecificClosed) {
-        const dayOfWeek = loopDate.getDay();
-        const dayConfig = businessHours.find((bh: any) => bh.dayOfWeek === dayOfWeek);
-
-        if (dayConfig && dayConfig.isOpen && dayConfig.timeSlots && dayConfig.timeSlots.length > 0) {
-          const timeSlots = dayConfig.timeSlots;
-          const dailyAppointments = appointments.filter(
-            (apt: any) => apt.date.startsWith(formattedLoopDate) && apt.status === 'SCHEDULED'
-          );
-          const busyTimes = dailyAppointments.map((apt: any) => apt.startTime);
-
-          const availableTimes = timeSlots.filter(
-            (time: string) => !busyTimes.includes(time)
-          );
-
-          availableTimes.forEach((time: string) => {
-            const [hours, minutes] = time.split(':');
-            const startDateTime = new Date(loopDate);
-            startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-            const endDateTime = new Date(startDateTime);
-            endDateTime.setHours(startDateTime.getHours() + 1);
-
-            marks.push({
-              id: `avail-${formattedLoopDate}-${time}`,
-              title: 'Disponible',
-              start: startDateTime,
-              end: endDateTime,
-              isAvailabilityMark: true,
-            });
-          });
-        }
-      }
-
-      loopDate = addDays(loopDate, 1);
+  const selectedDayStatus = useMemo(() => {
+    if (isBefore(startOfDay(currentDate), startOfDay(new Date()))) {
+      return { label: 'Día pasado', variant: 'past' as const };
     }
+    if (!isDayAvailable(currentDate, closedDates, businessHours)) {
+      return { label: 'No disponible', variant: 'unavailable' as const };
+    }
+    if (isDayFullyBooked(currentDate, fullyBookedDates)) {
+      return { label: 'Completo', variant: 'full' as const };
+    }
+    return { label: 'Disponible', variant: 'available' as const };
+  }, [currentDate, closedDates, businessHours, fullyBookedDates]);
 
-    return marks;
-  }, [businessHours, appointments, currentDate, closedDates]);
+  const handleDateSelect = (date: Date | undefined) => {
+    if (date) {
+      setCurrentDate(date);
+    }
+  };
 
-  // Componente personalizado para las celdas de fecha en el calendario
-  const CustomDateCell = ({ date, label }: { date: Date; label: string }) => {
-    const isAvailable = isDayAvailable(date, closedDates, businessHours);
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const isFullyBooked = fullyBookedDays.has(dateStr);
+  const validateDayForBooking = (date: Date): boolean => {
+    if (!isDayAvailable(date, closedDates, businessHours)) {
+      toast.error('Este día no está disponible para agendar');
+      return false;
+    }
+    return true;
+  };
 
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <span>{label}</span>
-        {!isAvailable && <span className="text-xs text-red-600 font-medium">No Disponible</span>}
-        {isFullyBooked && isAvailable && <span className="text-xs text-orange-700 font-medium">Completo</span>}
-      </div>
-    );
+  const handleSlotClick = (slotTime: string) => {
+    const [hours, minutes] = slotTime.split(':').map(Number);
+    const slotStart = new Date(currentDate);
+    slotStart.setHours(hours, minutes, 0, 0);
+    const slotEnd = new Date(slotStart);
+    slotEnd.setHours(hours + 1, minutes, 0, 0);
+    openModal(undefined, slotStart, slotEnd);
   };
 
   // Funciones de Modal
@@ -460,7 +307,7 @@ const Appointments: React.FC = () => {
       setSelectedDate(appointment.date.split('T')[0]);
     } else {
       setEditingAppointment(null);
-      let newDate = new Date().toISOString().split('T')[0];
+      let newDate = format(currentDate, 'yyyy-MM-dd');
       let newStartTime = '10:00';
       let newEndTime = '11:00';
 
@@ -468,8 +315,18 @@ const Appointments: React.FC = () => {
         newDate = format(slotStart, 'yyyy-MM-dd');
         newStartTime = format(slotStart, 'HH:mm');
         newEndTime = format(slotEnd, 'HH:mm');
-        setSelectedDate(newDate);
       }
+
+      const targetDate = parseDateString(newDate);
+      if (!validateDayForBooking(targetDate)) {
+        return;
+      }
+
+      if (isDayFullyBooked(targetDate, fullyBookedDates)) {
+        toast('Este día está completamente reservado. Como admin puedes agendar igualmente.', { icon: '⚠️' });
+      }
+
+      setSelectedDate(newDate);
 
       setFormData({
         clientId: '',
@@ -547,8 +404,12 @@ const Appointments: React.FC = () => {
       return;
     }
 
+    const appointmentDate = parseDateString(formData.date);
+    if (!editingAppointment && !validateDayForBooking(appointmentDate)) {
+      return;
+    }
+
     // Validar que las horas seleccionadas estén dentro del horario comercial
-    const appointmentDate = new Date(formData.date);
     if (!isTimeWithinBusinessHours(appointmentDate, formData.startTime, formData.endTime, businessHours)) {
       toast.error('Las horas seleccionadas están fuera del horario comercial');
       return;
@@ -574,147 +435,7 @@ const Appointments: React.FC = () => {
     deleteMutation.mutate(id);
   };
 
-  // Colorear eventos según el status y slots disponibles (eventos fantasma)
-  const eventPropGetter = (event: any) => {
-    if (event.isAvailabilityMark) {
-      return {
-        style: {
-          backgroundColor: '#ecfdf5', // verde muy claro
-          border: '2px dashed #10b981',
-          color: '#047857',
-          pointerEvents: 'none',
-          opacity: 0.8,
-          borderRadius: '4px',
-        },
-      };
-    }
-
-    const status = event.resource?.status;
-
-    let style = {
-      backgroundColor: '#3b82f6', // Azul por defecto (SCHEDULED)
-      borderRadius: '5px',
-      opacity: 0.8,
-      color: 'white',
-      border: '0px',
-      display: 'block',
-    };
-
-    if (status === 'COMPLETED') {
-      style.backgroundColor = '#10b981'; // Verde
-    } else if (status === 'CANCELLED') {
-      style.backgroundColor = '#ef4444'; // Rojo
-    }
-
-    return { style };
-  };
-
-  // Manejadores del calendario
-  const handleSelectSlot = (slotInfo: { start: Date; end: Date }) => {
-    // Verificar si el día está disponible (no es pasado, no está cerrado, y tiene horario comercial)
-    if (!isDayAvailable(slotInfo.start, closedDates, businessHours)) {
-      toast.error('Este día no está disponible para agendar');
-      return;
-    }
-
-    // Nota: La validación de horas específicas se hace en el formulario cuando el usuario ingresa las horas
-    openModal(undefined, slotInfo.start, slotInfo.end);
-  };
-
-  const handleSelectEvent = (event: CalendarEvent) => {
-    openModal(event.resource);
-  };
-
-  const handleNavigate = (newDate: Date) => {
-    setCurrentDate(newDate);
-
-    // Verificar disponibilidad de TODOS los días del mes nuevo
-    checkAllDaysInMonth(newDate, closedDates, businessHours, setFullyBookedDays);
-  };
-
-  const handleViewChange = (newView: string) => {
-    setCurrentView(newView);
-  };
-
-  // Función que maneja cuando se suelta el evento arrastrado (Tipado corregido)
-  const handleEventDrop = async ({ event, start, end }: { event: CalendarEvent; start: string | Date; end: string | Date }) => {
-    const appointment = event.resource;
-    
-    const newStart = new Date(start);
-    const newEnd = new Date(end);
-
-    if (!newStart || !newEnd) {
-      toast.error('Error al mover la cita');
-      return;
-    }
-
-    // Validar que las nuevas horas estén dentro del horario comercial
-    const startTimeStr = format(newStart, 'HH:mm');
-    const endTimeStr = format(newEnd, 'HH:mm');
-    if (!isTimeWithinBusinessHours(newStart, startTimeStr, endTimeStr, businessHours)) {
-      toast.error('No se puede mover la cita a un horario fuera de servicio');
-      return;
-    }
-
-    try {
-      const updatedAppointment = {
-        clientId: appointment.clientId,
-        productId: appointment.productId,
-        date: newStart.toISOString(),
-        startTime: startTimeStr,
-        endTime: endTimeStr,
-        notes: appointment.notes || '',
-        status: appointment.status,
-      };
-
-      updateMutation.mutate({
-        id: appointment.id,
-        appointmentData: updatedAppointment,
-      });
-    } catch (error) {
-      toast.error('Error al actualizar la cita');
-    }
-  };
-
-  const isLoading = appointmentsLoading || clientsLoading || productsLoading || businessHoursLoading || closedDatesLoading;
-
-  // Calcular el rango de horas del calendario basado en los horarios comerciales
-  const calendarMinMax = useMemo(() => {
-    if (businessHours.length === 0) {
-      // Horario por defecto si no hay datos
-      const defaultMin = new Date();
-      const defaultMax = new Date();
-      defaultMin.setHours(8, 0, 0, 0);
-      defaultMax.setHours(20, 0, 0, 0);
-      return { min: defaultMin, max: defaultMax };
-    }
-
-    // Encontrar la hora de apertura más temprana y la de cierre más tarde
-    let earliestStart = '23:59';
-    let latestEnd = '00:00';
-
-    businessHours.forEach((bh) => {
-      if (bh.isOpen) {
-        if (bh.startTime < earliestStart) {
-          earliestStart = bh.startTime;
-        }
-        if (bh.endTime > latestEnd) {
-          latestEnd = bh.endTime;
-        }
-      }
-    });
-
-    const min = new Date();
-    const max = new Date();
-
-    const [startHour, startMin] = earliestStart.split(':').map(Number);
-    const [endHour, endMin] = latestEnd.split(':').map(Number);
-
-    min.setHours(Math.max(0, startHour - 1), startMin, 0, 0);
-    max.setHours(Math.min(23, endHour + 1), endMin, 0, 0);
-
-    return { min, max };
-  }, [businessHours]);
+  const isLoading = appointmentsLoading || clientsLoading || productsLoading || businessHoursLoading || closedDatesLoading || fullyBookedLoading;
 
   return (
     <div className="space-y-6">
@@ -725,12 +446,18 @@ const Appointments: React.FC = () => {
             Agenda de Citas
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona todas las citas del salón de belleza - Haz clic en un espacio para crear, en un evento para editarlo, o arrástralo para cambiar su hora.
+            Gestiona todas las citas del salón de belleza — selecciona un día en el calendario para ver la agenda y editar citas.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
           <button
-            onClick={() => openModal()}
+            onClick={() => {
+              if (!validateDayForBooking(currentDate)) return;
+              if (isDayFullyBooked(currentDate, fullyBookedDates)) {
+                toast('Este día está completamente reservado. Como admin puedes agendar igualmente.', { icon: '⚠️' });
+              }
+              openModal();
+            }}
             className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="mr-2 h-5 w-5" />
@@ -739,58 +466,233 @@ const Appointments: React.FC = () => {
         </div>
       </div>
 
-      {/* Calendario */}
-      <div className="bg-white rounded-lg shadow p-4">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-screen">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      {isLoading ? (
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* COLUMNA IZQUIERDA: CALENDARIO */}
+          <div className="lg:col-span-4 xl:col-span-3 space-y-4">
+            <Card className="p-4 shadow-sm border-gray-200 rounded-2xl">
+              <Calendar
+                mode="single"
+                locale={es}
+                month={visibleMonth}
+                onMonthChange={setVisibleMonth}
+                selected={currentDate}
+                onSelect={handleDateSelect}
+                modifiers={{
+                  unavailable: unavailableDays,
+                  fullyBooked: fullyBookedDays,
+                  hasAppointments: appointmentDays,
+                }}
+                modifiersClassNames={{
+                  unavailable: 'bg-gray-200 text-gray-500 opacity-80',
+                  fullyBooked: 'bg-amber-100 text-amber-800 font-medium',
+                  hasAppointments: 'relative font-semibold after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-blue-500',
+                }}
+                className="rounded-md w-full"
+                classNames={{
+                  day_selected: 'bg-blue-600 text-white hover:bg-blue-700 rounded-full',
+                }}
+              />
+
+              <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-xs text-gray-600">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-gray-200 border border-gray-300" />
+                  No disponible
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-amber-100 border border-amber-300" />
+                  Completo
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-blue-500" />
+                  Con citas
+                </div>
+              </div>
+            </Card>
+
+            <button
+              onClick={() => {
+                setSelectedDate(format(currentDate, 'yyyy-MM-dd'));
+                setActiveTab('schedule');
+                setShowModal(true);
+              }}
+              className="w-full py-3 px-4 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl font-medium transition flex items-center justify-center gap-2"
+            >
+              <CalendarIcon className="w-4 h-4" />
+              Gestionar Horario de este Día
+            </button>
           </div>
-        ) : (
-          <DnDCalendar
-            localizer={localizer}
-            events={[...calendarEvents, ...availabilityMarks]}
-            startAccessor="start"
-            endAccessor="end"
-            style={{ height: 'calc(100vh - 200px)' }}
-            selectable
-            onSelectSlot={handleSelectSlot}
-            onSelectEvent={handleSelectEvent}
-            onEventDrop={handleEventDrop}
-            eventPropGetter={eventPropGetter}
-            dayPropGetter={(date: Date) => customDayPropGetter(date, closedDates, businessHours, fullyBookedDays)}
-            components={{
-              month: {
-                date: CustomDateCell,
-              },
-            }}
-            resizable={false}
-            popup
-            culture="es"
-            date={currentDate}
-            onNavigate={handleNavigate}
-            view={currentView as any}
-            onView={handleViewChange}
-            min={calendarMinMax.min}
-            max={calendarMinMax.max}
-            messages={{
-              today: 'Hoy',
-              previous: 'Anterior',
-              next: 'Siguiente',
-              month: 'Mes',
-              week: 'Semana',
-              day: 'Día',
-              agenda: 'Agenda',
-              date: 'Fecha',
-              time: 'Hora',
-              event: 'Evento',
-              allDay: 'Todo el día',
-              work_week: 'Semana Laboral',
-              yesterday: 'Ayer',
-              tomorrow: 'Mañana',
-            }}
-          />
-        )}
-      </div>
+
+          {/* COLUMNA DERECHA: AGENDA DEL DÍA */}
+          <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">
+                Agenda del {format(currentDate, "EEEE d 'de' MMMM", { locale: es })}
+              </h3>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className={
+                    selectedDayStatus.variant === 'available'
+                      ? 'bg-green-50 text-green-700 border-green-200'
+                      : selectedDayStatus.variant === 'full'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : selectedDayStatus.variant === 'unavailable'
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-gray-100 text-gray-600 border-gray-200'
+                  }
+                >
+                  {selectedDayStatus.label}
+                </Badge>
+                <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                  {dailyAppointments.length} citas
+                </span>
+              </div>
+            </div>
+
+            {selectedDayStatus.variant === 'unavailable' && (
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl text-sm text-red-800">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p>Este día está cerrado o fuera del horario comercial. Puedes consultar citas existentes o gestionar excepciones de horario.</p>
+              </div>
+            )}
+
+            {selectedDayStatus.variant === 'full' && (
+              <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-100 rounded-xl text-sm text-amber-800">
+                <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                <p>Todos los horarios de este día están reservados. Como administradora puedes agregar citas manualmente si es necesario.</p>
+              </div>
+            )}
+
+            {canShowAvailableSlots && (
+              <Card className="p-5 shadow-sm border-gray-200 rounded-2xl">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                    Horarios disponibles
+                  </h4>
+                  {!slotsLoading && availableSlots.length > 0 && (
+                    <span className="text-xs text-gray-500">
+                      Haz clic en un horario para crear una cita
+                    </span>
+                  )}
+                </div>
+
+                {slotsLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <span className="ml-3 text-sm text-gray-600">Cargando horarios...</span>
+                  </div>
+                ) : availableSlots.length > 0 ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                    {availableSlots.map((slot) => (
+                      <Button
+                        key={slot}
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleSlotClick(slot)}
+                        className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                      >
+                        {slot}
+                      </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <Clock className="h-10 w-10 mx-auto mb-2 text-gray-300" />
+                    <p className="text-sm font-medium">No hay horarios disponibles</p>
+                    <p className="text-xs mt-1">Todos los slots de este día están ocupados o no configurados.</p>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900 mb-4">
+                Citas programadas
+              </h4>
+
+            {dailyAppointments.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 border border-dashed border-gray-300 rounded-2xl">
+                <Clock className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                <h3 className="text-lg font-medium text-gray-900">
+                  {selectedDayStatus.variant === 'unavailable' ? 'Día no operativo' : 'Agenda libre'}
+                </h3>
+                <p className="text-gray-500 mt-1">
+                  {selectedDayStatus.variant === 'unavailable'
+                    ? 'No hay actividad programada en un día cerrado.'
+                    : selectedDayStatus.variant === 'full'
+                      ? 'No hay citas registradas, pero todos los slots están ocupados.'
+                      : 'No hay citas programadas para este día.'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dailyAppointments.map((appointment) => (
+                  <Card
+                    key={appointment.id}
+                    className="overflow-hidden border-l-4 shadow-sm hover:shadow-md transition"
+                    style={{
+                      borderLeftColor:
+                        appointment.status === 'COMPLETED'
+                          ? '#10b981'
+                          : appointment.status === 'CANCELLED'
+                            ? '#ef4444'
+                            : '#3b82f6',
+                    }}
+                  >
+                    <div className="p-5">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-gray-500" />
+                          <span className="font-bold text-gray-900">
+                            {appointment.startTime} - {appointment.endTime}
+                          </span>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            appointment.status === 'COMPLETED'
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : appointment.status === 'CANCELLED'
+                                ? 'bg-red-50 text-red-700 border-red-200'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                          }
+                        >
+                          {appointment.status}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="font-medium">{appointment.client?.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-700">
+                          <Package className="w-4 h-4 text-gray-400" />
+                          <span>{appointment.product?.name}</span>
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+                        <button
+                          onClick={() => openModal(appointment)}
+                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          <Edit className="w-4 h-4" /> Editar Cita
+                        </button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal - Crear/Editar Cita */}
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); }}>

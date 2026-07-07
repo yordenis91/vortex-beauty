@@ -1,0 +1,29 @@
+# Root workflow that mirrors backend/.github/workflows/ci-backend.yml for GitHub Actions execution
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+      - name: Build backend
+        working-directory: backend
+        run: npm run build:prod
