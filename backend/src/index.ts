@@ -29,6 +29,8 @@ app.use(cors({
     'http://127.0.0.1:5173',
     'http://localhost:5174', // Para cuando desarrollas en tu PC (Vite default)
     'http://127.0.0.1:5174',
+    'http://localhost:5175', // Vite alternate port when 5174 is in use
+    'http://127.0.0.1:5175',
     'http://localhost:3002', // Para cuando desarrollas en tu PC
     'https://deploy-vortex-frontend.wgteoi.easypanel.host', // ¡Tu frontend en producción!
     'https://deploy-vortex-backend.wgteoi.easypanel.host' // ¡Tu backend en producción!
@@ -71,8 +73,12 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/closed-dates', closedDatesRoutes);
 
 // Health check
+const healthResponse = { status: 'OK', timestamp: new Date().toISOString() };
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  res.json(healthResponse);
+});
+app.get('/health', (req, res) => {
+  res.json(healthResponse);
 });
 
 // Error handling middleware
