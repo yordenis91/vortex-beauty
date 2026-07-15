@@ -10,7 +10,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "build:prod": "npm run prisma:generate && tsc",
     "start": "node dist/src/index.js",
-    "start:prod": "echo \"=== Probando conexión ===\" && echo \"DATABASE_URL es: $DATABASE_URL\" && npm run migrate:deploy && node dist/src/index.js",
+    "start:prod": "npm run migrate:deploy && node dist/src/index.js",
     "seed": "tsx src/seed.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
