@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import prisma from './prismaClient';
 import authRoutes from './routes/auth';
 import clientRoutes from './routes/clients';
@@ -22,27 +24,56 @@ import closedDatesRoutes from './routes/closedDates';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Orígenes de desarrollo local, siempre permitidos.
+const DEV_ORIGINS = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175',
+  'http://localhost:3002',
+];
+
+// Orígenes de producción/staging: configurables por entorno (CORS_ORIGINS,
+// separados por comas). Si no se define, cae en los dominios de despliegue
+// actuales para no romper el entorno en producción.
+const DEFAULT_PROD_ORIGINS = [
+  'https://deploy-vortex-frontend.wgteoi.easypanel.host',
+  'https://deploy-vortex-backend.wgteoi.easypanel.host',
+];
+
+const EXTRA_ORIGINS = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : DEFAULT_PROD_ORIGINS;
+
 // 1. Configuramos CORS explícitamente para tu frontend
 app.use(cors({
-  origin: [
-    'http://localhost:5173', // Para cuando desarrollas en tu PC
-    'http://127.0.0.1:5173',
-    'http://localhost:5174', // Para cuando desarrollas en tu PC (Vite default)
-    'http://127.0.0.1:5174',
-    'http://localhost:5175', // Vite alternate port when 5174 is in use
-    'http://127.0.0.1:5175',
-    'http://localhost:3002', // Para cuando desarrollas en tu PC
-    'https://deploy-vortex-frontend.wgteoi.easypanel.host', // ¡Tu frontend en producción!
-    'https://deploy-vortex-backend.wgteoi.easypanel.host' // ¡Tu backend en producción!
-  ],
+  origin: [...DEV_ORIGINS, ...EXTRA_ORIGINS],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+// Cabeceras de seguridad HTTP básicas (CSP desactivada: esta API no sirve HTML).
+app.use(helmet({ contentSecurityPolicy: false }));
+
 // 2. Parseo de body
-app.use(express.json({ limit: '50mb', strict: true }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// 10mb cubre imágenes de perfil/galería en base64; bajará más cuando se
+// migren a almacenamiento de objetos con subida directa por URL firmada.
+app.use(express.json({ limit: '10mb', strict: true }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Límite de intentos de login/registro: mitiga fuerza bruta contra cuentas.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos. Inténtalo de nuevo en unos minutos.' },
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);

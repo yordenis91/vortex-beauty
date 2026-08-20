@@ -1,9 +1,19 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import rateLimit from 'express-rate-limit';
 import prisma from '../prismaClient';
-import { authenticateToken } from '../middleware/auth';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
+
+// Máximo 10 votos por IP cada 15 minutos, para evitar manipular las métricas de un artículo.
+const voteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados votos. Inténtalo de nuevo más tarde.' },
+});
 
 // Validation schemas
 const createArticleSchema = z.object({
@@ -175,7 +185,7 @@ router.get('/slug/:slug', async (req, res) => {
 });
 
 // POST /api/knowledge-base - Create a new article
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId;
     const validatedData = createArticleSchema.parse(req.body);
@@ -234,7 +244,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/knowledge-base/:id - Update an article
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const userId = (req as any).userId;
@@ -306,7 +316,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // POST /api/knowledge-base/:id/vote - Vote on article helpfulness
-router.post('/:id/vote', async (req, res) => {
+router.post('/:id/vote', voteLimiter, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const { helpful } = req.body;
@@ -343,7 +353,7 @@ router.post('/:id/vote', async (req, res) => {
 });
 
 // DELETE /api/knowledge-base/:id - Delete an article
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const userId = (req as any).userId;

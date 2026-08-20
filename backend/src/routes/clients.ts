@@ -7,6 +7,9 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
+// Todas las rutas de clientes son exclusivas de ADMIN.
+router.use(authenticateToken, requireAdmin);
+
 const clientSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
@@ -34,7 +37,7 @@ const createClientSchema = clientSchema.extend({
 const updateClientSchema = clientSchema.partial();
 
 // GET /api/clients - List all clients
-router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
       where: { userId: (req as any).userId },
@@ -47,7 +50,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // GET /api/clients/:id - Get single client
-router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const client = await prisma.client.findFirst({
       where: { id: req.params.id as string, userId: (req as any).userId },
@@ -65,7 +68,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // POST /api/clients - Create new client
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const parsed = createClientSchema.parse(req.body);
     const {
@@ -119,7 +122,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // PUT /api/clients/:id - Update client
-router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const data = updateClientSchema.parse(req.body);
 
@@ -152,7 +155,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/clients/:id - Delete client
-router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     // Verify client exists and belongs to user
     const existingClient = await prisma.client.findFirst({

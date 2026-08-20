@@ -5,6 +5,9 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
+// Todas las rutas de facturación son exclusivas de ADMIN.
+router.use(authenticateToken, requireAdmin);
+
 const invoiceSchema = z.object({
   invoiceNumber: z.string().min(1),
   issueDate: z.string().transform(str => new Date(str)),
@@ -22,7 +25,7 @@ const invoiceSchema = z.object({
 });
 
 // GET /api/invoices - List all invoices
-router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const invoices = await prisma.invoice.findMany({
       where: { userId: (req as any).userId },
@@ -36,7 +39,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // POST /api/invoices - Create new invoice
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { items, ...invoiceData } = invoiceSchema.parse(req.body);
 
@@ -84,9 +87,18 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // PUT /api/invoices/:id - Update invoice
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { items, ...invoiceData } = invoiceSchema.parse(req.body);
+
+    // Verifica que la factura existe y pertenece al admin autenticado
+    const existingInvoice = await prisma.invoice.findFirst({
+      where: { id: req.params.id as string, userId: (req as any).userId },
+    });
+
+    if (!existingInvoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
 
     // Calcula subtotal en backend (ignora subtotal/totalAmount de req.body)
     const subtotal = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
@@ -133,8 +145,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // DELETE /api/invoices/:id - Delete invoice
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
+    // Verifica que la factura existe y pertenece al admin autenticado
+    const existingInvoice = await prisma.invoice.findFirst({
+      where: { id: req.params.id as string, userId: (req as any).userId },
+    });
+
+    if (!existingInvoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
     await prisma.invoice.delete({
       where: { id: req.params.id as string },
     });
