@@ -4,3 +4,12 @@ node_modules
 dist
 
 /generated/prisma
+
+# El código compilado va solo a dist/; nunca junto al fuente en src/.
+src/**/*.js
+src/**/*.js.map
+src/**/*.d.ts
+src/**/*.d.ts.map
+prisma.config.js.map
+prisma.config.d.ts
+prisma.config.d.ts.map
