@@ -6,6 +6,9 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
+// Todas las rutas de proyectos son exclusivas de ADMIN.
+router.use(authenticateToken, requireAdmin);
+
 const projectSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
@@ -14,7 +17,7 @@ const projectSchema = z.object({
 });
 
 // GET /api/projects - List all projects
-router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const projects = await prisma.project.findMany({
       where: { userId: (req as any).userId },
@@ -27,7 +30,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // POST /api/projects - Create new project
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const data = projectSchema.parse(req.body);
 
@@ -49,7 +52,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // PUT /api/projects/:id - Update project
-router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const data = projectSchema.parse(req.body);
 
@@ -72,7 +75,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/projects/:id - Delete project
-router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     await prisma.project.delete({
       where: { id: req.params.id as string },

@@ -26,6 +26,7 @@ const createProductSchema = z.object({
   categoryId: z.string().uuid('Invalid category ID'),
   isPublic: z.boolean().default(true),
   stock: z.number().int().min(0).optional(),
+  durationMinutes: z.number().int().min(5, 'La duración mínima es 5 minutos').default(60),
 });
 
 const updateProductSchema = createProductSchema.partial();

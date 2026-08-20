@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem, ClosedDate, ScheduleOverride } from '../types';
+import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem, ClosedDate, ScheduleOverride, Staff } from '../types';
 
 // Clients
 export const useClients = () => {
@@ -701,11 +701,15 @@ export const useCreateAppointment = (options?: any) => {
 };
 
 // Available Slots
-export const useAvailableSlots = (date: string) => {
+// productId es opcional: si se manda, el backend filtra los huecos usando la
+// duración real de ese servicio en vez de solo el instante de inicio.
+export const useAvailableSlots = (date: string, productId?: string) => {
   return useQuery({
-    queryKey: ['available-slots', date],
+    queryKey: ['available-slots', date, productId],
     queryFn: async () => {
-      const response = await api.get<string[]>(`/portal/available-slots?date=${date}`);
+      const params = new URLSearchParams({ date });
+      if (productId) params.set('productId', productId);
+      const response = await api.get<string[]>(`/portal/available-slots?${params.toString()}`);
       return response.data;
     },
     enabled: !!date,
@@ -1135,6 +1139,78 @@ export const useFullyBookedDates = () => {
     queryFn: async () => {
       const response = await api.get<string[]>('/appointments/fully-booked-dates');
       return response.data;
+    },
+  });
+};
+
+// ==================== STAFF HOOKS ====================
+
+export const useStaff = (activeOnly?: boolean) => {
+  return useQuery({
+    queryKey: ['staff', activeOnly],
+    queryFn: async () => {
+      const url = activeOnly ? '/staff?active=true' : '/staff';
+      const response = await api.get<Staff[]>(url);
+      return response.data;
+    },
+  });
+};
+
+export const useCreateStaff = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (staffData: any) => {
+      const response = await api.post('/staff', staffData);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+export const useUpdateStaff = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async ({ id, staffData }: { id: string; staffData: any }) => {
+      const response = await api.put(`/staff/${id}`, staffData);
+      return response.data;
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+export const useDeleteStaff = (options?: any) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (id: string) => {
+      await api.delete(`/staff/${id}`);
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
+      toast.error(errorMessage);
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };

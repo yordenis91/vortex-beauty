@@ -14,6 +14,7 @@ import {
 import {
   LayoutDashboard,
   Users,
+  UserCog,
   FileText,
   Calendar,
   Package,
@@ -44,6 +45,7 @@ const navigation: NavItem[] = [
   { name: 'Facturas', href: '/admin/invoices', icon: FileText },
   { section: 'Servicios y Programación', highlight: true },
   { name: 'Citas', href: '/admin/appointments', icon: Calendar },
+  { name: 'Profesionales', href: '/admin/staff', icon: UserCog },
   { name: 'Productos', href: '/admin/products', icon: Package },
   { name: 'Categorías', href: '/admin/categories', icon: Folder },
   { section: 'Aprendizaje y Recursos', highlight: true },

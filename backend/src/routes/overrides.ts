@@ -5,13 +5,16 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
+// Todas las rutas de excepciones de horario son exclusivas de ADMIN.
+router.use(authenticateToken, requireAdmin);
+
 const scheduleOverrideSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido YYYY-MM-DD'),
   timeSlots: z.array(z.string().regex(/^\d{2}:\d{2}$/, 'Formato inválido HH:mm')).optional(),
 });
 
 // GET /api/overrides - List all schedule overrides
-router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const overrides = await prisma.scheduleOverride.findMany({
       orderBy: { date: 'asc' },
@@ -24,7 +27,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // GET /api/overrides/:date - Get override by date
-router.get('/:date', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.pick({ date: true }).parse({ date });
@@ -48,7 +51,7 @@ router.get('/:date', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // POST /api/overrides - Create a schedule override
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const parsed = scheduleOverrideSchema.parse(req.body);
 
@@ -75,7 +78,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // PUT /api/overrides/:date - Update or create schedule override for date
-router.put('/:date', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.parse({ date, ...req.body });
@@ -97,7 +100,7 @@ router.put('/:date', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/overrides/:date - Remove schedule override for date
-router.delete('/:date', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.pick({ date: true }).parse({ date });

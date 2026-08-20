@@ -154,6 +154,7 @@ export interface Product {
   status: 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED';
   isPublic: boolean;
   stock?: number;
+  durationMinutes: number;
   categoryId: string;
   userId: string;
   createdAt: string;
@@ -165,6 +166,26 @@ export interface Product {
     subscriptions: number;
     orderItems: number;
   };
+}
+
+// Staff types
+export interface Staff {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  color?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStaffRequest {
+  name: string;
+  email?: string;
+  phone?: string;
+  color?: string;
+  isActive?: boolean;
 }
 
 export interface GalleryItem {
@@ -276,6 +297,7 @@ export interface CreateProductRequest {
   categoryId: string;
   isPublic?: boolean;
   stock?: number;
+  durationMinutes?: number;
 }
 
 export interface CreateCategoryRequest {
@@ -329,18 +351,23 @@ export interface Appointment {
   notes?: string;
   clientId: string;
   productId: string;
+  staffId?: string | null;
   createdAt: string;
   updatedAt: string;
   client?: Client;
   product?: Product;
+  staff?: Staff | null;
 }
 
 export interface CreateAppointmentRequest {
   date: string;
   startTime: string;
-  endTime: string;
+  // endTime ya no lo decide el cliente: el backend lo calcula desde la
+  // duración del servicio. Se puede omitir; si se manda, se ignora.
+  endTime?: string;
   clientId: string;
   productId: string;
+  staffId?: string | null;
   status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
   notes?: string;
 }
@@ -351,6 +378,7 @@ export interface UpdateAppointmentRequest {
   endTime?: string;
   clientId?: string;
   productId?: string;
+  staffId?: string | null;
   status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
   notes?: string;
 }

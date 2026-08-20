@@ -4,16 +4,29 @@ import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import notificationService from '../services/notificationService';
+import {
+  AvailabilityError,
+  createAppointmentSafely,
+  updateAppointmentSafely,
+  isSerializationConflict,
+  dayOfWeekFromDateString,
+  addMinutesToTime,
+} from '../services/availabilityService';
 
 const router = Router();
 
 // Validation schemas
+// endTime ya no es de fiar del cliente: se calcula en el servidor a partir de
+// Product.durationMinutes (antes nada impedía pedir un servicio de 5 minutos).
+// Se sigue aceptando en el payload por compatibilidad con el frontend actual,
+// pero se ignora.
 const createAppointmentSchema = z.object({
   date: z.string().datetime('Invalid date format'),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in format HH:mm'),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm').optional(),
   clientId: z.string().uuid('Invalid client ID'),
   productId: z.string().uuid('Invalid product ID'),
+  staffId: z.string().uuid('Invalid staff ID').nullable().optional(),
   status: z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED']).default('SCHEDULED'),
   notes: z.string().optional(),
 });
@@ -27,6 +40,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
       include: {
         client: true,
         product: true,
+        staff: true,
       },
       orderBy: { date: 'asc' },
     });
@@ -66,9 +80,8 @@ router.get('/fully-booked-dates', authenticateToken, async (req, res) => {
 
     // Para cada fecha agrupada, verificar si está llena
     for (const [dateStr, appointmentCount] of appointmentsByDate.entries()) {
-      // Obtener el día de la semana de la fecha
-      const dateObj = new Date(`${dateStr}T00:00:00Z`);
-      const dayOfWeek = dateObj.getUTCDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      // Obtener el día de la semana de la fecha (misma regla que availabilityService)
+      const dayOfWeek = dayOfWeekFromDateString(dateStr);
 
       // Obtener BusinessHour para ese día
       const businessHour = await prisma.businessHour.findUnique({
@@ -98,6 +111,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
       include: {
         client: true,
         product: true,
+        staff: true,
       },
     });
 
@@ -135,91 +149,42 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid product' });
     }
 
-    // ===== VALIDACIÓN DE HORARIOS COMERCIALES =====
-    const appointmentDate = new Date(validatedData.date);
-    const dayOfWeek = appointmentDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-
-    const businessHour = await prisma.businessHour.findUnique({
-      where: { dayOfWeek },
-    });
-
-    if (!businessHour || !businessHour.isOpen) {
-      return res.status(400).json({ error: 'El salón está cerrado en este horario' });
-    }
-
-    // Si el admin configuró timeSlots explícitos, el inicio de la cita debe coincidir con uno de ellos.
-    if (Array.isArray(businessHour.timeSlots) && businessHour.timeSlots.length > 0) {
-      if (!businessHour.timeSlots.includes(validatedData.startTime)) {
-        return res.status(400).json({ error: 'El horario seleccionado no está permitido para este día' });
+    // Si se indica profesional, debe existir y estar activo
+    if (validatedData.staffId) {
+      const staff = await prisma.staff.findUnique({ where: { id: validatedData.staffId } });
+      if (!staff || !staff.isActive) {
+        return res.status(400).json({ error: 'Profesional no válido' });
       }
     }
 
-    // Convert request times to minutes para comparaciones de rango (compatibilidad retro)
-    const [reqStartHour, reqStartMin] = validatedData.startTime.split(':').map(Number);
-    const [reqEndHour, reqEndMin] = validatedData.endTime.split(':').map(Number);
-    const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
-    const [shopEndHour, shopEndMin] = businessHour.endTime.split(':').map(Number);
+    // La hora de fin se calcula a partir de la duración del servicio, no del
+    // endTime que mande el cliente.
+    const endTime = addMinutesToTime(validatedData.startTime, product.durationMinutes);
 
-    const reqStartMinutes = reqStartHour * 60 + reqStartMin;
-    const reqEndMinutes = reqEndHour * 60 + reqEndMin;
-    const shopStartMinutes = shopStartHour * 60 + shopStartMin;
-    const shopEndMinutes = shopEndHour * 60 + shopEndMin;
-
-    // Verify requested time is within business hours
-    if (reqStartMinutes < shopStartMinutes || reqEndMinutes > shopEndMinutes) {
-      return res.status(400).json({ error: 'El salón está cerrado en este horario' });
-    }
-
-    // Check for conflicting appointments: mismo día, misma hora (startTime) y no canceladas
-    const startOfDay = new Date(`${validatedData.date.split('T')[0]}T00:00:00.000`);
-    const endOfDay = new Date(`${validatedData.date.split('T')[0]}T23:59:59.999`);
-
-    const conflictingSameTime = await prisma.appointment.findFirst({
-      where: {
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
+    // Disponibilidad + creación: misma regla que usa el portal de clientas,
+    // en una sola transacción serializable para que dos citas simultáneas
+    // para el mismo hueco no puedan colarse las dos.
+    let appointment;
+    try {
+      appointment = await createAppointmentSafely({
+        dateStr: validatedData.date.split('T')[0],
         startTime: validatedData.startTime,
-        status: 'SCHEDULED',
-      },
-    });
-
-    if (conflictingSameTime) {
-      return res.status(400).json({ error: 'Ya existe una cita en ese horario' });
-    }
-
-    // Check whether same client already has appointment on that day (opcional)
-    const conflictingAppointment = await prisma.appointment.findFirst({
-      where: {
-        clientId: validatedData.clientId,
-        date: {
-          gte: startOfDay,
-          lte: endOfDay,
-        },
-        status: { not: 'CANCELLED' },
-      },
-    });
-
-    if (conflictingAppointment) {
-      return res.status(400).json({ error: 'El cliente ya tiene una cita para ese día' });
-    }
-
-    const appointment = await prisma.appointment.create({
-      data: {
-        date: new Date(validatedData.date),
-        startTime: validatedData.startTime,
-        endTime: validatedData.endTime,
-        status: validatedData.status,
-        notes: validatedData.notes,
+        endTime,
         clientId: validatedData.clientId,
         productId: validatedData.productId,
-      },
-      include: {
-        client: true,
-        product: true,
-      },
-    });
+        staffId: validatedData.staffId,
+        notes: validatedData.notes,
+        status: validatedData.status,
+      });
+    } catch (availabilityError: any) {
+      if (availabilityError instanceof AvailabilityError) {
+        return res.status(availabilityError.status).json({ error: availabilityError.message });
+      }
+      if (isSerializationConflict(availabilityError)) {
+        return res.status(409).json({ error: 'Alguien reservó ese horario justo antes. Prueba con otro horario.' });
+      }
+      throw availabilityError;
+    }
 
     try {
       await notificationService.createNotification({
@@ -275,62 +240,82 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       }
     }
 
-    // If product is being changed, verify new product exists
+    // Si el servicio cambia, necesitamos su duración para recalcular endTime;
+    // si no cambia, se reutiliza el ya cargado en la cita existente.
+    let effectiveProduct: { durationMinutes: number } | null = null;
     if (validatedData.productId && validatedData.productId !== existingAppointment.productId) {
-      const product = await prisma.product.findUnique({
+      effectiveProduct = await prisma.product.findUnique({
         where: { id: validatedData.productId },
+        select: { durationMinutes: true },
       });
 
-      if (!product) {
+      if (!effectiveProduct) {
         return res.status(400).json({ error: 'Invalid product' });
+      }
+    } else if (validatedData.startTime) {
+      // El servicio no cambia pero sí la hora: hace falta su duración igualmente.
+      effectiveProduct = await prisma.product.findUnique({
+        where: { id: existingAppointment.productId },
+        select: { durationMinutes: true },
+      });
+    }
+
+    // Si se indica profesional, debe existir y estar activo. null explícito = quitar profesional.
+    if (validatedData.staffId) {
+      const staff = await prisma.staff.findUnique({ where: { id: validatedData.staffId } });
+      if (!staff || !staff.isActive) {
+        return res.status(400).json({ error: 'Profesional no válido' });
       }
     }
 
-    // ===== VALIDACIÓN DE HORARIOS COMERCIALES =====
-    const dateToCheck = validatedData.date ? new Date(validatedData.date) : existingAppointment.date;
+    // Fecha/hora resultantes tras aplicar los cambios, para revalidar disponibilidad.
+    const dateStr = validatedData.date
+      ? validatedData.date.split('T')[0]
+      : existingAppointment.date.toISOString().split('T')[0];
     const startTimeToCheck = validatedData.startTime || existingAppointment.startTime;
-    const endTimeToCheck = validatedData.endTime || existingAppointment.endTime;
+    // endTime se recalcula desde la duración del servicio solo si cambió el
+    // horario de inicio o el servicio; si no, se conserva el ya guardado.
+    const endTimeToCheck = effectiveProduct
+      ? addMinutesToTime(startTimeToCheck, effectiveProduct.durationMinutes)
+      : existingAppointment.endTime;
+    const resultingStatus = validatedData.status || existingAppointment.status;
 
-    const dayOfWeek = dateToCheck.getDay();
-    const businessHour = await prisma.businessHour.findUnique({
-      where: { dayOfWeek },
-    });
-
-    if (!businessHour || !businessHour.isOpen) {
-      return res.status(400).json({ error: 'El salón está cerrado en este horario' });
-    }
-
-    const [reqStartHour, reqStartMin] = startTimeToCheck.split(':').map(Number);
-    const [reqEndHour, reqEndMin] = endTimeToCheck.split(':').map(Number);
-    const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
-    const [shopEndHour, shopEndMin] = businessHour.endTime.split(':').map(Number);
-
-    const reqStartMinutes = reqStartHour * 60 + reqStartMin;
-    const reqEndMinutes = reqEndHour * 60 + reqEndMin;
-    const shopStartMinutes = shopStartHour * 60 + shopStartMin;
-    const shopEndMinutes = shopEndHour * 60 + shopEndMin;
-
-    if (reqStartMinutes < shopStartMinutes || reqEndMinutes > shopEndMinutes) {
-      return res.status(400).json({ error: 'El salón está cerrado en este horario' });
-    }
+    // Solo hace falta comprobar el hueco si se reprograma la cita, o si vuelve
+    // a quedar SCHEDULED tras no estarlo (p.ej. se reactiva una cancelada).
+    // Cancelar nunca debe bloquearse por reglas de disponibilidad.
+    const isRescheduling = Boolean(validatedData.date || validatedData.startTime || validatedData.productId);
+    const isReactivating = resultingStatus === 'SCHEDULED' && existingAppointment.status !== 'SCHEDULED';
+    const skipAvailabilityCheck = resultingStatus === 'CANCELLED' || !(isRescheduling || isReactivating);
 
     const dataToUpdate: any = {};
-    if (validatedData.date) dataToUpdate.date = new Date(validatedData.date);
+    if (validatedData.date) dataToUpdate.date = new Date(`${dateStr}T00:00:00.000Z`);
     if (validatedData.startTime) dataToUpdate.startTime = validatedData.startTime;
-    if (validatedData.endTime) dataToUpdate.endTime = validatedData.endTime;
+    if (effectiveProduct) dataToUpdate.endTime = endTimeToCheck;
     if (validatedData.status) dataToUpdate.status = validatedData.status;
     if (validatedData.notes !== undefined) dataToUpdate.notes = validatedData.notes;
     if (validatedData.clientId) dataToUpdate.clientId = validatedData.clientId;
     if (validatedData.productId) dataToUpdate.productId = validatedData.productId;
+    if (validatedData.staffId !== undefined) dataToUpdate.staffId = validatedData.staffId;
 
-    const appointment = await prisma.appointment.update({
-      where: { id },
-      data: dataToUpdate,
-      include: {
-        client: true,
-        product: true,
-      },
-    });
+    let appointment;
+    try {
+      appointment = await updateAppointmentSafely({
+        id,
+        dateStr,
+        startTime: startTimeToCheck,
+        endTime: endTimeToCheck,
+        data: dataToUpdate,
+        skipAvailabilityCheck,
+      });
+    } catch (availabilityError: any) {
+      if (availabilityError instanceof AvailabilityError) {
+        return res.status(availabilityError.status).json({ error: availabilityError.message });
+      }
+      if (isSerializationConflict(availabilityError)) {
+        return res.status(409).json({ error: 'Alguien reservó ese horario justo antes. Prueba con otro horario.' });
+      }
+      throw availabilityError;
+    }
 
     // Notificar a la clienta si la cita se cancela
     const updatedStatus = dataToUpdate.status || existingAppointment.status;

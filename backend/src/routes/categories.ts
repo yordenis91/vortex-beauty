@@ -6,6 +6,9 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
+// Todas las rutas de categorías son exclusivas de ADMIN.
+router.use(authenticateToken, requireAdmin);
+
 // Validation schemas
 const createCategorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -19,7 +22,7 @@ const createCategorySchema = z.object({
 const updateCategorySchema = createCategorySchema.partial();
 
 // GET /api/categories - Get all categories
-router.get('/', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { type } = req.query;
 
@@ -47,7 +50,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // GET /api/categories/:id - Get a specific category
-router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
 
@@ -76,7 +79,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // POST /api/categories - Create a new category
-router.post('/', authenticateToken, requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const validatedData = createCategorySchema.parse(req.body);
 
@@ -119,7 +122,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // PUT /api/categories/:id - Update a category
-router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const validatedData = updateCategorySchema.parse(req.body);
@@ -176,7 +179,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 });
 
 // DELETE /api/categories/:id - Delete a category
-router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
 

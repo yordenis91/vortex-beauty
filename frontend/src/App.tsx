@@ -26,6 +26,7 @@ import ClientAppointments from './pages/client/ClientAppointments';
 import ClientProfile from './pages/client/ClientProfile';
 import Settings from './pages/Settings';
 import AdminGallery from './pages/AdminGallery';
+import Staff from './pages/Staff';
 
 /**
  * Protected route component para usuarios ADMIN
@@ -130,6 +131,7 @@ function App() {
               <Route path="clients" element={<Clients />} />
               <Route path="invoices" element={<Invoices />} />
               <Route path="appointments" element={<Appointments />} />
+              <Route path="staff" element={<Staff />} />
               <Route path="products" element={<Products />} />
               <Route path="categories" element={<Categories />} />
               <Route path="knowledge-base" element={<KnowledgeBase />} />
