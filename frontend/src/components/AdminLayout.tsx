@@ -75,7 +75,7 @@ const AdminLayout: React.FC = () => {
                     ) : (
                       <User className="h-8 w-8" />
                     )}
-                    <span>{user?.name}</span>
+                    <span className="hidden sm:inline-block max-w-24 truncate">{user?.name}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
