@@ -320,17 +320,19 @@ const ClientAppointments: React.FC = () => {
             </div>
           ) : (
             <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden mb-8 p-6">
-              <Calendar
-                mode="single"
-                selected={formData.date}
-                onSelect={handleDateSelect}
-                disabled={isDayBlocked}
-                className="rounded-lg"
-                classNames={{
-                  day_selected: "bg-indigo-600 text-white hover:bg-indigo-700 rounded-full",
-                  day_disabled: "text-gray-400 cursor-not-allowed",
-                }}
-              />
+              <div className="overflow-x-auto">
+                <Calendar
+                  mode="single"
+                  selected={formData.date}
+                  onSelect={handleDateSelect}
+                  disabled={isDayBlocked}
+                  className="rounded-lg w-full min-w-[17rem]"
+                  classNames={{
+                    day_selected: "bg-indigo-600 text-white hover:bg-indigo-700 rounded-full",
+                    day_disabled: "text-gray-400 cursor-not-allowed",
+                  }}
+                />
+              </div>
             </Card>
           )}
 

@@ -495,32 +495,40 @@ const Appointments: React.FC = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* COLUMNA IZQUIERDA: CALENDARIO */}
-          <div className="min-w-0 lg:col-span-4 xl:col-span-3 space-y-4">
+        <div className="flex flex-col xl:flex-row gap-8">
+          {/* COLUMNA IZQUIERDA: CALENDARIO — ancho fijo, no fracción del
+              grid: una columna proporcional puede quedar más angosta que
+              el mínimo que necesita el calendario justo al filo de un
+              breakpoint (nos pasó exactamente en xl con 4/12). */}
+          <div className="w-full xl:w-80 xl:shrink-0 space-y-4">
             <Card className="p-4 shadow-sm border-gray-200 rounded-2xl">
-              <Calendar
-                mode="single"
-                locale={es}
-                month={visibleMonth}
-                onMonthChange={setVisibleMonth}
-                selected={currentDate}
-                onSelect={handleDateSelect}
-                modifiers={{
-                  unavailable: unavailableDays,
-                  fullyBooked: fullyBookedDays,
-                  hasAppointments: appointmentDays,
-                }}
-                modifiersClassNames={{
-                  unavailable: 'bg-gray-200 text-gray-500 opacity-80',
-                  fullyBooked: 'bg-amber-100 text-amber-800 font-medium',
-                  hasAppointments: 'relative font-semibold after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-blue-500',
-                }}
-                className="rounded-md w-full"
-                classNames={{
-                  day_selected: 'bg-blue-600 text-white hover:bg-blue-700 rounded-full',
-                }}
-              />
+              {/* Red de seguridad: si el calendario alguna vez necesita más
+                  ancho del que tiene la tarjeta (fuente distinta, zoom del
+                  navegador...), se puede desplazar en vez de recortarse. */}
+              <div className="overflow-x-auto">
+                <Calendar
+                  mode="single"
+                  locale={es}
+                  month={visibleMonth}
+                  onMonthChange={setVisibleMonth}
+                  selected={currentDate}
+                  onSelect={handleDateSelect}
+                  modifiers={{
+                    unavailable: unavailableDays,
+                    fullyBooked: fullyBookedDays,
+                    hasAppointments: appointmentDays,
+                  }}
+                  modifiersClassNames={{
+                    unavailable: 'bg-gray-200 text-gray-500 opacity-80',
+                    fullyBooked: 'bg-amber-100 text-amber-800 font-medium',
+                    hasAppointments: 'relative font-semibold after:absolute after:bottom-0.5 after:left-1/2 after:-translate-x-1/2 after:w-1.5 after:h-1.5 after:rounded-full after:bg-blue-500',
+                  }}
+                  className="rounded-md w-full min-w-[17rem]"
+                  classNames={{
+                    day_selected: 'bg-blue-600 text-white hover:bg-blue-700 rounded-full',
+                  }}
+                />
+              </div>
 
               <div className="mt-4 pt-4 border-t border-gray-100 space-y-2 text-xs text-gray-600">
                 <div className="flex items-center gap-2">
@@ -552,7 +560,7 @@ const Appointments: React.FC = () => {
           </div>
 
           {/* COLUMNA DERECHA: AGENDA DEL DÍA */}
-          <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+          <div className="min-w-0 flex-1 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-200">
               <h3 className="text-xl font-bold text-gray-900">
                 Agenda del {format(currentDate, "EEEE d 'de' MMMM", { locale: es })}
