@@ -497,7 +497,7 @@ const Appointments: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* COLUMNA IZQUIERDA: CALENDARIO */}
-          <div className="lg:col-span-4 xl:col-span-3 space-y-4">
+          <div className="min-w-0 lg:col-span-4 xl:col-span-3 space-y-4">
             <Card className="p-4 shadow-sm border-gray-200 rounded-2xl">
               <Calendar
                 mode="single"
