@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAppointments, useClients, useProducts, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useFullyBookedDates, useAvailableSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
-import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle } from 'lucide-react';
+import { useAppointments, useClients, useProducts, useStaff, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useFullyBookedDates, useAvailableSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
+import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle, UserCog } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { format, isBefore, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
@@ -34,6 +34,7 @@ interface Appointment {
   notes?: string;
   clientId: string;
   productId: string;
+  staffId?: string | null;
   createdAt: string;
   updatedAt: string;
   client?: {
@@ -45,18 +46,36 @@ interface Appointment {
     id: string;
     name: string;
     price: number;
+    durationMinutes?: number;
   };
+  staff?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 interface FormData {
   clientId: string;
   productId: string;
+  staffId: string;
   date: string;
   startTime: string;
   endTime: string;
   notes: string;
   status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
 }
+
+// Calcula la hora de fin a partir de la duración del servicio, igual que el
+// backend (availabilityService.addMinutesToTime). Es solo para mostrarla en
+// el formulario — la que manda es la que calcula el servidor al guardar.
+const computeEndTime = (startTime: string, durationMinutes: number): string => {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const total = hours * 60 + minutes + durationMinutes;
+  const wrapped = ((total % 1440) + 1440) % 1440;
+  const hh = Math.floor(wrapped / 60).toString().padStart(2, '0');
+  const mm = (wrapped % 60).toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+};
 
 interface ClosedDate {
   id: string;
@@ -157,6 +176,7 @@ const Appointments: React.FC = () => {
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
     productId: '',
+    staffId: '',
     date: new Date().toISOString().split('T')[0],
     startTime: '10:00',
     endTime: '11:00',
@@ -168,6 +188,7 @@ const Appointments: React.FC = () => {
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: staffList = [] } = useStaff(true);
   const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
   const { data: closedDates = [], isLoading: closedDatesLoading } = useClosedDates();
   const { data: fullyBookedDates = [], isLoading: fullyBookedLoading } = useFullyBookedDates();
@@ -298,6 +319,7 @@ const Appointments: React.FC = () => {
       setFormData({
         clientId: appointment.clientId,
         productId: appointment.productId,
+        staffId: appointment.staffId || '',
         date: appointment.date.split('T')[0],
         startTime: appointment.startTime,
         endTime: appointment.endTime,
@@ -331,6 +353,7 @@ const Appointments: React.FC = () => {
       setFormData({
         clientId: '',
         productId: '',
+        staffId: '',
         date: newDate,
         startTime: newStartTime,
         endTime: newEndTime,
@@ -418,6 +441,7 @@ const Appointments: React.FC = () => {
     const appointmentData = {
       ...formData,
       date: new Date(formData.date).toISOString(),
+      staffId: formData.staffId || null,
     };
 
     if (editingAppointment) {
@@ -675,6 +699,12 @@ const Appointments: React.FC = () => {
                           <Package className="w-4 h-4 text-gray-400" />
                           <span>{appointment.product?.name}</span>
                         </div>
+                        {appointment.staff && (
+                          <div className="flex items-center gap-2 text-gray-500 text-sm">
+                            <UserCog className="w-4 h-4 text-gray-400" />
+                            <span>{appointment.staff.name}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
                         <button
@@ -759,18 +789,47 @@ const Appointments: React.FC = () => {
                     <select
                       id="product"
                       value={formData.productId}
-                      onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
+                      onChange={(e) => {
+                        const productId = e.target.value;
+                        const selected = products.find((p) => p.id === productId);
+                        setFormData({
+                          ...formData,
+                          productId,
+                          endTime: selected
+                            ? computeEndTime(formData.startTime, selected.durationMinutes)
+                            : formData.endTime,
+                        });
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       required
                     >
                       <option value="">-- Selecciona un servicio --</option>
                       {products.map((product) => (
                         <option key={product.id} value={product.id}>
-                          {product.name} (${Number(product.price).toFixed(2)})
+                          {product.name} (${Number(product.price).toFixed(2)} · {product.durationMinutes} min)
                         </option>
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="border-b border-gray-200 pb-4">
+                  <label htmlFor="staff" className="block text-sm font-medium text-gray-700 mb-1">
+                    Profesional <span className="text-gray-400">(opcional)</span>
+                  </label>
+                  <select
+                    id="staff"
+                    value={formData.staffId}
+                    onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  >
+                    <option value="">-- Sin asignar --</option>
+                    {staffList.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-gray-200 pb-4">
@@ -795,23 +854,32 @@ const Appointments: React.FC = () => {
                       id="startTime"
                       type="time"
                       value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      onChange={(e) => {
+                        const startTime = e.target.value;
+                        const selected = products.find((p) => p.id === formData.productId);
+                        setFormData({
+                          ...formData,
+                          startTime,
+                          endTime: selected ? computeEndTime(startTime, selected.durationMinutes) : formData.endTime,
+                        });
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       required
                     />
                   </div>
                   <div>
                     <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
-                      Hora de Fin <span className="text-red-500">*</span>
+                      Hora de Fin
                     </label>
                     <input
                       id="endTime"
                       type="time"
                       value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                      required
+                      readOnly
+                      disabled
+                      className="w-full px-4 py-2 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none cursor-not-allowed"
                     />
+                    <p className="mt-1 text-xs text-gray-500">Se calcula según la duración del servicio.</p>
                   </div>
                 </div>
 

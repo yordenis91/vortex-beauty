@@ -101,7 +101,8 @@ const ClientAppointments: React.FC = () => {
   const { data: appointments = [], isLoading: appointmentsLoading } = useClientAppointments();
   const { data: products = [] } = useClientProducts();
   const { data: availableSlots = [], isLoading: slotsLoading } = useAvailableSlots(
-    formData.date ? format(formData.date, 'yyyy-MM-dd') : ''
+    formData.date ? format(formData.date, 'yyyy-MM-dd') : '',
+    formData.productId || undefined
   );
   const { data: businessHours = [] } = useBusinessHours();
   const { data: closedDates = [] } = useClosedDates();
@@ -208,15 +209,25 @@ const ClientAppointments: React.FC = () => {
     return hoursUntilAppointment > 24;
   };
 
+  // Solo para mostrarla en el formulario — la hora de fin real la calcula el
+  // servidor a partir de la duración del servicio (Product.durationMinutes).
+  const computeEndTime = (startTime: string, durationMinutes: number): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const total = hours * 60 + minutes + durationMinutes;
+    const wrapped = ((total % 1440) + 1440) % 1440;
+    const hh = Math.floor(wrapped / 60).toString().padStart(2, '0');
+    const mm = (wrapped % 60).toString().padStart(2, '0');
+    return `${hh}:${mm}`;
+  };
+
   const handleSelectSlot = (slotTime: string) => {
-    const [hours, minutes] = slotTime.split(':').map(Number);
-    const endHour = hours + 1;
-    const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    const selectedProduct = products.find((p) => p.id === formData.productId);
+    const duration = selectedProduct?.durationMinutes ?? 60;
 
     setFormData({
       ...formData,
       startTime: slotTime,
-      endTime: endTime,
+      endTime: computeEndTime(slotTime, duration),
     });
   };
 
@@ -341,14 +352,27 @@ const ClientAppointments: React.FC = () => {
                     <label className="text-sm font-semibold text-gray-900 mb-3 block">
                       Servicio <span className="text-red-500">*</span>
                     </label>
-                    <Select value={formData.productId} onValueChange={(value) => setFormData({ ...formData, productId: value })}>
+                    <Select
+                      value={formData.productId}
+                      onValueChange={(value) => {
+                        const selected = products.find((p) => p.id === value);
+                        setFormData({
+                          ...formData,
+                          productId: value,
+                          endTime:
+                            formData.startTime && selected
+                              ? computeEndTime(formData.startTime, selected.durationMinutes)
+                              : formData.endTime,
+                        });
+                      }}
+                    >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecciona un servicio" />
                       </SelectTrigger>
                       <SelectContent>
                         {products.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
-                            {product.name} - ${Number(product.price).toFixed(2)}
+                            {product.name} - ${Number(product.price).toFixed(2)} ({product.durationMinutes} min)
                           </SelectItem>
                         ))}
                       </SelectContent>

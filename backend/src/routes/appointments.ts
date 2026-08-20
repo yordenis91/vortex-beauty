@@ -10,17 +10,23 @@ import {
   updateAppointmentSafely,
   isSerializationConflict,
   dayOfWeekFromDateString,
+  addMinutesToTime,
 } from '../services/availabilityService';
 
 const router = Router();
 
 // Validation schemas
+// endTime ya no es de fiar del cliente: se calcula en el servidor a partir de
+// Product.durationMinutes (antes nada impedía pedir un servicio de 5 minutos).
+// Se sigue aceptando en el payload por compatibilidad con el frontend actual,
+// pero se ignora.
 const createAppointmentSchema = z.object({
   date: z.string().datetime('Invalid date format'),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in format HH:mm'),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm').optional(),
   clientId: z.string().uuid('Invalid client ID'),
   productId: z.string().uuid('Invalid product ID'),
+  staffId: z.string().uuid('Invalid staff ID').nullable().optional(),
   status: z.enum(['SCHEDULED', 'COMPLETED', 'CANCELLED']).default('SCHEDULED'),
   notes: z.string().optional(),
 });
@@ -34,6 +40,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
       include: {
         client: true,
         product: true,
+        staff: true,
       },
       orderBy: { date: 'asc' },
     });
@@ -104,6 +111,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
       include: {
         client: true,
         product: true,
+        staff: true,
       },
     });
 
@@ -141,6 +149,18 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid product' });
     }
 
+    // Si se indica profesional, debe existir y estar activo
+    if (validatedData.staffId) {
+      const staff = await prisma.staff.findUnique({ where: { id: validatedData.staffId } });
+      if (!staff || !staff.isActive) {
+        return res.status(400).json({ error: 'Profesional no válido' });
+      }
+    }
+
+    // La hora de fin se calcula a partir de la duración del servicio, no del
+    // endTime que mande el cliente.
+    const endTime = addMinutesToTime(validatedData.startTime, product.durationMinutes);
+
     // Disponibilidad + creación: misma regla que usa el portal de clientas,
     // en una sola transacción serializable para que dos citas simultáneas
     // para el mismo hueco no puedan colarse las dos.
@@ -149,9 +169,10 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       appointment = await createAppointmentSafely({
         dateStr: validatedData.date.split('T')[0],
         startTime: validatedData.startTime,
-        endTime: validatedData.endTime,
+        endTime,
         clientId: validatedData.clientId,
         productId: validatedData.productId,
+        staffId: validatedData.staffId,
         notes: validatedData.notes,
         status: validatedData.status,
       });
@@ -219,14 +240,31 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       }
     }
 
-    // If product is being changed, verify new product exists
+    // Si el servicio cambia, necesitamos su duración para recalcular endTime;
+    // si no cambia, se reutiliza el ya cargado en la cita existente.
+    let effectiveProduct: { durationMinutes: number } | null = null;
     if (validatedData.productId && validatedData.productId !== existingAppointment.productId) {
-      const product = await prisma.product.findUnique({
+      effectiveProduct = await prisma.product.findUnique({
         where: { id: validatedData.productId },
+        select: { durationMinutes: true },
       });
 
-      if (!product) {
+      if (!effectiveProduct) {
         return res.status(400).json({ error: 'Invalid product' });
+      }
+    } else if (validatedData.startTime) {
+      // El servicio no cambia pero sí la hora: hace falta su duración igualmente.
+      effectiveProduct = await prisma.product.findUnique({
+        where: { id: existingAppointment.productId },
+        select: { durationMinutes: true },
+      });
+    }
+
+    // Si se indica profesional, debe existir y estar activo. null explícito = quitar profesional.
+    if (validatedData.staffId) {
+      const staff = await prisma.staff.findUnique({ where: { id: validatedData.staffId } });
+      if (!staff || !staff.isActive) {
+        return res.status(400).json({ error: 'Profesional no válido' });
       }
     }
 
@@ -235,24 +273,29 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       ? validatedData.date.split('T')[0]
       : existingAppointment.date.toISOString().split('T')[0];
     const startTimeToCheck = validatedData.startTime || existingAppointment.startTime;
-    const endTimeToCheck = validatedData.endTime || existingAppointment.endTime;
+    // endTime se recalcula desde la duración del servicio solo si cambió el
+    // horario de inicio o el servicio; si no, se conserva el ya guardado.
+    const endTimeToCheck = effectiveProduct
+      ? addMinutesToTime(startTimeToCheck, effectiveProduct.durationMinutes)
+      : existingAppointment.endTime;
     const resultingStatus = validatedData.status || existingAppointment.status;
 
     // Solo hace falta comprobar el hueco si se reprograma la cita, o si vuelve
     // a quedar SCHEDULED tras no estarlo (p.ej. se reactiva una cancelada).
     // Cancelar nunca debe bloquearse por reglas de disponibilidad.
-    const isRescheduling = Boolean(validatedData.date || validatedData.startTime || validatedData.endTime);
+    const isRescheduling = Boolean(validatedData.date || validatedData.startTime || validatedData.productId);
     const isReactivating = resultingStatus === 'SCHEDULED' && existingAppointment.status !== 'SCHEDULED';
     const skipAvailabilityCheck = resultingStatus === 'CANCELLED' || !(isRescheduling || isReactivating);
 
     const dataToUpdate: any = {};
     if (validatedData.date) dataToUpdate.date = new Date(`${dateStr}T00:00:00.000Z`);
     if (validatedData.startTime) dataToUpdate.startTime = validatedData.startTime;
-    if (validatedData.endTime) dataToUpdate.endTime = validatedData.endTime;
+    if (effectiveProduct) dataToUpdate.endTime = endTimeToCheck;
     if (validatedData.status) dataToUpdate.status = validatedData.status;
     if (validatedData.notes !== undefined) dataToUpdate.notes = validatedData.notes;
     if (validatedData.clientId) dataToUpdate.clientId = validatedData.clientId;
     if (validatedData.productId) dataToUpdate.productId = validatedData.productId;
+    if (validatedData.staffId !== undefined) dataToUpdate.staffId = validatedData.staffId;
 
     let appointment;
     try {

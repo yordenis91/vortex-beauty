@@ -13,6 +13,7 @@ import {
   Search,
   DollarSign,
   Calendar,
+  Clock,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -36,6 +37,7 @@ const Products: React.FC = () => {
     categoryId: '',
     isPublic: true,
     stock: '',
+    durationMinutes: '60',
   });
 
   // Use React Query hooks
@@ -90,6 +92,7 @@ const Products: React.FC = () => {
       categoryId: '',
       isPublic: true,
       stock: '',
+      durationMinutes: '60',
     });
   };
 
@@ -104,6 +107,7 @@ const Products: React.FC = () => {
         ...formData,
         price: parseFloat(formData.price),
         stock: formData.stock ? parseInt(formData.stock) : undefined,
+        durationMinutes: parseInt(formData.durationMinutes) || 60,
       };
 
       await createProduct.mutateAsync(productData);
@@ -127,6 +131,7 @@ const Products: React.FC = () => {
         ...formData,
         price: parseFloat(formData.price),
         stock: formData.stock ? parseInt(formData.stock) : undefined,
+        durationMinutes: parseInt(formData.durationMinutes) || 60,
       };
 
       await updateProduct.mutateAsync({ id: editingProduct.id, productData });
@@ -170,6 +175,7 @@ const Products: React.FC = () => {
       categoryId: product.categoryId,
       isPublic: product.isPublic,
       stock: product.stock?.toString() || '',
+      durationMinutes: product.durationMinutes?.toString() || '60',
     });
   };
 
@@ -329,6 +335,10 @@ const Products: React.FC = () => {
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           {product.billingCycle.replace('_', ' ')}
+                        </div>
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {product.durationMinutes} min
                         </div>
                         {product.stock && (
                           <div className="flex items-center">
@@ -531,6 +541,21 @@ const Products: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Duración (minutos) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    step="5"
+                    required
+                    value={formData.durationMinutes}
+                    onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Determina la hora de fin de las citas de este servicio.</p>
                 </div>
               </div>
 

@@ -9,6 +9,7 @@ import {
   dayOfWeekFromDateString,
   dayRangeUTC,
   timeToMinutes,
+  addMinutesToTime,
 } from '../services/availabilityService';
 
 const router = express.Router();
@@ -263,7 +264,7 @@ router.get('/my-appointments', authenticateToken, async (req: AuthRequest, res) 
  */
 router.post('/appointments', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { productId, date, startTime, endTime, notes } = req.body;
+    const { productId, date, startTime, notes } = req.body;
     const clientId = req.user?.clientId;
     const userId = req.user?.userId;
 
@@ -273,7 +274,7 @@ router.post('/appointments', authenticateToken, async (req: AuthRequest, res) =>
     }
 
     // Validar campos requeridos
-    if (!productId || !date || !startTime || !endTime) {
+    if (!productId || !date || !startTime) {
       return res.status(400).json({ error: 'Campos requeridos faltantes' });
     }
 
@@ -285,6 +286,10 @@ router.post('/appointments', authenticateToken, async (req: AuthRequest, res) =>
     if (!product) {
       return res.status(400).json({ error: 'Servicio no encontrado' });
     }
+
+    // La hora de fin se calcula a partir de la duración del servicio, no de
+    // lo que mande el cliente.
+    const endTime = addMinutesToTime(startTime, product.durationMinutes);
 
     // Disponibilidad + creación: misma regla que usa la administración, en
     // una sola transacción serializable para que dos clientas no puedan
@@ -442,14 +447,28 @@ router.patch('/appointments/:id/cancel', authenticateToken, async (req: AuthRequ
 /**
  * GET /api/portal/available-slots
  * Retorna los slots disponibles para una fecha específica
- * Query params: date (YYYY-MM-DD)
+ * Query params: date (YYYY-MM-DD), productId (opcional)
+ *
+ * Si se indica productId, el solape se calcula con la duración real de ese
+ * servicio; si no, se usa la comprobación antigua (solo el instante de
+ * inicio), que es una aproximación — la validación real y vinculante ocurre
+ * de todas formas en el servidor al crear la cita (availabilityService).
  */
 router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) => {
   try {
-    const { date } = req.query;
+    const { date, productId } = req.query;
 
     if (!date || typeof date !== 'string') {
       return res.status(400).json({ error: 'Fecha requerida (formato YYYY-MM-DD)' });
+    }
+
+    let durationMinutes: number | null = null;
+    if (productId && typeof productId === 'string') {
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { durationMinutes: true },
+      });
+      durationMinutes = product?.durationMinutes ?? null;
     }
 
     // Validar formato de fecha
@@ -524,20 +543,22 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
     // Filter available slots by checking for overlaps with existing appointments
     const finalAvailableSlots = availableSlots.filter((slot) => {
       const slotStartMinutes = timeToMinutes(slot);
-      
-      // Check if this slot overlaps with any existing appointment
-      // Assuming each slot has a fixed duration, we need to check if the slot start time
-      // falls within any existing appointment
-      const conflict = scheduledAppointments.some(apt => {
+
+      const conflict = scheduledAppointments.some((apt) => {
         const aptStartMinutes = timeToMinutes(apt.startTime);
         const aptEndMinutes = timeToMinutes(apt.endTime);
-        
-        // A slot is unavailable if it falls within an existing appointment
-        // We check if the slot start time is before the appointment end time
-        // and if the appointment start time is before or at the slot start time
+
+        if (durationMinutes != null) {
+          // Se conoce el servicio: comparar el rango completo que ocuparía la cita.
+          const slotEndMinutes = slotStartMinutes + durationMinutes;
+          return slotStartMinutes < aptEndMinutes && slotEndMinutes > aptStartMinutes;
+        }
+
+        // Sin servicio seleccionado todavía: aproximación antigua (solo el
+        // instante de inicio). La comprobación real ocurre al crear la cita.
         return slotStartMinutes >= aptStartMinutes && slotStartMinutes < aptEndMinutes;
       });
-      
+
       return !conflict;
     });
 

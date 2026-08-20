@@ -20,6 +20,7 @@ import overridesRoutes from './routes/overrides';
 import settingsRoutes from './routes/settings';
 import galleryRoutes from './routes/gallery';
 import closedDatesRoutes from './routes/closedDates';
+import staffRoutes from './routes/staff';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -102,6 +103,9 @@ app.use('/api/gallery', galleryRoutes);
 
 // Closed dates routes
 app.use('/api/closed-dates', closedDatesRoutes);
+
+// Staff routes
+app.use('/api/staff', staffRoutes);
 
 // Health check
 const healthResponse = { status: 'OK', timestamp: new Date().toISOString() };

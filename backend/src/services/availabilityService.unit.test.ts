@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { timeToMinutes, dayOfWeekFromDateString, dayRangeUTC } from './availabilityService';
+import { timeToMinutes, dayOfWeekFromDateString, dayRangeUTC, addMinutesToTime } from './availabilityService';
 
 describe('timeToMinutes', () => {
   it('convierte HH:mm a minutos desde medianoche', () => {
@@ -35,6 +35,22 @@ describe('dayOfWeekFromDateString', () => {
     } finally {
       process.env.TZ = original;
     }
+  });
+});
+
+describe('addMinutesToTime', () => {
+  // I1: la hora de fin de una cita se calcula desde Product.durationMinutes,
+  // no desde lo que mande el cliente (antes nada impedía un servicio de 5
+  // minutos porque endTime era un input de confianza).
+  it('suma la duración del servicio a la hora de inicio', () => {
+    expect(addMinutesToTime('10:00', 60)).toBe('11:00');
+    expect(addMinutesToTime('10:00', 90)).toBe('11:30');
+    expect(addMinutesToTime('09:15', 45)).toBe('10:00');
+    expect(addMinutesToTime('10:00', 5)).toBe('10:05');
+  });
+
+  it('no rompe si la duración cruza medianoche (caso fuera de horario comercial real)', () => {
+    expect(addMinutesToTime('23:30', 90)).toBe('01:00');
   });
 });
 

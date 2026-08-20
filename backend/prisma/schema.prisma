@@ -233,6 +233,7 @@ model Product {
   status      ProductStatus @default(ACTIVE)
   isPublic    Boolean       @default(true)  // Visible en portal de cliente
   stock       Int?          // Para productos limitados (null = unlimited)
+  durationMinutes Int       @default(60) // Duración del servicio; determina la hora de fin de la cita
 
   // Categorización
   categoryId  String
@@ -418,6 +419,25 @@ model KnowledgeBase {
   @@index([status])
 }
 
+// Profesionales del salón. El horario comercial (BusinessHour) sigue siendo
+// general para todo el salón; asignar una cita a un Staff es informativo por
+// ahora y no implica horarios ni cupos independientes por profesional.
+model Staff {
+  id           String        @id @default(uuid())
+  name         String
+  email        String?
+  phone        String?
+  color        String?       // Para distinguir profesionales en la agenda (hex color)
+  isActive     Boolean       @default(true)
+
+  appointments Appointment[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([isActive])
+}
+
 // Sistema de Citas (Appointments)
 model Appointment {
   id          String              @id @default(uuid())
@@ -434,11 +454,16 @@ model Appointment {
   productId   String
   product     Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
 
+  // Profesional que atiende la cita (opcional: el horario sigue siendo general del salón)
+  staffId     String?
+  staff       Staff?              @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
   @@index([clientId])
   @@index([productId])
+  @@index([staffId])
   @@index([date])
   @@index([status])
 }

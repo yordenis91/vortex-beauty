@@ -21,6 +21,23 @@ export function timeToMinutes(time: string): number {
 }
 
 /**
+ * Suma minutos a una hora HH:mm. Se usa para calcular la hora de fin de una
+ * cita a partir de Product.durationMinutes, en vez de confiar en el endTime
+ * que mande el cliente (antes nada impedía pedir un servicio de 5 minutos).
+ *
+ * No modela que la cita cruce la medianoche: para eso haría falta que
+ * endTime dejara de ser un string HH:mm suelto. En la práctica no ocurre,
+ * porque el horario comercial del salón siempre cierra bastante antes.
+ */
+export function addMinutesToTime(time: string, minutes: number): string {
+  const total = timeToMinutes(time) + minutes;
+  const wrapped = ((total % 1440) + 1440) % 1440;
+  const hh = Math.floor(wrapped / 60).toString().padStart(2, '0');
+  const mm = (wrapped % 60).toString().padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+/**
  * Día de la semana (0 = domingo ... 6 = sábado) a partir de una fecha de
  * calendario "YYYY-MM-DD". Se interpreta siempre como fecha de calendario,
  * no como instante, para que el resultado no dependa del huso horario del
@@ -127,11 +144,12 @@ interface CreateAppointmentParams {
   endTime: string;
   clientId: string;
   productId: string;
+  staffId?: string | null;
   notes?: string;
   status?: AppointmentStatus;
 }
 
-const appointmentInclude = { client: true, product: true } as const;
+const appointmentInclude = { client: true, product: true, staff: true } as const;
 
 /**
  * Comprueba disponibilidad y crea la cita en una única transacción
@@ -142,7 +160,7 @@ const appointmentInclude = { client: true, product: true } as const;
  * P2034 de Prisma (conflicto de serialización) y responder en consecuencia.
  */
 export async function createAppointmentSafely(params: CreateAppointmentParams) {
-  const { dateStr, startTime, endTime, clientId, productId, notes, status } = params;
+  const { dateStr, startTime, endTime, clientId, productId, staffId, notes, status } = params;
 
   return prisma.$transaction(
     async (tx) => {
@@ -157,6 +175,7 @@ export async function createAppointmentSafely(params: CreateAppointmentParams) {
           notes,
           clientId,
           productId,
+          staffId: staffId ?? null,
         },
         include: appointmentInclude,
       });
