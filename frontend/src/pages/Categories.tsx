@@ -16,12 +16,12 @@ const Categories: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'PRODUCT' as any,
+    type: 'PRODUCT' as Category['type'],
     color: '#3B82F6',
     icon: 'folder',
     order: 0,
@@ -308,7 +308,7 @@ const Categories: React.FC = () => {
                     <select
                       required
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as Category['type'] })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     >
                       <option value="PRODUCT">Products</option>

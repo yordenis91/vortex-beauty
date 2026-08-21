@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { GalleryItem, Product } from '../types';
-import { useProducts, useAdminGalleryItems, useCreateGalleryItem, useUpdateGalleryItem, useDeleteGalleryItem } from '../hooks/useQueries';
+import { useProducts, useAdminGalleryItems, useCreateGalleryItem, useUpdateGalleryItem, useDeleteGalleryItem, getErrorMessage } from '../hooks/useQueries';
 import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
 
@@ -89,8 +89,8 @@ const AdminGallery: React.FC = () => {
         toast.success('Elemento eliminado');
         closeDeleteModal();
       },
-      onError: (error: any) => {
-        toast.error(error?.response?.data?.error || 'Error eliminando elemento');
+      onError: (error: unknown) => {
+        toast.error(getErrorMessage(error, 'Error eliminando elemento'));
       },
     });
   };

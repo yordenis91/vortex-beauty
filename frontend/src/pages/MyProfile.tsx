@@ -26,7 +26,18 @@ const MyProfile: React.FC = () => {
     );
   }
 
-  const companyInfo = profileData?.client || {
+  // El backend de /portal/my-profile no devuelve city/country/taxId todavía;
+  // se dejan opcionales aquí para que la UI siga mostrando "N/A" hasta que
+  // exista ese dato real.
+  const companyInfo: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    country?: string;
+    taxId?: string;
+  } = profileData?.client || {
     name: 'Empresa',
     email: 'contact@company.com',
     phone: 'N/A',

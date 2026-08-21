@@ -25,15 +25,15 @@ const Products: React.FC = () => {
   const [filterVisibility, setFilterVisibility] = useState<string>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'MANICURA_BASICA' as any,
+    type: 'MANICURA_BASICA' as Product['type'],
     price: '',
     currency: 'CUP',
-    billingCycle: 'ONE_TIME' as any,
+    billingCycle: 'ONE_TIME' as Product['billingCycle'],
     categoryId: '',
     isPublic: true,
     stock: '',
@@ -428,7 +428,7 @@ const Products: React.FC = () => {
                   <select
                     required
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Product['type'] })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   >
                     <option value="MANICURA_BASICA">Manicura Básica</option>
@@ -498,7 +498,7 @@ const Products: React.FC = () => {
                   <select
                     required
                     value={formData.billingCycle}
-                    onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value as any })}
+                    onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value as Product['billingCycle'] })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   >
                     <option value="ONE_TIME">Una Sola Vez</option>

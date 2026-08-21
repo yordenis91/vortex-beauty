@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots, useClosedDates, useCancelAppointment, useFullyBookedDates } from '../../hooks/useQueries';
+import type { ClosedDate } from '../../types';
 import { Calendar as CalendarIcon, Clock, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
@@ -125,7 +126,7 @@ const ClientAppointments: React.FC = () => {
   });
 
   // Función auxiliar para verificar si una fecha específica está bloqueada
-  const isSpecificClosedDay = (date: Date, closedDates: any[]): boolean => {
+  const isSpecificClosedDay = (date: Date, closedDates: ClosedDate[]): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return closedDates.some(cd => cd.date === dateStr);
   };
@@ -165,14 +166,14 @@ const ClientAppointments: React.FC = () => {
   const upcomingAppointments = useMemo(() => {
     const today = startOfDay(new Date());
     return clientAppointments
-      .filter((apt: any) => {
+      .filter((apt) => {
         if (apt.status !== 'SCHEDULED') return false;
         // Extraemos solo la fecha (YYYY-MM-DD) para evitar conflictos
         const justDate = apt.date.includes('T') ? apt.date.split('T')[0] : apt.date;
         const appointmentDate = startOfDay(parseISO(justDate));
         return !isBefore(appointmentDate, today);
       })
-      .sort((a: any, b: any) => {
+      .sort((a, b) => {
         const justDateA = a.date.includes('T') ? a.date.split('T')[0] : a.date;
         const justDateB = b.date.includes('T') ? b.date.split('T')[0] : b.date;
         
@@ -185,8 +186,8 @@ const ClientAppointments: React.FC = () => {
 
   const cancelledAppointments = useMemo(() => {
     return clientAppointments
-      .filter((apt: any) => apt.status === 'CANCELLED')
-      .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      .filter((apt) => apt.status === 'CANCELLED')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [clientAppointments]);
 
   const formatDate = (date: string, time: string) => {

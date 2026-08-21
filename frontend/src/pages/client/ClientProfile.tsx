@@ -22,6 +22,9 @@ const ClientProfile: React.FC = () => {
 
   useEffect(() => {
     if (profileData?.client) {
+      // Inicializa el formulario editable con el perfil recién cargado del
+      // servidor; después de esto el usuario lo edita localmente.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEmail(profileData.client.email || user?.email || '');
       setPhone(profileData.client.phone || '');
       setAddress(profileData.client.address || '');
@@ -93,7 +96,7 @@ const ClientProfile: React.FC = () => {
           <div className="relative">
             {clientInfo.imageUrl || imageUrl ? (
               <img
-                src={imageUrl || clientInfo.imageUrl}
+                src={(imageUrl || clientInfo.imageUrl) ?? undefined}
                 alt="Foto de perfil"
                 className="h-16 w-16 rounded-full object-cover"
               />

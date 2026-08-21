@@ -3,16 +3,7 @@ import { Bell } from 'lucide-react';
 import { useClientNotifications, useMarkNotificationAsRead } from '../hooks/useQueries';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale/es';
-
-interface Notification {
-  id: string;
-  type: 'WHATSAPP' | 'EMAIL' | 'SYSTEM';
-  recipient: string;
-  content: string;
-  status: 'PENDING' | 'SENT' | 'FAILED';
-  isRead: boolean;
-  createdAt: string;
-}
+import type { Notification } from '../types';
 
 const NotificationBell: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -125,7 +116,7 @@ const NotificationBell: React.FC = () => {
                   }`}
                   onClick={(e) => {
                     if (!notification.isRead) {
-                      handleMarkAsRead(notification.id, e as any);
+                      handleMarkAsRead(notification.id, e);
                     }
                   }}
                 >
