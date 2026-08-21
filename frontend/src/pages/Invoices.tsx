@@ -4,6 +4,7 @@ import type { Invoice, InvoiceItem } from '../types';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import InvoiceForm from '../components/InvoiceForm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   FileText,
   Plus,
@@ -274,22 +275,17 @@ const Invoices: React.FC = () => {
       </div>
 
       {/* Invoice Detail Modal */}
-      {selectedInvoice && (
-        <div className="fixed inset-0 bg-black/50 transition-opacity flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-white">
+      <Dialog open={!!selectedInvoice} onOpenChange={(open) => { if (!open) setSelectedInvoice(null); }}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          {selectedInvoice && (
+          <>
+            <DialogHeader>
+              <DialogTitle>
                 Invoice {selectedInvoice.invoiceNumber}
-              </h3>
-              <button
-                onClick={() => setSelectedInvoice(null)}
-                className="text-blue-100 hover:text-white transition"
-              >
-                <XCircle className="h-6 w-6" />
-              </button>
-            </div>
+              </DialogTitle>
+            </DialogHeader>
 
-            <div className="p-8 space-y-8">
+            <div className="space-y-8">
               <div>
                 <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Client & Invoice Information</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -389,9 +385,10 @@ const Invoices: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <InvoiceForm
         isOpen={showCreateModal || !!editingInvoice}

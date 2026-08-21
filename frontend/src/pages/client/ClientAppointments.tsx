@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots, useClosedDates, useCancelAppointment, useFullyBookedDates } from '../../hooks/useQueries';
-import { Calendar as CalendarIcon, Clock, X, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale/es';
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -316,19 +317,20 @@ const ClientAppointments: React.FC = () => {
         <TabsContent value="agendar" className="space-y-4">
           {appointmentsLoading ? (
             <div className="flex items-center justify-center h-96">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           ) : (
             <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden mb-8 p-6">
               <div className="overflow-x-auto">
                 <Calendar
                   mode="single"
+                  locale={es}
                   selected={formData.date}
                   onSelect={handleDateSelect}
                   disabled={isDayBlocked}
                   className="rounded-lg w-full min-w-[17rem]"
                   classNames={{
-                    day_selected: "bg-indigo-600 text-white hover:bg-indigo-700 rounded-full",
+                    day_selected: "bg-blue-600 text-white hover:bg-blue-700 rounded-full",
                     day_disabled: "text-gray-400 cursor-not-allowed",
                   }}
                 />
@@ -339,7 +341,7 @@ const ClientAppointments: React.FC = () => {
           {formData.date && !isDayBlocked(formData.date) && (
             <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
               <DrawerTrigger asChild>
-                <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl py-3 text-lg font-semibold">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl py-3 text-lg font-semibold">
                   Ver horarios para {format(formData.date, 'EEEE d MMMM', { locale: es })}
                 </Button>
               </DrawerTrigger>
@@ -386,7 +388,7 @@ const ClientAppointments: React.FC = () => {
                     <label className="text-sm font-semibold text-gray-900 mb-3 block">Hora <span className="text-red-500">*</span></label>
                     {slotsLoading ? (
                       <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         <span className="ml-3 text-gray-600">Cargando horarios...</span>
                       </div>
                     ) : availableSlots.length > 0 ? (
@@ -397,7 +399,7 @@ const ClientAppointments: React.FC = () => {
                             type="button"
                             variant={formData.startTime === slot ? "default" : "outline"}
                             onClick={() => handleSelectSlot(slot)}
-                            className={formData.startTime === slot ? "bg-indigo-600" : "rounded-xl"}
+                            className={formData.startTime === slot ? "bg-blue-600" : "rounded-xl"}
                           >
                             {slot}
                           </Button>
@@ -428,7 +430,7 @@ const ClientAppointments: React.FC = () => {
                     <Button
                       type="submit"
                       disabled={createMutation.isPending || !formData.productId || !formData.startTime}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
                     >
                       {createMutation.isPending ? (
                         <>
@@ -480,7 +482,7 @@ const ClientAppointments: React.FC = () => {
                     <div className="p-6">
                       <div className="flex items-center space-x-4">
                         {/* Recuadro con día y mes */}
-                        <div className="bg-indigo-50 text-indigo-700 rounded-xl p-3 text-center min-w-[70px]">
+                        <div className="bg-blue-50 text-blue-700 rounded-xl p-3 text-center min-w-[70px]">
                           <div className="text-lg font-bold">{day}</div>
                           <div className="text-xs uppercase">{month}</div>
                         </div>
@@ -539,22 +541,18 @@ const ClientAppointments: React.FC = () => {
       </Tabs>
 
       {/* Modal de Detalles del Evento */}
-      {selectedEventModal && !appointmentToCancel && (
-        <div className="fixed inset-0 bg-black/50 transition-opacity flex items-center justify-center z-50 p-4">
-          <div className="absolute inset-0" onClick={() => setSelectedEventModal(null)} />
-          <div className="relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
-            <div className="sticky top-0 z-10 bg-gradient-to-r from-indigo-600 to-indigo-700 px-8 py-6 flex items-center justify-between">
-              <h3 className="text-2xl font-bold text-white">Detalles de tu Cita</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedEventModal(null)}
-                className="text-white hover:text-indigo-100 focus:outline-none"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+      <Dialog
+        open={!!selectedEventModal && !appointmentToCancel}
+        onOpenChange={(open) => { if (!open) setSelectedEventModal(null); }}
+      >
+        <DialogContent className="sm:max-w-md">
+          {selectedEventModal && (
+          <>
+            <DialogHeader>
+              <DialogTitle>Detalles de tu Cita</DialogTitle>
+            </DialogHeader>
 
-            <div className="p-8 space-y-6">
+            <div className="space-y-6">
               {/* Servicio */}
               <div className="border-b border-gray-200 pb-4">
                 <p className="text-sm font-medium text-gray-500">Servicio</p>
@@ -567,7 +565,7 @@ const ClientAppointments: React.FC = () => {
               <div className="border-b border-gray-200 pb-4">
                 <p className="text-sm font-medium text-gray-500">Fecha y Hora</p>
                 <p className="text-lg font-semibold text-gray-900 mt-1 flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5 text-indigo-600" />
+                  <CalendarIcon className="h-5 w-5 text-blue-600" />
                   {formatDate(selectedEventModal.date, selectedEventModal.startTime)}
                 </p>
               </div>
@@ -576,14 +574,14 @@ const ClientAppointments: React.FC = () => {
               {selectedEventModal.product?.price && (
                 <div className="border-b border-gray-200 pb-4">
                   <p className="text-sm font-medium text-gray-500">Precio</p>
-                  <p className="text-lg font-semibold text-indigo-600 mt-1">
+                  <p className="text-lg font-semibold text-blue-600 mt-1">
                     ${Number(selectedEventModal.product.price).toFixed(2)}
                   </p>
                 </div>
               )}
 
               {/* Estado */}
-              <div className="pb-6">
+              <div className="pb-2">
                 <p className="text-sm font-medium text-gray-500">Estado</p>
                 <Badge className="mt-1">
                   {selectedEventModal.status === 'SCHEDULED' && 'Agendada'}
@@ -615,9 +613,10 @@ const ClientAppointments: React.FC = () => {
                 )}
               </div>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* AlertDialog para cancelación */}
       <AlertDialog open={appointmentToCancel !== null} onOpenChange={(open) => !open && setAppointmentToCancel(null)}>

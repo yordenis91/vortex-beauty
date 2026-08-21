@@ -3,6 +3,7 @@ import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory 
 import type { Category } from '../types';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Folder,
   Plus,
@@ -260,33 +261,28 @@ const Categories: React.FC = () => {
       </div>
 
       {/* Create/Edit Modal */}
-      {(showCreateModal || editingCategory) && (
-        <div className="fixed inset-0 bg-black/50 transition-opacity z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="relative w-full max-w-4xl mt-12 rounded-2xl shadow-2xl bg-white overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
-              <div>
-                <h3 className="text-2xl font-bold text-white">
-                  {editingCategory ? 'Editar Categoría' : 'Agregar Nueva Categoría'}
-                </h3>
-                <p className="mt-2 text-sm text-blue-100">
-                  {editingCategory
-                    ? 'Actualiza los datos de la categoría.'
-                    : 'Crea una nueva categoría para organizar tu contenido.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setEditingCategory(null);
-                  resetForm();
-                }}
-                className="text-blue-100 hover:text-white transition"
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={editingCategory ? handleEdit : handleCreate} className="p-8 space-y-8">
+      <Dialog
+        open={showCreateModal || !!editingCategory}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowCreateModal(false);
+            setEditingCategory(null);
+            resetForm();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingCategory ? 'Editar Categoría' : 'Agregar Nueva Categoría'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingCategory
+                ? 'Actualiza los datos de la categoría.'
+                : 'Crea una nueva categoría para organizar tu contenido.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={editingCategory ? handleEdit : handleCreate} className="space-y-8">
               <div>
                 <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
                   Detalles de la categoría
@@ -388,9 +384,8 @@ const Categories: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
       
       <ConfirmModal
         isOpen={itemToDelete !== null}

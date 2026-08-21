@@ -9,6 +9,7 @@ import {
 } from '../hooks/useQueries';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   BookOpen,
   Plus,
@@ -297,11 +298,14 @@ const KnowledgeBasePage: React.FC = () => {
       </div>
 
       {/* Create Modal */}
-      {showCreateModal && !showDetailModal && (
-        <div className="fixed inset-0 bg-black/50 transition-opacity overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Crear Nuevo Artículo</h3>
+      <Dialog
+        open={showCreateModal && !showDetailModal}
+        onOpenChange={(open) => { if (!open) { setShowCreateModal(false); resetForm(); } }}
+      >
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Artículo</DialogTitle>
+          </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Título *</label>
@@ -371,21 +375,24 @@ const KnowledgeBasePage: React.FC = () => {
                     type="submit"
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                   >
-                    Actualizar Artículo
+                    Crear Artículo
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Modal */}
-      {showDetailModal && selectedArticle && (
-        <div className="fixed inset-0 bg-black/50 transition-opacity overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Artículo</h3>
+      <Dialog
+        open={showDetailModal && !!selectedArticle}
+        onOpenChange={(open) => { if (!open) { setShowDetailModal(false); setSelectedArticle(null); resetForm(); } }}
+      >
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+          {selectedArticle && (
+          <>
+            <DialogHeader>
+              <DialogTitle>Editar Artículo</DialogTitle>
+            </DialogHeader>
               <form onSubmit={handleUpdate} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Título *</label>
@@ -466,11 +473,11 @@ const KnowledgeBasePage: React.FC = () => {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
-      
+          </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <ConfirmModal
         isOpen={itemToDelete !== null}
         title="Eliminar Artículo"
