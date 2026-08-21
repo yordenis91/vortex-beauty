@@ -181,8 +181,8 @@ const Clients: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Clientes</h2>
-          <p className="mt-1 text-sm text-gray-500">Gestiona tu cartera de clientes</p>
+          <h2 className="text-2xl font-bold text-foreground">Clientes</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Gestiona tu cartera de clientes</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -194,9 +194,9 @@ const Clients: React.FC = () => {
       </div>
 
       {/* Buscador */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+      <div className="bg-card p-4 rounded-lg shadow-sm border border-border">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <input
             type="text"
             placeholder="Buscar por nombre o email..."
@@ -210,32 +210,32 @@ const Clients: React.FC = () => {
       {/* Grid de Clientes */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredClients.length === 0 ? (
-          <div className="col-span-full bg-white rounded-lg shadow-sm border border-gray-100 px-4 py-12 text-center text-gray-500">
-            <Users className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+          <div className="col-span-full bg-card rounded-lg shadow-sm border border-border px-4 py-12 text-center text-muted-foreground">
+            <Users className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
             <p>No se encontraron clientes.</p>
           </div>
         ) : (
           filteredClients.map((client) => (
-            <div key={client.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col transition hover:shadow-md">
+            <div key={client.id} className="bg-card rounded-xl shadow-sm border border-border p-6 flex flex-col transition hover:shadow-md">
               <div className="flex justify-between items-start mb-4">
                 <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
                   {client.name.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex space-x-1 shrink-0">
-                  <button onClick={() => openEdit(client)} className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50 transition">
+                  <button onClick={() => openEdit(client)} className="p-2 text-muted-foreground hover:text-blue-600 rounded-full hover:bg-blue-50 transition">
                     <Edit className="h-4 w-4" />
                   </button>
-                  <button onClick={() => handleDelete(client.id)} className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50 transition">
+                  <button onClick={() => handleDelete(client.id)} className="p-2 text-muted-foreground hover:text-red-600 rounded-full hover:bg-red-50 transition">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-bold text-gray-900 truncate">{client.name}</h3>
+                <h3 className="text-lg font-bold text-foreground truncate">{client.name}</h3>
                 <div className="mt-2 space-y-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Mail className="h-4 w-4 shrink-0 mr-2 text-gray-400" />
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4 shrink-0 mr-2 text-muted-foreground" />
                     <span className="truncate">{client.email}</span>
                   </div>
                   {/* Puedes agregar aquí el teléfono si lo deseas, siguiendo el mismo patrón del Mail */}
@@ -262,7 +262,7 @@ const Clients: React.FC = () => {
                   onChange={handleImageChange}
                   className="hidden"
                 />
-                <div className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 group-hover:border-blue-500 transition flex items-center justify-center relative overflow-hidden">
+                <div className="w-24 h-24 rounded-full bg-muted border-2 border-dashed border-border group-hover:border-blue-500 transition flex items-center justify-center relative overflow-hidden">
                   {formData.imageUrl ? (
                     <img
                       src={formData.imageUrl}
@@ -270,25 +270,25 @@ const Clients: React.FC = () => {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-blue-500 transition">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground group-hover:text-blue-500 transition">
                       <Camera className="h-8 w-8 mb-1" />
                       <span className="text-xs">Foto</span>
                     </div>
                   )}
                 </div>
-                <p className="text-center text-xs text-gray-500 mt-2 group-hover:text-blue-600 transition">Haz clic para cambiar</p>
+                <p className="text-center text-xs text-muted-foreground mt-2 group-hover:text-blue-600 transition">Haz clic para cambiar</p>
               </label>
             </div>
 
             {/* Información Personal Section */}
             <div>
-              <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+              <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">
                 Información Personal
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Nombre Completo <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -296,14 +296,14 @@ const Clients: React.FC = () => {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     placeholder="Ej: María García"
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -311,35 +311,35 @@ const Clients: React.FC = () => {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     placeholder="maria@example.com"
                   />
                 </div>
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Teléfono
                   </label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     placeholder="+34 612 345 678"
                   />
                 </div>
 
                 {/* Address */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-foreground mb-2">
                     Dirección
                   </label>
                   <input
                     type="text"
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     placeholder="Calle Principal 123"
                   />
                 </div>
@@ -349,27 +349,27 @@ const Clients: React.FC = () => {
             {/* Seguridad Section */}
             {!editingClient && (
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">
+                <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">
                   Credenciales de Acceso
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {/* Username */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Usuario
                     </label>
                     <input
                       type="text"
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       placeholder="nombre_usuario"
                     />
                   </div>
 
                   {/* Password */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Contraseña
                     </label>
                     <div className="relative">
@@ -377,13 +377,13 @@ const Clients: React.FC = () => {
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        className="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-muted-foreground"
                       >
                         {showPassword ? (
                           <EyeOff className="h-5 w-5" />
@@ -396,7 +396,7 @@ const Clients: React.FC = () => {
 
                   {/* Confirm Password */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
                       Confirmar Contraseña
                     </label>
                     <div className="relative">
@@ -404,13 +404,13 @@ const Clients: React.FC = () => {
                         type={showConfirmPassword ? "text" : "password"}
                         value={formData.confirmPassword}
                         onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                        className="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-muted-foreground"
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="h-5 w-5" />
@@ -423,28 +423,28 @@ const Clients: React.FC = () => {
                 </div>
 
                 {/* Welcome Email Checkbox */}
-                <div className="flex items-center space-x-3 bg-blue-50 rounded-lg p-4 border border-blue-100">
+                <div className="flex items-center space-x-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg p-4 border border-blue-100 dark:border-blue-900">
                   <input
                     id="sendWelcomeEmail"
                     type="checkbox"
                     checked={formData.sendWelcomeEmail}
                     onChange={(e) => setFormData({ ...formData, sendWelcomeEmail: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded cursor-pointer"
+                    className="h-4 w-4 text-blue-600 border-border rounded cursor-pointer"
                   />
-                  <label htmlFor="sendWelcomeEmail" className="text-sm text-gray-700 cursor-pointer">
+                  <label htmlFor="sendWelcomeEmail" className="text-sm text-foreground cursor-pointer">
                     <span className="font-medium">Enviar correo de bienvenida</span>
-                    <p className="text-xs text-gray-500">El cliente recibirá sus credenciales por email</p>
+                    <p className="text-xs text-muted-foreground">El cliente recibirá sus credenciales por email</p>
                   </label>
                 </div>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+            <div className="flex justify-end gap-3 pt-6 border-t border-border">
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+                className="px-6 py-2 text-foreground bg-muted rounded-lg hover:bg-muted transition font-medium"
               >
                 Cancelar
               </button>
