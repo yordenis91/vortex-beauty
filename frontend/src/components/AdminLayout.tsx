@@ -25,7 +25,7 @@ const AdminLayout: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-muted">
         <AdminSidebar />
 
         <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
@@ -37,7 +37,7 @@ const AdminLayout: React.FC = () => {
                 <label htmlFor="search-field" className="sr-only">
                   Buscar
                 </label>
-                <div className="relative w-full min-w-0 text-gray-400 focus-within:text-gray-600">
+                <div className="relative w-full min-w-0 text-muted-foreground focus-within:text-muted-foreground">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center">
                     <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
                       <path
@@ -49,7 +49,7 @@ const AdminLayout: React.FC = () => {
                   </div>
                   <input
                     id="search-field"
-                    className="block h-full w-full border-0 py-2 pl-8 pr-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-transparent sm:text-sm"
+                    className="block h-full w-full border-0 py-2 pl-8 pr-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:placeholder:text-muted-foreground focus:ring-0 focus:border-transparent sm:text-sm"
                     placeholder="Buscar..."
                     type="search"
                     name="search"
@@ -65,7 +65,7 @@ const AdminLayout: React.FC = () => {
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex shrink-0 items-center gap-2 border-l border-gray-200 pl-4 text-sm">
+                  <Button variant="ghost" className="flex shrink-0 items-center gap-2 border-l border-border pl-4 text-sm">
                     {user?.imageUrl ? (
                       <img
                         src={user.imageUrl}
@@ -75,7 +75,7 @@ const AdminLayout: React.FC = () => {
                     ) : (
                       <User className="h-8 w-8" />
                     )}
-                    <span>{user?.name}</span>
+                    <span className="hidden sm:inline-block max-w-24 truncate">{user?.name}</span>
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -96,7 +96,7 @@ const AdminLayout: React.FC = () => {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 bg-gray-50">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 bg-muted">
             <div className="mx-auto w-full max-w-7xl space-y-6">
               <Outlet />
             </div>

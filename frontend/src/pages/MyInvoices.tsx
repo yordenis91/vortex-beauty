@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Calendar, DollarSign, Loader } from 'lucide-react';
+import { FileText, Calendar, DollarSign, Loader, Download } from 'lucide-react';
 import { useMyInvoices } from '../hooks/useQueries';
 
 const MyInvoices: React.FC = () => {
@@ -15,6 +15,19 @@ const MyInvoices: React.FC = () => {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusBarColor = (status: string) => {
+    switch (status) {
+      case 'PAID':
+        return 'bg-green-500';
+      case 'OVERDUE':
+        return 'bg-red-500';
+      case 'CANCELLED':
+        return 'bg-gray-400';
+      default:
+        return 'bg-yellow-400';
     }
   };
 
@@ -79,59 +92,49 @@ const MyInvoices: React.FC = () => {
         </div>
       </div>
 
-      {/* Invoices Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      {/* Invoices Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {invoices.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No hay facturas disponibles</p>
+          <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-12 text-center text-gray-500">
+            <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+            <p className="mt-1 text-sm text-gray-500">No hay facturas disponibles</p>
           </div>
         ) : (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Número
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha Vencimiento
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acción
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {invoices.map((invoice) => (
-                <tr key={invoice.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {invoice.invoiceNumber}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('es-ES') : '-'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${(invoice.totalAmount || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(invoice.status)}`}>
-                      {invoice.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <a href="#" className="text-blue-600 hover:text-blue-900">
-                      Descargar PDF
-                    </a>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          invoices.map((invoice) => (
+            <div key={invoice.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex flex-col transition hover:shadow-md relative overflow-hidden">
+              {/* Barra de color superior según estado */}
+              <div className={`absolute top-0 left-0 right-0 h-1 ${getStatusBarColor(invoice.status)}`}></div>
+
+              <div className="flex justify-between items-start mb-4 mt-2 gap-2">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="shrink-0 p-2 bg-gray-50 rounded-lg">
+                    <FileText className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-900 truncate">{invoice.invoiceNumber}</h3>
+                </div>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold shrink-0 ${getStatusColor(invoice.status)}`}>
+                  {invoice.status}
+                </span>
+              </div>
+
+              <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center text-xs text-gray-500">
+                    <Calendar className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                    Vence: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('es-ES') : '-'}
+                  </div>
+                  <div className="flex items-center text-lg font-bold text-gray-900">
+                    <DollarSign className="h-5 w-5 text-gray-400 shrink-0" />
+                    {(invoice.totalAmount || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <a href="#" className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800">
+                  <Download className="h-4 w-4" />
+                  Descargar
+                </a>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>

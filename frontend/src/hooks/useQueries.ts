@@ -1,7 +1,53 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import api from '../lib/api';
-import type { Client, Project, Invoice, Product, Category, Ticket, Subscription, Appointment, GalleryItem, ClosedDate, ScheduleOverride, Staff } from '../types';
+import type {
+  Client,
+  Project,
+  Invoice,
+  Product,
+  Category,
+  Ticket,
+  Subscription,
+  Appointment,
+  GalleryItem,
+  ClosedDate,
+  ScheduleOverride,
+  Staff,
+  Notification,
+  ClientProfileResponse,
+  UpdateClientProfileRequest,
+  CreateGalleryItemRequest,
+  KnowledgeBase,
+  TicketMessage,
+  CreateClientRequest,
+  CreateInvoiceRequest,
+  CreateProductRequest,
+  CreateCategoryRequest,
+  CreateSubscriptionRequest,
+  CreateTicketRequest,
+  CreateTicketMessageRequest,
+  CreateKnowledgeBaseRequest,
+  CreateAppointmentRequest,
+  UpdateAppointmentRequest,
+  CreateStaffRequest,
+} from '../types';
+
+// Extrae un mensaje legible de un error de axios (o de cualquier otro tipo)
+// sin depender de `any` para acceder a sus campos.
+export function getErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object') {
+    const err = error as { response?: { data?: { error?: string } }; message?: string };
+    return err.response?.data?.error || err.message || fallback;
+  }
+  return fallback;
+}
+
+// Opciones extra que aceptan los hooks de mutación de este archivo, además
+// de las que ya define useMutation. En la práctica solo se usa onSuccess.
+type MutationOptions<TData = unknown, TVariables = unknown> = {
+  onSuccess?: (data: TData, variables: TVariables, context: unknown) => void;
+};
 
 // Clients
 export const useClients = () => {
@@ -71,18 +117,17 @@ export const useTickets = () => {
 };
 
 // Mutations
-export const useUpdateClient = (options?: any) => {
+export const useUpdateClient = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, clientData }: { id: string; clientData: any }) => {
+    mutationFn: async ({ id, clientData }: { id: string; clientData: Partial<CreateClientRequest> }) => {
       const response = await api.put(`/clients/${id}`, clientData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -91,7 +136,7 @@ export const useUpdateClient = (options?: any) => {
   });
 };
 
-export const useDeleteClient = (options?: any) => {
+export const useDeleteClient = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -99,9 +144,8 @@ export const useDeleteClient = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/clients/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -110,18 +154,17 @@ export const useDeleteClient = (options?: any) => {
   });
 };
 
-export const useCreateClient = (options?: any) => {
+export const useCreateClient = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (clientData: any) => {
+    mutationFn: async (clientData: CreateClientRequest) => {
       const response = await api.post('/clients', clientData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
@@ -130,18 +173,17 @@ export const useCreateClient = (options?: any) => {
   });
 };
 
-export const useUpdateProject = (options?: any) => {
+export const useUpdateProject = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, projectData }: { id: string; projectData: any }) => {
+    mutationFn: async ({ id, projectData }: { id: string; projectData: Partial<Project> }) => {
       const response = await api.put(`/projects/${id}`, projectData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -150,7 +192,7 @@ export const useUpdateProject = (options?: any) => {
   });
 };
 
-export const useDeleteProject = (options?: any) => {
+export const useDeleteProject = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -158,9 +200,8 @@ export const useDeleteProject = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/projects/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -169,18 +210,17 @@ export const useDeleteProject = (options?: any) => {
   });
 };
 
-export const useCreateProject = (options?: any) => {
+export const useCreateProject = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (projectData: any) => {
+    mutationFn: async (projectData: Partial<Project>) => {
       const response = await api.post('/projects', projectData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
@@ -189,18 +229,17 @@ export const useCreateProject = (options?: any) => {
   });
 };
 
-export const useCreateInvoice = (options?: any) => {
+export const useCreateInvoice = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (invoiceData: any) => {
+    mutationFn: async (invoiceData: CreateInvoiceRequest) => {
       const response = await api.post('/invoices', invoiceData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -209,18 +248,17 @@ export const useCreateInvoice = (options?: any) => {
   });
 };
 
-export const useUpdateInvoice = (options?: any) => {
+export const useUpdateInvoice = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, invoiceData }: { id: string; invoiceData: any }) => {
+    mutationFn: async ({ id, invoiceData }: { id: string; invoiceData: Partial<CreateInvoiceRequest> }) => {
       const response = await api.put(`/invoices/${id}`, invoiceData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -229,7 +267,7 @@ export const useUpdateInvoice = (options?: any) => {
   });
 };
 
-export const useDeleteInvoice = (options?: any) => {
+export const useDeleteInvoice = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -237,9 +275,8 @@ export const useDeleteInvoice = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/invoices/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -248,18 +285,17 @@ export const useDeleteInvoice = (options?: any) => {
   });
 };
 
-export const useUpdateProduct = (options?: any) => {
+export const useUpdateProduct = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, productData }: { id: string; productData: any }) => {
+    mutationFn: async ({ id, productData }: { id: string; productData: Partial<CreateProductRequest> }) => {
       const response = await api.put(`/products/${id}`, productData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -268,7 +304,7 @@ export const useUpdateProduct = (options?: any) => {
   });
 };
 
-export const useDeleteProduct = (options?: any) => {
+export const useDeleteProduct = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -276,9 +312,8 @@ export const useDeleteProduct = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/products/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -287,18 +322,17 @@ export const useDeleteProduct = (options?: any) => {
   });
 };
 
-export const useCreateProduct = (options?: any) => {
+export const useCreateProduct = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (productData: any) => {
+    mutationFn: async (productData: CreateProductRequest) => {
       const response = await api.post('/products', productData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -307,18 +341,17 @@ export const useCreateProduct = (options?: any) => {
   });
 };
 
-export const useCreateCategory = (options?: any) => {
+export const useCreateCategory = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (categoryData: any) => {
+    mutationFn: async (categoryData: CreateCategoryRequest) => {
       const response = await api.post('/categories', categoryData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -327,18 +360,17 @@ export const useCreateCategory = (options?: any) => {
   });
 };
 
-export const useUpdateCategory = (options?: any) => {
+export const useUpdateCategory = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, categoryData }: { id: string; categoryData: any }) => {
+    mutationFn: async ({ id, categoryData }: { id: string; categoryData: Partial<CreateCategoryRequest> }) => {
       const response = await api.put(`/categories/${id}`, categoryData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -347,7 +379,7 @@ export const useUpdateCategory = (options?: any) => {
   });
 };
 
-export const useDeleteCategory = (options?: any) => {
+export const useDeleteCategory = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -355,9 +387,8 @@ export const useDeleteCategory = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/categories/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -366,18 +397,17 @@ export const useDeleteCategory = (options?: any) => {
   });
 };
 
-export const useCreateTicket = (options?: any) => {
+export const useCreateTicket = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (ticketData: any) => {
+    mutationFn: async (ticketData: CreateTicketRequest) => {
       const response = await api.post('/tickets', ticketData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -397,18 +427,17 @@ export const useSubscriptions = () => {
   });
 };
 
-export const useCreateSubscription = (options?: any) => {
+export const useCreateSubscription = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (subscriptionData: any) => {
+    mutationFn: async (subscriptionData: CreateSubscriptionRequest) => {
       const response = await api.post('/subscriptions', subscriptionData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -417,7 +446,7 @@ export const useCreateSubscription = (options?: any) => {
   });
 };
 
-export const useCancelSubscription = (options?: any) => {
+export const useCancelSubscription = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -426,9 +455,8 @@ export const useCancelSubscription = (options?: any) => {
       const response = await api.put(`/subscriptions/${id}/cancel`, {});
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -437,7 +465,7 @@ export const useCancelSubscription = (options?: any) => {
   });
 };
 
-export const useDeleteSubscription = (options?: any) => {
+export const useDeleteSubscription = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -445,9 +473,8 @@ export const useDeleteSubscription = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/subscriptions/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -456,7 +483,7 @@ export const useDeleteSubscription = (options?: any) => {
   });
 };
 
-export const useRenewSubscription = (options?: any) => {
+export const useRenewSubscription = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -465,9 +492,8 @@ export const useRenewSubscription = (options?: any) => {
       const response = await api.post(`/subscriptions/${id}/renew`, {});
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
@@ -503,7 +529,7 @@ export const useMyProfile = () => {
   return useQuery({
     queryKey: ['my-profile'],
     queryFn: async () => {
-      const response = await api.get<any>('/portal/my-profile');
+      const response = await api.get<ClientProfileResponse>('/portal/my-profile');
       return response.data;
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
@@ -514,25 +540,24 @@ export const useClientProfile = () => {
   return useQuery({
     queryKey: ['client-profile'],
     queryFn: async () => {
-      const response = await api.get<any>('/portal/my-profile');
+      const response = await api.get<ClientProfileResponse>('/portal/my-profile');
       return response.data;
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 
-export const useUpdateClientProfile = (options?: any) => {
+export const useUpdateClientProfile = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (profileData: any) => {
+    mutationFn: async (profileData: UpdateClientProfileRequest) => {
       const response = await api.put('/portal/my-profile', profileData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['client-profile'] });
@@ -547,24 +572,23 @@ export const useKnowledgeBase = () => {
   return useQuery({
     queryKey: ['knowledge-base'],
     queryFn: async () => {
-      const response = await api.get<any[]>('/knowledge-base');
+      const response = await api.get<KnowledgeBase[]>('/knowledge-base');
       return response.data;
     },
   });
 };
 
-export const useCreateKnowledgeBase = (options?: any) => {
+export const useCreateKnowledgeBase = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (articleData: any) => {
+    mutationFn: async (articleData: CreateKnowledgeBaseRequest) => {
       const response = await api.post('/knowledge-base', articleData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
@@ -573,18 +597,17 @@ export const useCreateKnowledgeBase = (options?: any) => {
   });
 };
 
-export const useUpdateKnowledgeBase = (options?: any) => {
+export const useUpdateKnowledgeBase = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, articleData }: { id: string; articleData: any }) => {
+    mutationFn: async ({ id, articleData }: { id: string; articleData: Partial<CreateKnowledgeBaseRequest> }) => {
       const response = await api.put(`/knowledge-base/${id}`, articleData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
@@ -593,7 +616,7 @@ export const useUpdateKnowledgeBase = (options?: any) => {
   });
 };
 
-export const useDeleteKnowledgeBase = (options?: any) => {
+export const useDeleteKnowledgeBase = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -601,9 +624,8 @@ export const useDeleteKnowledgeBase = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/knowledge-base/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
@@ -617,25 +639,24 @@ export const useTicketMessages = (ticketId: string) => {
   return useQuery({
     queryKey: ['ticket-messages', ticketId],
     queryFn: async () => {
-      const response = await api.get<any[]>(`/tickets/${ticketId}/messages`);
+      const response = await api.get<TicketMessage[]>(`/tickets/${ticketId}/messages`);
       return response.data;
     },
     enabled: !!ticketId,
   });
 };
 
-export const useCreateTicketMessage = (options?: any) => {
+export const useCreateTicketMessage = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ ticketId, messageData }: { ticketId: string; messageData: any }) => {
+    mutationFn: async ({ ticketId, messageData }: { ticketId: string; messageData: CreateTicketMessageRequest }) => {
       const response = await api.post(`/tickets/${ticketId}/messages`, messageData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       const { ticketId } = variables;
@@ -647,18 +668,17 @@ export const useCreateTicketMessage = (options?: any) => {
 };
 
 // Ticket Updates
-export const useUpdateTicket = (options?: any) => {
+export const useUpdateTicket = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, ticketData }: { id: string; ticketData: any }) => {
+    mutationFn: async ({ id, ticketData }: { id: string; ticketData: Partial<Ticket> }) => {
       const response = await api.patch(`/tickets/${id}`, ticketData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -678,18 +698,17 @@ export const useAppointments = () => {
   });
 };
 
-export const useCreateAppointment = (options?: any) => {
+export const useCreateAppointment = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (appointmentData: any) => {
+    mutationFn: async (appointmentData: CreateAppointmentRequest) => {
       const response = await api.post('/appointments', appointmentData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -716,18 +735,17 @@ export const useAvailableSlots = (date: string, productId?: string) => {
   });
 };
 
-export const useUpdateAppointment = (options?: any) => {
+export const useUpdateAppointment = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, appointmentData }: { id: string; appointmentData: any }) => {
+    mutationFn: async ({ id, appointmentData }: { id: string; appointmentData: UpdateAppointmentRequest }) => {
       const response = await api.put(`/appointments/${id}`, appointmentData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -738,7 +756,7 @@ export const useUpdateAppointment = (options?: any) => {
   });
 };
 
-export const useDeleteAppointment = (options?: any) => {
+export const useDeleteAppointment = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -746,9 +764,8 @@ export const useDeleteAppointment = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/appointments/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
@@ -779,7 +796,7 @@ export const useClosedDates = () => {
  * Hook para crear un nuevo día cerrado
  * Usa endpoint POST /api/closed-dates
  */
-export const useCreateClosedDate = (options?: any) => {
+export const useCreateClosedDate = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -788,9 +805,8 @@ export const useCreateClosedDate = (options?: any) => {
       const response = await api.post('/closed-dates', closedDateData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['closed-dates'] });
@@ -803,7 +819,7 @@ export const useCreateClosedDate = (options?: any) => {
  * Hook para eliminar un día cerrado
  * Usa endpoint DELETE /api/closed-dates/:id
  */
-export const useDeleteClosedDate = (options?: any) => {
+export const useDeleteClosedDate = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -811,9 +827,8 @@ export const useDeleteClosedDate = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/closed-dates/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['closed-dates'] });
@@ -842,7 +857,7 @@ export const useClientAppointments = () => {
  * Hook para cancelar una cita del cliente autenticado
  * Usa endpoint PATCH /api/portal/appointments/:id/cancel
  */
-export const useCancelAppointment = (options?: any) => {
+export const useCancelAppointment = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
 
@@ -852,10 +867,8 @@ export const useCancelAppointment = (options?: any) => {
       const response = await api.patch(`/portal/appointments/${appointmentId}/cancel`);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage =
-        error?.response?.data?.error || error?.message || 'No se pudo cancelar la cita. Intenta nuevamente.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'No se pudo cancelar la cita. Intenta nuevamente.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
@@ -900,19 +913,18 @@ export const useAdminGalleryItems = () => {
   });
 };
 
-export const useCreateGalleryItem = (options?: any) => {
+export const useCreateGalleryItem = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
 
   return useMutation({
     ...otherOptions,
-    mutationFn: async (payload: any) => {
+    mutationFn: async (payload: CreateGalleryItemRequest) => {
       const response = await api.post('/gallery', payload);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Error creando elemento de galería.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Error creando elemento de galería.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['admin-gallery-items'] });
@@ -921,19 +933,18 @@ export const useCreateGalleryItem = (options?: any) => {
   });
 };
 
-export const useUpdateGalleryItem = (options?: any) => {
+export const useUpdateGalleryItem = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
 
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, payload }: { id: string; payload: any }) => {
+    mutationFn: async ({ id, payload }: { id: string; payload: Partial<CreateGalleryItemRequest> }) => {
       const response = await api.put(`/gallery/${id}`, payload);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Error actualizando elemento de galería.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Error actualizando elemento de galería.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['admin-gallery-items'] });
@@ -942,7 +953,7 @@ export const useUpdateGalleryItem = (options?: any) => {
   });
 };
 
-export const useDeleteGalleryItem = (options?: any) => {
+export const useDeleteGalleryItem = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
 
@@ -951,9 +962,8 @@ export const useDeleteGalleryItem = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/gallery/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Error eliminando elemento de galería.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Error eliminando elemento de galería.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['admin-gallery-items'] });
@@ -966,18 +976,17 @@ export const useDeleteGalleryItem = (options?: any) => {
  * Hook para crear una nueva cita como cliente
  * Usa endpoint /api/portal/appointments
  */
-export const useCreateClientAppointment = (options?: any) => {
+export const useCreateClientAppointment = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (appointmentData: any) => {
+    mutationFn: async (appointmentData: CreateAppointmentRequest) => {
       const response = await api.post('/portal/appointments', appointmentData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al crear la cita.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error al crear la cita.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
@@ -996,7 +1005,7 @@ export const useNotifications = () => {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
-      const response = await api.get('/notifications');
+      const response = await api.get<Notification[]>('/notifications');
       return response.data;
     },
   });
@@ -1011,7 +1020,7 @@ export const useClientNotifications = () => {
   return useQuery({
     queryKey: ['client-notifications'],
     queryFn: async () => {
-      const response = await api.get('/notifications/client');
+      const response = await api.get<Notification[]>('/notifications/client');
       return response.data;
     },
     refetchInterval: 30000, // Polling cada 30 segundos
@@ -1022,7 +1031,7 @@ export const useClientNotifications = () => {
  * Hook para marcar una notificación como leída
  * Usa endpoint PUT /api/notifications/:id/read
  */
-export const useMarkNotificationAsRead = (options?: any) => {
+export const useMarkNotificationAsRead = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -1031,9 +1040,8 @@ export const useMarkNotificationAsRead = (options?: any) => {
       const response = await api.put(`/notifications/${notificationId}/read`);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al actualizar la notificación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error al actualizar la notificación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['client-notifications'] });
@@ -1077,7 +1085,7 @@ export const useScheduleOverride = (date: string) => {
  * Hook para crear o actualizar una excepción de horario
  * Usa endpoint PUT /api/overrides/:date
  */
-export const useUpsertScheduleOverride = (options?: any) => {
+export const useUpsertScheduleOverride = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -1086,9 +1094,8 @@ export const useUpsertScheduleOverride = (options?: any) => {
       const response = await api.put(`/overrides/${date}`, { date, timeSlots });
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al guardar la excepción de horario.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error al guardar la excepción de horario.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['schedule-overrides'] });
@@ -1104,7 +1111,7 @@ export const useUpsertScheduleOverride = (options?: any) => {
  * Hook para eliminar una excepción de horario
  * Usa endpoint DELETE /api/overrides/:date
  */
-export const useDeleteScheduleOverride = (options?: any) => {
+export const useDeleteScheduleOverride = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -1112,9 +1119,8 @@ export const useDeleteScheduleOverride = (options?: any) => {
     mutationFn: async (date: string) => {
       await api.delete(`/overrides/${date}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error al eliminar la excepción de horario.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error al eliminar la excepción de horario.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['schedule-overrides'] });
@@ -1156,18 +1162,17 @@ export const useStaff = (activeOnly?: boolean) => {
   });
 };
 
-export const useCreateStaff = (options?: any) => {
+export const useCreateStaff = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (staffData: any) => {
+    mutationFn: async (staffData: CreateStaffRequest) => {
       const response = await api.post('/staff', staffData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
@@ -1176,18 +1181,17 @@ export const useCreateStaff = (options?: any) => {
   });
 };
 
-export const useUpdateStaff = (options?: any) => {
+export const useUpdateStaff = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, staffData }: { id: string; staffData: any }) => {
+    mutationFn: async ({ id, staffData }: { id: string; staffData: Partial<CreateStaffRequest> }) => {
       const response = await api.put(`/staff/${id}`, staffData);
       return response.data;
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });
@@ -1196,7 +1200,7 @@ export const useUpdateStaff = (options?: any) => {
   });
 };
 
-export const useDeleteStaff = (options?: any) => {
+export const useDeleteStaff = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
@@ -1204,9 +1208,8 @@ export const useDeleteStaff = (options?: any) => {
     mutationFn: async (id: string) => {
       await api.delete(`/staff/${id}`);
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Ocurrió un error en la operación.';
-      toast.error(errorMessage);
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['staff'] });

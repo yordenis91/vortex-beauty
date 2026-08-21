@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api } from '../lib/api';
-import { useClosedDates, useCreateClosedDate, useDeleteClosedDate } from '../hooks/useQueries';
+import { useClosedDates, useCreateClosedDate, useDeleteClosedDate, getErrorMessage } from '../hooks/useQueries';
 import { Trash2 } from 'lucide-react';
 
 interface BusinessHour {
@@ -43,8 +43,8 @@ const useUpdateBusinessHour = () => {
       queryClient.invalidateQueries({ queryKey: ['businessHours'] });
       toast.success('Horario actualizado correctamente');
     },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.error || 'Error al actualizar el horario');
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Error al actualizar el horario'));
     },
   });
 };
@@ -72,6 +72,10 @@ const Settings: React.FC = () => {
         acc[hour.dayOfWeek] = hour;
         return acc;
       }, {} as { [key: number]: BusinessHour });
+      // Sincroniza el formulario editable con los horarios recién cargados del
+      // servidor; no es estado derivable en render porque el usuario edita
+      // formData localmente después de esta carga inicial.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData(initialData);
     }
   }, [businessHours]);

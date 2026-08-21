@@ -21,7 +21,7 @@ const Login: React.FC = () => {
     try {
       await login(email, password);
       navigate('/');
-    } catch (err) {
+    } catch {
       setError('Correo electrónico o contraseña inválidos');
     } finally {
       setIsLoading(false);

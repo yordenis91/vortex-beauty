@@ -16,6 +16,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook vive junto a su Provider a propósito, usado en ~20 archivos
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -44,6 +45,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsLoading(false);
       });
     } else {
+      // No hay token que verificar: se resuelve la carga inicial de una vez.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(false);
     }
 
@@ -65,7 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { user, token } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
-    } catch (error) {
+    } catch {
       throw new Error('Invalid credentials');
     }
   };
@@ -76,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { user, token } = response.data;
       localStorage.setItem('token', token);
       setUser(user);
-    } catch (error) {
+    } catch {
       throw new Error('Registration failed');
     }
   };

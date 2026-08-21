@@ -19,15 +19,13 @@ const ClientGallery: React.FC = () => {
       setSelectedDate('');
       setSelectedSlot('');
     },
-    onError: (error: any) => {
-      const errorMessage = error?.response?.data?.error || 'No se pudo crear la cita.';
-      toast.error(errorMessage);
-    },
   });
 
   useEffect(() => {
     if (selectedDate) {
       refetchSlots();
+      // Al cambiar de fecha, el horario elegido para la fecha anterior ya no aplica.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSlot('');
     }
   }, [selectedDate, refetchSlots]);

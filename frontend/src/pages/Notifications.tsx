@@ -3,25 +3,7 @@ import { useNotifications } from '../hooks/useQueries';
 import { Mail, MessageSquare, Bell, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale/es';
-
-interface Notification {
-  id: string;
-  type: 'WHATSAPP' | 'EMAIL' | 'SYSTEM';
-  recipient: string;
-  content: string;
-  status: 'PENDING' | 'SENT' | 'FAILED';
-  isRead: boolean;
-  errorLog?: string;
-  clientId?: string;
-  createdAt: string;
-  updatedAt: string;
-  client?: {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-  };
-}
+import type { Notification } from '../types';
 
 const Notifications: React.FC = () => {
   const { data: notifications = [], isLoading } = useNotifications();

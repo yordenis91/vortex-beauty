@@ -35,6 +35,17 @@ export interface Client {
   invoices?: Invoice[];
 }
 
+export interface CreateClientRequest {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  imageUrl?: string;
+  username?: string;
+  password?: string;
+  sendWelcomeEmail?: boolean;
+}
+
 // Project types
 export interface Project {
   id: string;
@@ -80,6 +91,17 @@ export interface Invoice {
   client?: Client;
   project?: Project;
   items?: InvoiceItem[];
+}
+
+export interface CreateInvoiceRequest {
+  invoiceNumber: string;
+  clientId: string;
+  projectId?: string;
+  issueDate: string;
+  dueDate: string;
+  status: Invoice['status'];
+  notes?: string;
+  items: Array<{ description: string; quantity: number; unitPrice: number }>;
 }
 
 // Auth types
@@ -365,7 +387,10 @@ export interface CreateAppointmentRequest {
   // endTime ya no lo decide el cliente: el backend lo calcula desde la
   // duración del servicio. Se puede omitir; si se manda, se ignora.
   endTime?: string;
-  clientId: string;
+  // Requerido en /api/appointments (admin, identifica al cliente de la cita).
+  // En /api/portal/appointments el backend ignora este campo y usa el
+  // clientId del token de sesión, así que ahí es opcional.
+  clientId?: string;
   productId: string;
   staffId?: string | null;
   status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
@@ -381,4 +406,61 @@ export interface UpdateAppointmentRequest {
   staffId?: string | null;
   status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
   notes?: string;
+}
+
+// Notification types
+export type NotificationChannel = 'WHATSAPP' | 'EMAIL' | 'SYSTEM';
+export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED';
+
+export interface Notification {
+  id: string;
+  type: NotificationChannel;
+  recipient: string;
+  content: string;
+  status: NotificationStatus;
+  isRead: boolean;
+  errorLog?: string | null;
+  clientId?: string | null;
+  client?: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Client portal profile types
+export interface ClientProfileResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  imageUrl?: string | null;
+  clientId?: string | null;
+  client?: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    address?: string;
+    imageUrl?: string | null;
+  } | null;
+}
+
+export interface UpdateClientProfileRequest {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  imageUrl?: string | null;
+}
+
+// Gallery request types
+export interface CreateGalleryItemRequest {
+  title: string;
+  imageUrl: string;
+  productId: string;
+  isActive?: boolean;
 }

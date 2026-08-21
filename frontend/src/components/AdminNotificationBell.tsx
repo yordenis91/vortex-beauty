@@ -9,7 +9,7 @@ const AdminNotificationBell: React.FC = () => {
   const prevCountRef = useRef(notifications.length);
 
   const unreadCount = useMemo(() => {
-    return notifications.filter((n: any) => !n.isRead).length;
+    return notifications.filter((n) => !n.isRead).length;
   }, [notifications]);
 
   useEffect(() => {

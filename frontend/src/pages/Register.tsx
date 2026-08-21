@@ -29,7 +29,7 @@ const Register: React.FC = () => {
     try {
       await register(email, password, name);
       navigate('/');
-    } catch (err) {
+    } catch {
       setError('El registro falló. Por favor, inténtalo de nuevo.');
     } finally {
       setIsLoading(false);
