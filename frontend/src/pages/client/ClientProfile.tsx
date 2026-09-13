@@ -76,7 +76,7 @@ const ClientProfile: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-2">
           <Loader className="h-8 w-8 animate-spin text-blue-500" />
-          <p className="text-gray-600">Cargando perfil...</p>
+          <p className="text-muted-foreground">Cargando perfil...</p>
         </div>
       </div>
     );
@@ -86,12 +86,12 @@ const ClientProfile: React.FC = () => {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Mi Perfil</h1>
-        <p className="mt-2 text-sm text-gray-600">Información personal y preferencias</p>
+        <h1 className="text-3xl font-bold text-foreground">Mi Perfil</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Información personal y preferencias</p>
       </div>
 
       {/* Personal Info Card */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-card rounded-lg shadow-md p-6">
         <div className="flex items-start space-x-4">
           <div className="relative">
             {clientInfo.imageUrl || imageUrl ? (
@@ -101,8 +101,8 @@ const ClientProfile: React.FC = () => {
                 className="h-16 w-16 rounded-full object-cover"
               />
             ) : (
-              <div className="h-16 w-16 rounded-full bg-pink-100 flex items-center justify-center">
-                <User className="h-8 w-8 text-pink-600" />
+              <div className="h-16 w-16 rounded-full bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center">
+                <User className="h-8 w-8 text-pink-600 dark:text-pink-300" />
               </div>
             )}
             <div className="absolute -bottom-2 -right-2 flex space-x-1">
@@ -126,29 +126,29 @@ const ClientProfile: React.FC = () => {
             </div>
           </div>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">{clientInfo.name}</h2>
-            <p className="text-gray-600">{clientInfo.email}</p>
+            <h2 className="text-2xl font-bold text-foreground">{clientInfo.name}</h2>
+            <p className="text-muted-foreground">{clientInfo.email}</p>
             <span className="inline-block mt-2 px-3 py-1 bg-pink-100 text-pink-800 text-xs font-semibold rounded-full">
               CLIENTA
             </span>
           </div>
         </div>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        <div className="mt-6 pt-6 border-t border-border">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Información de Contacto</h3>
+            <h3 className="text-lg font-semibold text-foreground">Información de Contacto</h3>
             <button
               onClick={() => setIsEditingContact(!isEditingContact)}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 text-muted-foreground hover:text-muted-foreground transition-colors"
             >
               <Pencil className="h-5 w-5" />
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3">
-              <Mail className="h-5 w-5 text-gray-400" />
+              <Mail className="h-5 w-5 text-muted-foreground" />
               <div>
-                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <label className="block text-sm font-medium text-foreground">Email</label>
                 {isEditingContact ? (
                   <input
                     type="email"
@@ -157,14 +157,14 @@ const ClientProfile: React.FC = () => {
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-pink-500 outline-none"
                   />
                 ) : (
-                  <p className="mt-1 text-gray-900">{clientInfo.email}</p>
+                  <p className="mt-1 text-foreground">{clientInfo.email}</p>
                 )}
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Phone className="h-5 w-5 text-gray-400" />
+              <Phone className="h-5 w-5 text-muted-foreground" />
               <div>
-                <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                <label className="block text-sm font-medium text-foreground">Teléfono</label>
                 {isEditingContact ? (
                   <input
                     type="tel"
@@ -173,14 +173,14 @@ const ClientProfile: React.FC = () => {
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-pink-500 outline-none"
                   />
                 ) : (
-                  <p className="mt-1 text-gray-900">{clientInfo.phone || 'No especificado'}</p>
+                  <p className="mt-1 text-foreground">{clientInfo.phone || 'No especificado'}</p>
                 )}
               </div>
             </div>
             <div className="flex items-center space-x-3 md:col-span-2">
-              <User className="h-5 w-5 text-gray-400" />
+              <User className="h-5 w-5 text-muted-foreground" />
               <div>
-                <label className="block text-sm font-medium text-gray-700">Dirección</label>
+                <label className="block text-sm font-medium text-foreground">Dirección</label>
                 {isEditingContact ? (
                   <input
                     type="text"
@@ -189,7 +189,7 @@ const ClientProfile: React.FC = () => {
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-pink-500 outline-none"
                   />
                 ) : (
-                  <p className="mt-1 text-gray-900">{clientInfo.address || 'No especificada'}</p>
+                  <p className="mt-1 text-foreground">{clientInfo.address || 'No especificada'}</p>
                 )}
               </div>
             </div>
@@ -198,7 +198,7 @@ const ClientProfile: React.FC = () => {
             <div className="flex justify-end space-x-3 mt-4">
               <button
                 onClick={() => setIsEditingContact(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors"
+                className="px-4 py-2 bg-gray-300 text-foreground rounded-md hover:bg-gray-400 transition-colors"
               >
                 Cancelar
               </button>
@@ -217,34 +217,34 @@ const ClientProfile: React.FC = () => {
       </div>
 
       {/* Preferences Card */}
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-card rounded-lg shadow-md p-6">
         <div className="flex items-center space-x-3 mb-4">
           <Heart className="h-6 w-6 text-pink-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Preferencias de Manicura</h3>
+          <h3 className="text-lg font-semibold text-foreground">Preferencias de Manicura</h3>
         </div>
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-gray-600 text-sm">
+        <div className="bg-muted rounded-lg p-4">
+          <p className="text-muted-foreground text-sm">
             Esta sección está en desarrollo. Pronto podrás configurar tus preferencias de estilo,
             colores favoritos y tratamientos preferidos para una experiencia personalizada.
           </p>
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span className="text-pink-600 font-semibold">?</span>
+              <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <span className="text-pink-600 dark:text-pink-300 font-semibold">?</span>
               </div>
-              <p className="text-sm text-gray-700">Estilos Favoritos</p>
+              <p className="text-sm text-foreground">Estilos Favoritos</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span className="text-pink-600 font-semibold">?</span>
+              <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <span className="text-pink-600 dark:text-pink-300 font-semibold">?</span>
               </div>
-              <p className="text-sm text-gray-700">Colores Preferidos</p>
+              <p className="text-sm text-foreground">Colores Preferidos</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span className="text-pink-600 font-semibold">?</span>
+              <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/50 rounded-full flex items-center justify-center mx-auto mb-2">
+                <span className="text-pink-600 dark:text-pink-300 font-semibold">?</span>
               </div>
-              <p className="text-sm text-gray-700">Tratamientos</p>
+              <p className="text-sm text-foreground">Tratamientos</p>
             </div>
           </div>
         </div>

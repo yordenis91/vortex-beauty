@@ -14,9 +14,9 @@ const MySubscriptions: React.FC = () => {
       case 'CANCELLED':
         return 'bg-red-100 text-red-800';
       case 'EXPIRED':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -25,7 +25,7 @@ const MySubscriptions: React.FC = () => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-2">
           <Loader className="h-8 w-8 animate-spin text-blue-500" />
-          <p className="text-gray-600">Cargando suscripciones...</p>
+          <p className="text-muted-foreground">Cargando suscripciones...</p>
         </div>
       </div>
     );
@@ -33,8 +33,8 @@ const MySubscriptions: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <p className="text-red-800">Error al cargar las suscripciones. Por favor, intenta de nuevo.</p>
+      <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 rounded-md p-4">
+        <p className="text-red-800 dark:text-red-300">Error al cargar las suscripciones. Por favor, intenta de nuevo.</p>
       </div>
     );
   }
@@ -43,46 +43,46 @@ const MySubscriptions: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Mis Suscripciones</h1>
-        <p className="mt-2 text-sm text-gray-600">Gestiona tus suscripciones activas y próximas renovaciones</p>
+        <h1 className="text-3xl font-bold text-foreground">Mis Suscripciones</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Gestiona tus suscripciones activas y próximas renovaciones</p>
       </div>
 
       {/* Subscriptions Grid */}
       <div className="grid grid-cols-1 gap-6">
         {subscriptions.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-            <p className="text-gray-500">No hay suscripciones activas</p>
+          <div className="text-center py-12 bg-card rounded-lg border border-border">
+            <p className="text-muted-foreground">No hay suscripciones activas</p>
           </div>
         ) : (
           subscriptions.map((sub) => (
-            <div key={sub.id} className="bg-white rounded-lg shadow-md p-6 border-l-4 border-blue-500">
+            <div key={sub.id} className="bg-card rounded-lg shadow-md p-6 border-l-4 border-blue-500">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3">
                     <Zap className="h-6 w-6 text-blue-500" />
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{sub.product?.name || 'Producto'}</h3>
-                      <p className="text-sm text-gray-500">{sub.subscriptionNumber || `SUB-${sub.id.slice(0, 6).toUpperCase()}`}</p>
+                      <h3 className="text-lg font-semibold text-foreground">{sub.product?.name || 'Producto'}</h3>
+                      <p className="text-sm text-muted-foreground">{sub.subscriptionNumber || `SUB-${sub.id.slice(0, 6).toUpperCase()}`}</p>
                     </div>
                   </div>
 
                   <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
                     <div>
-                      <p className="text-xs text-gray-500 uppercase">Estado</p>
+                      <p className="text-xs text-muted-foreground uppercase">Estado</p>
                       <span className={`inline-block mt-1 px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(sub.status)}`}>
                         {sub.status}
                       </span>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 uppercase">Próxima Renovación</p>
-                      <div className="mt-1 flex items-center text-sm text-gray-700">
+                      <p className="text-xs text-muted-foreground uppercase">Próxima Renovación</p>
+                      <div className="mt-1 flex items-center text-sm text-foreground">
                         <Calendar className="h-4 w-4 mr-1" />
                         {sub.nextBilling ? new Date(sub.nextBilling).toLocaleDateString('es-ES') : '-'}
                       </div>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-500 uppercase">Precio Mensual</p>
-                      <p className="mt-1 font-semibold text-gray-900">${(sub.product?.price || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                      <p className="text-xs text-muted-foreground uppercase">Precio Mensual</p>
+                      <p className="mt-1 font-semibold text-foreground">${(sub.product?.price || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                   </div>
                 </div>
@@ -98,11 +98,11 @@ const MySubscriptions: React.FC = () => {
 
       {/* Info Box */}
       {subscriptions.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start space-x-3">
+        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-4 flex items-start space-x-3">
           <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
           <div>
-            <h4 className="font-medium text-blue-900">Recuerda renovar a tiempo</h4>
-            <p className="text-sm text-blue-700 mt-1">
+            <h4 className="font-medium text-blue-900 dark:text-blue-200">Recuerda renovar a tiempo</h4>
+            <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
               Tus suscripciones se renovarán automáticamente en la fecha indicada. Puedes cancelar en cualquier momento.
             </p>
           </div>

@@ -160,22 +160,22 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
         </DialogHeader>
         <form onSubmit={handleSubmit(submitHandler)} className="space-y-8">
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Invoice Details</h4>
+            <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">Invoice Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Invoice Number <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-foreground mb-2">Invoice Number <span className="text-red-500">*</span></label>
                 <input
                   {...register('invoiceNumber')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   placeholder="INV-001"
                 />
                 {errors.invoiceNumber && (<span className="text-sm text-red-500 mt-1 block">{errors.invoiceNumber.message}</span>)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Status</label>
                 <select
                   {...register('status')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 >
                   <option value="PENDING">Pending</option>
                   <option value="PAID">Paid</option>
@@ -187,13 +187,13 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Client & Project</h4>
+            <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">Client & Project</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Client <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-foreground mb-2">Client <span className="text-red-500">*</span></label>
                 <select
                   {...register('clientId')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 >
                   <option value="">Select a client</option>
                   {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
@@ -201,10 +201,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                 {errors.clientId && (<span className="text-sm text-red-500 mt-1 block">{errors.clientId.message}</span>)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
+                <label className="block text-sm font-medium text-foreground mb-2">Project</label>
                 <select
                   {...register('projectId')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 >
                   <option value="">Select a project (optional)</option>
                   {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
@@ -214,23 +214,23 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Dates</h4>
+            <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">Dates</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Issue Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-foreground mb-2">Issue Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   {...register('issueDate')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
                 {errors.issueDate && (<span className="text-sm text-red-500 mt-1 block">{errors.issueDate.message}</span>)}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-foreground mb-2">Due Date <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   {...register('dueDate')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
                 {errors.dueDate && (<span className="text-sm text-red-500 mt-1 block">{errors.dueDate.message}</span>)}
               </div>
@@ -238,10 +238,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Invoice Items</h4>
+            <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">Invoice Items</h4>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Seleccionar producto existente o escribir manualmente</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Seleccionar producto existente o escribir manualmente</label>
               <ProductCategorySelect
                 value={selectedProductId}
                 onChange={(id) => {
@@ -264,7 +264,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-[5fr_1fr_1fr_auto] gap-3 items-end">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Description</label>
                 <input
                   type="text"
                   value={newItem.description}
@@ -273,28 +273,28 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     setNewItem((prev) => ({ ...prev, description: e.target.value }));
                   }}
                   placeholder="New item description"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Qty</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Qty</label>
                 <input
                   type="number"
                   value={newItem.quantity}
                   min={1}
                   onChange={(e) => setNewItem((prev) => ({ ...prev, quantity: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Unit Price</label>
+                <label className="block text-sm font-medium text-foreground mb-1">Unit Price</label>
                 <input
                   type="number"
                   value={newItem.unitPrice}
                   min={0}
                   step={0.01}
                   onChange={(e) => setNewItem((prev) => ({ ...prev, unitPrice: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                 />
               </div>
               <div className="flex gap-2">
@@ -314,7 +314,7 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                       setNewItem({ description: '', quantity: 1, unitPrice: 0 });
                       setNewItemError(null);
                     }}
-                    className="h-10 px-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                    className="h-10 px-4 bg-muted text-foreground rounded-lg hover:bg-gray-300 transition"
                   >
                     Cancel Edit
                   </button>
@@ -324,20 +324,20 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
             {newItemError && <div className="text-sm text-red-500 mt-2">{newItemError}</div> }
 
             <div className="overflow-x-auto mt-4">
-              <table className="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-md">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-border border border-border rounded-md">
+                <thead className="bg-muted">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Description</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Qty</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Unit Price</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Total</th>
+                    <th className="px-4 py-2 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-border">
                   {fields.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">No items added yet</td>
+                      <td colSpan={5} className="px-4 py-6 text-center text-sm text-muted-foreground">No items added yet</td>
                     </tr>
                   ) : (
                     fields.map((field, index) => {
@@ -346,10 +346,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                       const total = item.quantity * unitPrice;
                       return (
                         <tr key={field.id}>
-                          <td className="px-4 py-3 text-sm text-gray-900">{item.description}</td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-700">{item.quantity}</td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-700">${unitPrice.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-700">${total.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-foreground">{item.description}</td>
+                          <td className="px-4 py-3 text-sm text-right text-foreground">{item.quantity}</td>
+                          <td className="px-4 py-3 text-sm text-right text-foreground">${unitPrice.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-sm text-right text-foreground">${total.toFixed(2)}</td>
                           <td className="px-4 py-3 text-right flex justify-end gap-1">
                             <button
                               type="button"
@@ -386,10 +386,10 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
                     })
                   )}
                 </tbody>
-                <tfoot className="bg-gray-50">
+                <tfoot className="bg-muted">
                   <tr>
                     <td colSpan={3}></td>
-                    <td className="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-foreground">
                       Total: ${fields.reduce((sum, item) => sum + item.quantity * Number(item.unitPrice), 0).toFixed(2)}
                     </td>
                     <td />
@@ -400,20 +400,20 @@ const InvoiceForm: React.FC<InvoiceFormProps> = ({
           </div>
 
           <div>
-            <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Notes</h4>
+            <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">Notes</h4>
             <textarea
               {...register('notes')}
               rows={4}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               placeholder="Additional notes..."
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+          <div className="flex justify-end gap-3 pt-6 border-t border-border">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+              className="px-6 py-2 text-foreground bg-muted rounded-lg hover:bg-muted transition font-medium"
             >
               Cancel
             </button>

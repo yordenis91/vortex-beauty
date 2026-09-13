@@ -71,98 +71,98 @@ const Notifications: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+        <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
           Centro de Notificaciones
         </h2>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Registro y auditoría de todas las notificaciones enviadas a clientes
         </p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600 font-medium">Total</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
+        <div className="bg-card rounded-lg shadow p-6">
+          <p className="text-sm text-muted-foreground font-medium">Total</p>
+          <p className="text-3xl font-bold text-foreground mt-2">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card rounded-lg shadow p-6">
           <p className="text-sm text-yellow-600 font-medium">Pendientes</p>
           <p className="text-3xl font-bold text-yellow-600 mt-2">{stats.pending}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card rounded-lg shadow p-6">
           <p className="text-sm text-green-600 font-medium">Enviadas</p>
           <p className="text-3xl font-bold text-green-600 mt-2">{stats.sent}</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card rounded-lg shadow p-6">
           <p className="text-sm text-red-600 font-medium">Errores</p>
           <p className="text-3xl font-bold text-red-600 mt-2">{stats.failed}</p>
         </div>
       </div>
 
       {/* Tabla de Notificaciones */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
           </div>
         ) : notifications.length === 0 ? (
           <div className="text-center py-12">
-            <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">No hay notificaciones</p>
+            <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">No hay notificaciones</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                     Fecha
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                     Tipo
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                     Destinatario
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                     Cliente
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                     Mensaje (Preview)
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-foreground uppercase tracking-wider">
                     Estado
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {notifications.map((notification: Notification) => (
-                  <tr key={notification.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={notification.id} className="hover:bg-muted transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {formatDate(notification.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {getTypeIcon(notification.type)}
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-foreground">
                           {notification.type === 'WHATSAPP' ? 'WhatsApp' : notification.type === 'EMAIL' ? 'Email' : 'Sistema'}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                       {notification.recipient}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       {notification.client ? (
                         <div>
-                          <p className="font-medium text-gray-900">{notification.client.name}</p>
-                          <p className="text-xs text-gray-500">{notification.client.email}</p>
+                          <p className="font-medium text-foreground">{notification.client.name}</p>
+                          <p className="text-xs text-muted-foreground">{notification.client.email}</p>
                         </div>
                       ) : (
-                        <span className="text-gray-400">-</span>
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700 max-w-xs">
+                    <td className="px-6 py-4 text-sm text-foreground max-w-xs">
                       <p className="truncate">{notification.content}</p>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -177,8 +177,8 @@ const Notifications: React.FC = () => {
       </div>
 
       {/* Leyenda */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p className="text-sm text-blue-900">
+      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
+        <p className="text-sm text-blue-900 dark:text-blue-200">
           <strong>Nota:</strong> Este panel muestra todas las notificaciones enviadas a los clientes incluidas WhatsApp, Email y notificaciones del sistema.
           Cada fila incluye información del remitente, destinatario y estado actual del envío.
         </p>

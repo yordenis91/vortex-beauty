@@ -89,10 +89,10 @@ const ClientDashboard: React.FC = () => {
     <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-foreground">
           Bienvenida, {user?.name}! ✨
         </h1>
-        <p className="text-gray-600 mt-2">Aquí está tu resumen personal</p>
+        <p className="text-muted-foreground mt-2">Aquí está tu resumen personal</p>
       </div>
 
       {/* HERO CARD - Próxima Cita */}
@@ -125,7 +125,7 @@ const ClientDashboard: React.FC = () => {
             </div>
             <Button
               onClick={() => navigate('/portal/appointments')}
-              className="bg-white text-purple-600 hover:bg-gray-100 font-semibold px-6 py-3 rounded-lg"
+              className="bg-card text-purple-600 hover:bg-muted font-semibold px-6 py-3 rounded-lg"
             >
               Ver detalles
             </Button>
@@ -147,7 +147,7 @@ const ClientDashboard: React.FC = () => {
             </div>
             <Button
               onClick={() => navigate('/portal/appointments')}
-              className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-6 py-3 rounded-lg"
+              className="bg-card text-blue-600 hover:bg-muted font-semibold px-6 py-3 rounded-lg"
             >
               Agendar cita
             </Button>
@@ -157,7 +157,7 @@ const ClientDashboard: React.FC = () => {
 
       {/* Historial de Citas Completadas */}
       <div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-6">
+        <h3 className="text-2xl font-bold text-foreground mb-6">
           Tus citas completadas
         </h3>
 
@@ -166,31 +166,31 @@ const ClientDashboard: React.FC = () => {
             {lastCompletedAppointments.map((appointment: Appointment) => (
               <div
                 key={appointment.id}
-                className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
+                className="rounded-xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <CheckCircle className="h-5 w-5 text-green-600 mb-2" />
-                    <h4 className="font-semibold text-gray-900 text-lg">
+                    <h4 className="font-semibold text-foreground text-lg">
                       {appointment.product?.name || 'Servicio'}
                     </h4>
                   </div>
                 </div>
 
                 <div className="mt-4 space-y-2">
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4 mr-2" />
                     {formatDateShort(appointment.date, appointment.startTime)}
                   </div>
 
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-muted-foreground">
                     <Clock className="h-4 w-4 mr-2" />
                     {appointment.startTime} - {appointment.endTime}
                   </div>
 
                   {appointment.product?.price && (
-                    <div className="pt-2 border-t border-gray-200 mt-4">
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="pt-2 border-t border-border mt-4">
+                      <p className="text-sm font-medium text-foreground">
                         💰 ${Number(appointment.product.price).toFixed(2)}
                       </p>
                     </div>
@@ -198,7 +198,7 @@ const ClientDashboard: React.FC = () => {
                 </div>
 
                 {appointment.notes && (
-                  <p className="mt-4 text-xs text-gray-600 italic px-3 py-2 bg-gray-50 rounded">
+                  <p className="mt-4 text-xs text-muted-foreground italic px-3 py-2 bg-muted rounded">
                     {appointment.notes}
                   </p>
                 )}
@@ -206,12 +206,12 @@ const ClientDashboard: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-            <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg">
+          <div className="rounded-xl border border-dashed border-border bg-muted p-12 text-center">
+            <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">
               Aún no has completado ninguna cita
             </p>
-            <p className="text-gray-500 text-sm mt-2">
+            <p className="text-muted-foreground text-sm mt-2">
               Cuando completes una cita, aparecerá aquí tu historial
             </p>
           </div>
@@ -219,17 +219,17 @@ const ClientDashboard: React.FC = () => {
       </div>
 
       {/* CTA de Inspiración */}
-      <div className="mt-8 rounded-3xl border border-purple-200 bg-gradient-to-r from-purple-50 to-white p-6 shadow-lg">
+      <div className="mt-8 rounded-3xl border border-purple-200 dark:border-purple-900 bg-gradient-to-r from-purple-50 to-white dark:from-purple-950/40 dark:to-card p-6 shadow-lg">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-purple-100 p-4 text-purple-700">
+            <div className="rounded-2xl bg-purple-100 dark:bg-purple-900/50 p-4 text-purple-700 dark:text-purple-300">
               <Sparkles className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">
+              <h3 className="text-xl font-semibold text-foreground">
                 ¿Buscas inspiración para tu próxima visita?
               </h3>
-              <p className="mt-2 text-gray-600">
+              <p className="mt-2 text-muted-foreground">
                 Explora nuestra galería de trabajos y encuentra el estilo perfecto para ti.
               </p>
             </div>
@@ -244,13 +244,13 @@ const ClientDashboard: React.FC = () => {
       </div>
 
       {/* Sección de enlaces rápidos */}
-      <div className="mt-10 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h3 className="text-2xl font-bold text-gray-900">Enlaces rápidos</h3>
-        <p className="text-gray-600 mt-2">Navega rápido a las secciones más usadas</p>
+      <div className="mt-10 rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h3 className="text-2xl font-bold text-foreground">Enlaces rápidos</h3>
+        <p className="text-muted-foreground mt-2">Navega rápido a las secciones más usadas</p>
         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={() => navigate('/portal/appointments')}
-            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+            className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-left transition hover:bg-purple-50 dark:hover:bg-purple-950/40"
           >
             <Calendar className="h-5 w-5 text-purple-600" />
             Mis citas
@@ -258,7 +258,7 @@ const ClientDashboard: React.FC = () => {
 
           <button
             onClick={() => navigate('/portal/gallery')}
-            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+            className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-left transition hover:bg-purple-50 dark:hover:bg-purple-950/40"
           >
             <Image className="h-5 w-5 text-purple-600" />
             Galería
@@ -266,7 +266,7 @@ const ClientDashboard: React.FC = () => {
 
           <button
             onClick={() => navigate('/portal/my-invoices')}
-            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+            className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-left transition hover:bg-purple-50 dark:hover:bg-purple-950/40"
           >
             <CreditCard className="h-5 w-5 text-purple-600" />
             Mis facturas
@@ -274,7 +274,7 @@ const ClientDashboard: React.FC = () => {
 
           <button
             onClick={() => navigate('/portal/my-profile')}
-            className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 text-left transition hover:bg-purple-50"
+            className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-left transition hover:bg-purple-50 dark:hover:bg-purple-950/40"
           >
             <User className="h-5 w-5 text-purple-600" />
             Mi perfil

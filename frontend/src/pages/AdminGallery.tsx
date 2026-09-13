@@ -107,20 +107,20 @@ const AdminGallery: React.FC = () => {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold">Galería de Inspiración (Admin)</h2>
-        <p className="text-sm text-gray-500">Gestión de diseños para la página de clientes.</p>
+        <p className="text-sm text-muted-foreground">Gestión de diseños para la página de clientes.</p>
       </div>
 
-      <form onSubmit={handleCreate} className="bg-white rounded-2xl shadow-lg p-8 space-y-8">
+      <form onSubmit={handleCreate} className="bg-card rounded-2xl shadow-lg p-8 space-y-8">
         <div className="flex items-center justify-between">
-          <h3 className="text-2xl font-bold text-gray-900">Agregar nuevo diseño</h3>
-          <span className="text-sm text-gray-500">Admin Gallery</span>
+          <h3 className="text-2xl font-bold text-foreground">Agregar nuevo diseño</h3>
+          <span className="text-sm text-muted-foreground">Admin Gallery</span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Título <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-foreground mb-2">Título <span className="text-red-500">*</span></label>
             <input
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               value={form.title}
               onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
               required
@@ -128,9 +128,9 @@ const AdminGallery: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Servicio <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-medium text-foreground mb-2">Servicio <span className="text-red-500">*</span></label>
             <select
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
               value={form.productId}
               onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))}
               required
@@ -145,10 +145,10 @@ const AdminGallery: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Imagen <span className="text-red-500">*</span></label>
-            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full px-4 py-8 text-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-              <p className="text-sm font-medium text-gray-700">Arrastra y suelta tu imagen aquí, o haz clic para seleccionar</p>
-              <p className="text-xs text-gray-500 mt-1">(JPG, PNG, GIF, máximo 10MB)</p>
+            <label className="block text-sm font-medium text-foreground mb-2">Imagen <span className="text-red-500">*</span></label>
+            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full px-4 py-8 text-center border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted hover:bg-muted transition">
+              <p className="text-sm font-medium text-foreground">Arrastra y suelta tu imagen aquí, o haz clic para seleccionar</p>
+              <p className="text-xs text-muted-foreground mt-1">(JPG, PNG, GIF, máximo 10MB)</p>
               <input
                 id="image-upload"
                 type="file"
@@ -171,9 +171,9 @@ const AdminGallery: React.FC = () => {
               type="checkbox"
               checked={form.isActive}
               onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 border-border rounded"
             />
-            <span className="text-sm font-medium text-gray-700">Activo</span>
+            <span className="text-sm font-medium text-foreground">Activo</span>
           </label>
           <button
             type="submit"
@@ -185,18 +185,18 @@ const AdminGallery: React.FC = () => {
         </div>
       </form>
 
-      <div className="bg-white rounded-2xl shadow-lg p-8">
+      <div className="bg-card rounded-2xl shadow-lg p-8">
         <h3 className="text-2xl font-bold mb-4">Diseños existentes</h3>
 
         <div className="grid grid-cols-1 gap-4">
           {galleryItems.map((item) => (
-            <div key={item.id} className="border border-gray-200 rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-start bg-white">
+            <div key={item.id} className="border border-border rounded-2xl p-5 flex flex-col md:flex-row gap-4 items-start bg-card">
               <img src={item.imageUrl} alt={item.title} className="w-full md:w-40 h-28 object-cover rounded-xl" />
               <div className="flex-1">
                 <h4 className="font-semibold text-lg">{item.title}</h4>
-                <p className="text-sm text-gray-600">Servicio: {item.product?.name || '—'}</p>
-                <p className="text-sm text-gray-600">Precio: {item.product?.price || '—'} {item.product?.currency || ''}</p>
-                <p className="text-sm text-gray-600">Estado: {item.isActive ? 'Activo' : 'Inactivo'}</p>
+                <p className="text-sm text-muted-foreground">Servicio: {item.product?.name || '—'}</p>
+                <p className="text-sm text-muted-foreground">Precio: {item.product?.price || '—'} {item.product?.currency || ''}</p>
+                <p className="text-sm text-muted-foreground">Estado: {item.isActive ? 'Activo' : 'Inactivo'}</p>
                 <div className="mt-3 flex gap-2">
                   <button
                     className="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -216,7 +216,7 @@ const AdminGallery: React.FC = () => {
               </div>
             </div>
           ))}
-          {galleryItems.length === 0 && <p className="text-gray-500">No hay diseños registrados aún.</p>}
+          {galleryItems.length === 0 && <p className="text-muted-foreground">No hay diseños registrados aún.</p>}
         </div>
       </div>
 
