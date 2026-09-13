@@ -102,10 +102,10 @@ const Staff: React.FC = () => {
     <div className="space-y-6">
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
             Profesionales
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Gestiona las manicuristas del salón. Asignar un profesional a una cita es opcional e informativo — el horario del salón sigue siendo general.
           </p>
         </div>
@@ -120,18 +120,18 @@ const Staff: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-card shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+              <Search className="h-5 w-5 text-muted-foreground" />
             </div>
             <input
               type="text"
               placeholder="Buscar profesionales..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full pl-10 pr-3 py-2 border border-border rounded-md leading-5 bg-card placeholder:text-muted-foreground focus:outline-none focus:placeholder:text-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
@@ -139,10 +139,10 @@ const Staff: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStaff.length === 0 ? (
-          <div className="col-span-full bg-white rounded-lg shadow px-4 py-8 text-center text-gray-500">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Sin profesionales</h3>
-            <p className="mt-1 text-sm text-gray-500">Agrega a la primera manicurista del equipo.</p>
+          <div className="col-span-full bg-card rounded-lg shadow px-4 py-8 text-center text-muted-foreground">
+            <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-2 text-sm font-medium text-foreground">Sin profesionales</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Agrega a la primera manicurista del equipo.</p>
             <div className="mt-6">
               <button
                 onClick={() => setShowCreateModal(true)}
@@ -155,32 +155,32 @@ const Staff: React.FC = () => {
           </div>
         ) : (
           filteredStaff.map((member) => (
-            <div key={member.id} className="bg-white rounded-lg shadow overflow-hidden">
+            <div key={member.id} className="bg-card rounded-lg shadow overflow-hidden">
               <div className="h-3" style={{ backgroundColor: member.color || '#3B82F6' }}></div>
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-medium text-gray-900">{member.name}</h3>
+                      <h3 className="text-lg font-medium text-foreground">{member.name}</h3>
                       {!member.isActive && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                           Inactivo
                         </span>
                       )}
                     </div>
-                    {member.email && <p className="mt-1 text-sm text-gray-500">{member.email}</p>}
-                    {member.phone && <p className="text-sm text-gray-500">{member.phone}</p>}
+                    {member.email && <p className="mt-1 text-sm text-muted-foreground">{member.email}</p>}
+                    {member.phone && <p className="text-sm text-muted-foreground">{member.phone}</p>}
                   </div>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => openEditModal(member)}
-                      className="p-1 rounded-full text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                      className="p-1 rounded-full text-muted-foreground hover:text-muted-foreground hover:bg-muted"
                     >
                       <Edit className="h-5 w-5" />
                     </button>
                     <button
                       onClick={() => setItemToDelete(member.id)}
-                      className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-gray-100"
+                      className="p-1 rounded-full text-muted-foreground hover:text-red-500 hover:bg-muted"
                     >
                       <Trash2 className="h-5 w-5" />
                     </button>
@@ -210,7 +210,7 @@ const Staff: React.FC = () => {
           </DialogHeader>
           <form onSubmit={editingStaff ? handleEdit : handleCreate} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Nombre <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -218,41 +218,41 @@ const Staff: React.FC = () => {
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   placeholder="Nombre de la manicurista"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Email</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Teléfono</label>
                   <input
                     type="text"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Color en la agenda</label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Color en la agenda</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
                       value={formData.color}
                       onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      className="h-10 w-14 border border-gray-300 rounded-lg"
+                      className="h-10 w-14 border border-border rounded-lg"
                     />
-                    <span className="text-sm text-gray-500">{formData.color}</span>
+                    <span className="text-sm text-muted-foreground">{formData.color}</span>
                   </div>
                 </div>
                 <label className="flex items-center gap-2 pb-2">
@@ -260,13 +260,13 @@ const Staff: React.FC = () => {
                     type="checkbox"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-border text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">Activo</span>
+                  <span className="text-sm font-medium text-foreground">Activo</span>
                 </label>
               </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <div className="flex justify-end gap-3 pt-6 border-t border-border">
                 <button
                   type="button"
                   onClick={() => {
@@ -274,7 +274,7 @@ const Staff: React.FC = () => {
                     setEditingStaff(null);
                     resetForm();
                   }}
-                  className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+                  className="px-6 py-2 text-foreground bg-muted rounded-lg hover:bg-muted transition font-medium"
                 >
                   Cancelar
                 </button>
