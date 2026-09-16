@@ -21,6 +21,10 @@ import settingsRoutes from './routes/settings';
 import galleryRoutes from './routes/gallery';
 import closedDatesRoutes from './routes/closedDates';
 import staffRoutes from './routes/staff';
+import platformAuthRoutes from './routes/platformAuth';
+import platformTenantsRoutes from './routes/platformTenants';
+import platformPlansRoutes from './routes/platformPlans';
+import platformDashboardRoutes from './routes/platformDashboard';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -75,6 +79,7 @@ const authLimiter = rateLimit({
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/platform/auth/login', authLimiter);
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -106,6 +111,13 @@ app.use('/api/closed-dates', closedDatesRoutes);
 
 // Staff routes
 app.use('/api/staff', staffRoutes);
+
+// Portal de plataforma (Super Admin): namespace separado de las rutas de
+// tenant de arriba, con su propio sistema de auth (ver middleware/platformAuth).
+app.use('/api/platform/auth', platformAuthRoutes);
+app.use('/api/platform/tenants', platformTenantsRoutes);
+app.use('/api/platform/plans', platformPlansRoutes);
+app.use('/api/platform/dashboard', platformDashboardRoutes);
 
 // Health check
 const healthResponse = { status: 'OK', timestamp: new Date().toISOString() };

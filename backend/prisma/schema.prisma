@@ -41,6 +41,40 @@ enum TenantStatus {
   SUSPENDED
 }
 
+// ================= Plataforma (Super Admin) =================
+// Todo lo de aquí abajo es a nivel de la plataforma SaaS, no de un salón
+// (tenant) concreto: quién administra la plataforma, qué le cobra a cada
+// salón y con qué plan. Se mantiene deliberadamente separado de los modelos
+// de negocio de cada salón (Subscription/Invoice son lo que EL SALÓN le
+// cobra a SUS clientas; esto es lo que EL SAAS le cobra AL SALÓN).
+
+enum PlatformRole {
+  SUPER_ADMIN
+  SUPPORT
+  BILLING_ADMIN
+}
+
+enum TenantSubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum PlatformInvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  VOID
+}
+
+enum AuditActorType {
+  PLATFORM_ADMIN
+  TENANT_USER
+}
+
 // ================= Models =================
 
 // Un Tenant representa un salón individual suscrito al SaaS. Es la base de la
@@ -75,6 +109,12 @@ model Tenant {
   knowledgeBase     KnowledgeBase[]
   notifications     Notification[]
   galleryItems      GalleryItem[]
+
+  // Suscripción de este salón a un Plan de la plataforma (lo que el SaaS le
+  // cobra al salón), y sus facturas de plataforma. Distinto de Subscription/
+  // Invoice, que son la facturación del salón a SUS clientas.
+  platformSubscription TenantSubscription?
+  platformInvoices     PlatformInvoice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -752,4 +792,146 @@ enum NotificationStatus {
   PENDING
   SENT
   FAILED
+}
+
+// ================= Modelos de plataforma (Super Admin) =================
+
+// Cuenta de quien administra el SaaS (no un usuario de ningún salón). Tabla
+// separada de User a propósito: su JWT no lleva tenantId y el de un salón no
+// sirve aquí, así que ambos sistemas de sesión quedan aislados por diseño.
+model PlatformAdmin {
+  id          String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  name        String
+  role        PlatformRole @default(SUPER_ADMIN)
+  isActive    Boolean      @default(true)
+  lastLoginAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Catálogo de planes que el SaaS vende a los salones (Free/Basic/Pro/...).
+// No confundir con Product, que es el catálogo de servicios que CADA salón
+// vende a sus propias clientas.
+model Plan {
+  id          String  @id @default(uuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  priceMonthly Decimal @db.Decimal(10, 2)
+  priceYearly  Decimal @db.Decimal(10, 2)
+  currency     String  @default("USD")
+
+  trialDays Int @default(0)
+
+  // Límites del plan. null = ilimitado.
+  maxStaff                Int?
+  maxAppointmentsPerMonth Int?
+  maxLocations            Int?
+
+  // Lista de claves de features activas para este plan (ej. ["whatsapp_notifications","multi_location"]).
+  features Json @default("[]")
+
+  isActive  Boolean @default(true)
+  isPublic  Boolean @default(true) // visible en la página pública de precios
+  sortOrder Int     @default(0)
+
+  tenantSubscriptions TenantSubscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+}
+
+// La suscripción de UN salón (tenant) a un Plan de la plataforma. Una por
+// tenant (la actual); los cambios de plan/estado quedan en AuditLog.
+model TenantSubscription {
+  id       String @id @default(uuid())
+  tenantId String @unique
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  planId String
+  plan   Plan   @relation(fields: [planId], references: [id])
+
+  status       TenantSubscriptionStatus @default(TRIALING)
+  billingCycle BillingCycle             @default(MONTHLY)
+
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd   DateTime
+  trialEndsAt        DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  canceledAt         DateTime?
+
+  // Referencias a la pasarela de pago (Mercado Pago / Stripe / etc.), cuando
+  // se conecte una; hasta entonces la suscripción se administra a mano.
+  gateway                 String?
+  externalCustomerId      String?
+  externalSubscriptionId  String?
+
+  invoices PlatformInvoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planId])
+  @@index([status])
+}
+
+// Lo que el SaaS le factura al salón (no lo que el salón factura a sus
+// clientas — eso es el modelo Invoice).
+model PlatformInvoice {
+  id            String @id @default(uuid())
+  invoiceNumber String @unique
+
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  tenantSubscriptionId String?
+  tenantSubscription   TenantSubscription? @relation(fields: [tenantSubscriptionId], references: [id], onDelete: SetNull)
+
+  amount   Decimal                @db.Decimal(10, 2)
+  currency String                 @default("USD")
+  status   PlatformInvoiceStatus  @default(PENDING)
+
+  issueDate DateTime  @default(now())
+  dueDate   DateTime
+  paidAt    DateTime?
+
+  gateway           String?
+  externalPaymentId String?
+  notes             String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([tenantSubscriptionId])
+}
+
+// Bitácora de auditoría a nivel de plataforma: qué hizo un super admin (o,
+// potencialmente, un evento relevante de un usuario de salón) y cuándo.
+// Cubre en particular cada impersonación, que siempre debe quedar registrada.
+model AuditLog {
+  id         String         @id @default(uuid())
+  actorType  AuditActorType
+  actorId    String
+  actorEmail String?
+  action     String
+  targetType String?
+  targetId   String?
+  tenantId   String?
+  metadata   Json?
+  ip         String?
+
+  createdAt DateTime @default(now())
+
+  @@index([actorId])
+  @@index([tenantId])
+  @@index([action])
+  @@index([createdAt])
 }

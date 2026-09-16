@@ -158,10 +158,83 @@ async function seed() {
       }
     }
 
+    // ===== Datos de plataforma (Super Admin) =====
+
+    const platformAdminPassword = await bcrypt.hash('super123', 10);
+    const platformAdmin = await prisma.platformAdmin.upsert({
+      where: { email: 'superadmin@vortexbeauty.com' },
+      update: {},
+      create: {
+        email: 'superadmin@vortexbeauty.com',
+        password: platformAdminPassword,
+        name: 'Super Admin',
+        role: 'SUPER_ADMIN',
+      },
+    });
+    console.log('✅ Platform admin created:', platformAdmin.email);
+
+    const planDefs = [
+      {
+        name: 'Free', slug: 'free', description: 'Para probar la plataforma.',
+        priceMonthly: 0, priceYearly: 0, trialDays: 0,
+        maxStaff: 1, maxAppointmentsPerMonth: 50, maxLocations: 1,
+        features: ['citas_online'], sortOrder: 0,
+      },
+      {
+        name: 'Basic', slug: 'basic', description: 'Para salones pequeños.',
+        priceMonthly: 19, priceYearly: 190, trialDays: 14,
+        maxStaff: 3, maxAppointmentsPerMonth: 300, maxLocations: 1,
+        features: ['citas_online', 'notificaciones_whatsapp'], sortOrder: 1,
+      },
+      {
+        name: 'Pro', slug: 'pro', description: 'Para salones en crecimiento.',
+        priceMonthly: 49, priceYearly: 490, trialDays: 14,
+        maxStaff: 10, maxAppointmentsPerMonth: null, maxLocations: 1,
+        features: ['citas_online', 'notificaciones_whatsapp', 'reportes_avanzados'], sortOrder: 2,
+      },
+      {
+        name: 'Enterprise', slug: 'enterprise', description: 'Para cadenas de salones.',
+        priceMonthly: 149, priceYearly: 1490, trialDays: 30,
+        maxStaff: null, maxAppointmentsPerMonth: null, maxLocations: null,
+        features: ['citas_online', 'notificaciones_whatsapp', 'reportes_avanzados', 'multi_sede'], sortOrder: 3,
+      },
+    ] as const;
+
+    const plans: Record<string, { id: string }> = {};
+    for (const planDef of planDefs) {
+      const plan = await prisma.plan.upsert({
+        where: { slug: planDef.slug },
+        update: {},
+        create: { ...planDef, currency: 'USD' },
+      });
+      plans[planDef.slug] = plan;
+      console.log('✅ Plan created:', plan.name);
+    }
+
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+
+    await prisma.tenantSubscription.upsert({
+      where: { tenantId: tenant.id },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        planId: plans['pro'].id,
+        status: 'ACTIVE',
+        billingCycle: 'MONTHLY',
+        currentPeriodStart: now,
+        currentPeriodEnd: periodEnd,
+        gateway: 'manual',
+      },
+    });
+    console.log('✅ Tenant subscription created for', tenant.name);
+
     console.log('🎉 Database seeded successfully!');
     console.log('\n📋 Credenciales de acceso:');
     console.log('Admin: admin@vortexbeauty.com / admin123');
     console.log('Clientes: cliente1@example.com, cliente2@example.com, cliente3@example.com / cliente123');
+    console.log('Super Admin: superadmin@vortexbeauty.com / super123');
 
   } catch (error) {
     console.error('❌ Error seeding database:', error);
