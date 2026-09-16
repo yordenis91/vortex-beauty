@@ -7,6 +7,7 @@ interface AuthRequest extends Request {
     userId: string;
     role: 'ADMIN' | 'CLIENT';
     clientId?: string;
+    tenantId: string;
   };
 }
 
@@ -24,11 +25,16 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     }
 
     const decodedUser = decoded as any;
+    if (!decodedUser.tenantId) {
+      // Tokens emitidos antes del soporte multitenant no llevan tenantId.
+      return res.status(401).json({ error: 'Token sin salón asociado. Vuelve a iniciar sesión.' });
+    }
     req.userId = decodedUser.userId;
     req.user = {
       userId: decodedUser.userId,
       role: decodedUser.role || 'CLIENT',
       clientId: decodedUser.clientId,
+      tenantId: decodedUser.tenantId,
     };
     next();
   });

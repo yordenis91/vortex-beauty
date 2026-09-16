@@ -47,15 +47,10 @@ enum TenantStatus {
 // separación multitenant: toda tabla de datos de negocio lleva tenantId para
 // que los datos de un salón nunca sean visibles para otro.
 //
-// NOTA DE MIGRACIÓN (fase 1 de 2): tenantId se introduce aquí como columna
-// opcional en cada tabla, y la migración *_backfill_default_tenant crea un
-// tenant "de arranque" y le asigna todas las filas existentes. Se deja
-// intencionalmente opcional (no NOT NULL todavía): hacerla obligatoria sin
-// que las rutas del backend filtren y escriban tenantId en cada operación
-// rompería la compilación y, peor, dejaría filas nuevas sin tenant. Esa
-// migración (columna NOT NULL + índices únicos definitivos) va junto con el
-// trabajo de la fase 2: resolver el tenant en el login/JWT y filtrar cada
-// ruta por tenantId.
+// tenantId es obligatorio (NOT NULL) en todas las tablas de datos de negocio,
+// salvo Ticket: el sistema de tickets de soporte es funcionalidad heredada sin
+// ninguna ruta ni pantalla que lo use, así que se deja fuera del alcance del
+// aislamiento multitenant en vez de invertir en scoping de código muerto.
 model Tenant {
   id       String       @id @default(uuid())
   name     String // Nombre comercial del salón
@@ -66,6 +61,7 @@ model Tenant {
 
   users             User[]
   clients           Client[]
+  projects          Project[]
   products          Product[]
   categories        Category[]
   staff             Staff[]
@@ -93,9 +89,9 @@ model User {
   role     Role    @default(CLIENT) // ADMIN o CLIENT
 
   // Salón al que pertenece este usuario (admin o clienta).
-  tenantId String?
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Foto de perfil (Base64)
   imageUrl String? @db.Text
@@ -127,13 +123,13 @@ model User {
 model Client {
   id    String  @id @default(uuid())
   name  String
-  email String  @unique
+  email String
   code  String?
 
-  // Salón al que pertenece esta clienta (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece esta clienta.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   displayName    String?
   businessNumber String?
@@ -178,10 +174,7 @@ model Client {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NOTA (fase 2 pendiente): email seguirá siendo único global hasta que las
-  // rutas filtren por tenant. Acotarlo a @@unique([tenantId, email]) ahora
-  // rompería los lookups existentes por email (login, checks de duplicado)
-  // que no pasan tenantId; se hace junto con esa migración.
+  @@unique([tenantId, email])
   @@index([userId])
   @@index([tenantId])
 }
@@ -191,6 +184,10 @@ model Project {
   name        String
   description String?       @db.Text
   status      ProjectStatus @default(ACTIVE)
+
+  // Salón al que pertenece este proyecto.
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Claves foráneas
   clientId String
@@ -206,11 +203,12 @@ model Project {
   updatedAt DateTime @updatedAt
 
   @@index([clientId])
+  @@index([tenantId])
 }
 
 model Invoice {
   id            String        @id @default(uuid())
-  invoiceNumber String        @unique
+  invoiceNumber String
   issueDate     DateTime      @default(now())
   dueDate       DateTime
   status        InvoiceStatus @default(PENDING)
@@ -221,10 +219,10 @@ model Invoice {
   totalAmount Decimal @db.Decimal(10, 2)
   notes       String? @db.Text
 
-  // Salón al que pertenece esta factura (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece esta factura.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Claves foráneas
   userId String
@@ -243,8 +241,7 @@ model Invoice {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NOTA (fase 2 pendiente): invoiceNumber seguirá siendo único global hasta
-  // que las rutas filtren por tenant y generen numeración por salón.
+  @@unique([tenantId, invoiceNumber])
   @@index([clientId])
   @@index([invoiceNumber])
   @@index([userId])
@@ -278,10 +275,10 @@ model Category {
   icon        String? // Nombre del icono
   order       Int          @default(0) // Para ordenar categorías
 
-  // Salón al que pertenece esta categoría (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece esta categoría.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Relaciones
   products Product[]
@@ -291,10 +288,7 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NOTA (fase 2 pendiente): (name, type) seguirá siendo único global hasta
-  // que las rutas filtren por tenant — hoy dos salones no podrían tener cada
-  // uno su propia categoría "Uñas" con el mismo nombre.
-  @@unique([name, type])
+  @@unique([tenantId, name, type])
   @@index([tenantId])
 }
 
@@ -316,10 +310,10 @@ model Product {
   stock           Int? // Para productos limitados (null = unlimited)
   durationMinutes Int           @default(60) // Duración del servicio; determina la hora de fin de la cita
 
-  // Salón al que pertenece este producto/servicio (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece este producto/servicio.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Categorización
   categoryId String
@@ -350,10 +344,10 @@ model GalleryItem {
   imageUrl String  @db.Text
   isActive Boolean @default(true)
 
-  // Salón al que pertenece este diseño (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece este diseño.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -367,7 +361,7 @@ model GalleryItem {
 // Órdenes/Suscripciones
 model Subscription {
   id                 String             @id @default(uuid())
-  subscriptionNumber String             @unique
+  subscriptionNumber String
   status             SubscriptionStatus @default(ACTIVE)
 
   // Fechas importantes
@@ -376,10 +370,10 @@ model Subscription {
   nextBilling DateTime?
   cancelledAt DateTime?
 
-  // Salón al que pertenece esta suscripción (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece esta suscripción.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Producto suscrito
   productId String
@@ -400,8 +394,7 @@ model Subscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NOTA (fase 2 pendiente): igual que invoiceNumber, se acotará por tenant
-  // junto con el filtrado de rutas.
+  @@unique([tenantId, subscriptionNumber])
   @@index([clientId])
   @@index([productId])
   @@index([userId])
@@ -501,12 +494,12 @@ model KnowledgeBase {
   title   String
   content String  @db.Text
   excerpt String? @db.Text // Resumen corto
-  slug    String  @unique // Para URLs amigables
+  slug    String // Para URLs amigables
 
-  // Salón al que pertenece este artículo (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece este artículo.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Categorización
   categoryId String
@@ -528,8 +521,7 @@ model KnowledgeBase {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NOTA (fase 2 pendiente): slug seguirá siendo único global hasta que las
-  // rutas filtren por tenant.
+  @@unique([tenantId, slug])
   @@index([categoryId])
   @@index([userId])
   @@index([tenantId])
@@ -547,10 +539,10 @@ model Staff {
   color    String? // Para distinguir profesionales en la agenda (hex color)
   isActive Boolean @default(true)
 
-  // Salón al que pertenece este profesional (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece este profesional.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   appointments Appointment[]
 
@@ -570,10 +562,10 @@ model Appointment {
   status    AppointmentStatus @default(SCHEDULED)
   notes     String?           @db.Text
 
-  // Salón al que pertenece esta cita (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece esta cita.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Relaciones
   clientId String
@@ -606,10 +598,10 @@ model Notification {
   isRead    Boolean            @default(false) // Para la campanita del cliente
   errorLog  String?            @db.Text // Log de errores si falla el envío
 
-  // Salón que envió esta notificación (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón que envió esta notificación.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Relaciones
   clientId String?
@@ -635,51 +627,50 @@ model BusinessHour {
   isOpen          Boolean  @default(true) // Si es false, ese día está cerrado
   maxAppointments Int      @default(0) // 0 = sin límite, >0 = límite máximo de citas por día
 
-  // Salón al que pertenece este horario (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece este horario.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // NOTA (fase 2 pendiente): dayOfWeek seguirá siendo único global (un solo
-  // horario comercial para toda la instalación) hasta que las rutas filtren
-  // por tenant.
-  @@unique([dayOfWeek])
+  @@unique([tenantId, dayOfWeek])
   @@index([dayOfWeek])
   @@index([tenantId])
 }
 
 model ClosedDate {
   id     String  @id @default(uuid())
-  date   String  @unique // YYYY-MM-DD
+  date   String // YYYY-MM-DD
   reason String? @db.Text
 
-  // Salón al que pertenece este día cerrado (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece este día cerrado.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, date])
   @@index([tenantId])
 }
 
 model ScheduleOverride {
   id        String   @id @default(uuid())
-  date      String   @unique // YYYY-MM-DD
+  date      String // YYYY-MM-DD
   timeSlots String[] @default([])
 
-  // Salón al que pertenece esta excepción de horario (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
+  // Salón al que pertenece esta excepción de horario.
+  tenantId String
 
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, date])
   @@index([tenantId])
 }
 

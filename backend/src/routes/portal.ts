@@ -20,6 +20,7 @@ interface AuthRequest extends express.Request {
     userId: string;
     role: 'ADMIN' | 'CLIENT';
     clientId?: string;
+    tenantId: string;
   };
 }
 
@@ -46,6 +47,7 @@ router.get('/my-invoices', authenticateToken, async (req: AuthRequest, res) => {
     const invoices = await prisma.invoice.findMany({
       where: {
         clientId: clientId, // Filtrar por clientId del usuario
+        tenantId: req.user!.tenantId,
       },
       include: {
         client: {
@@ -202,6 +204,7 @@ router.get('/my-subscriptions', authenticateToken, async (req: AuthRequest, res)
     const subscriptions = await prisma.subscription.findMany({
       where: {
         clientId: clientId,
+        tenantId: req.user!.tenantId,
       },
       include: {
         product: {
@@ -239,6 +242,7 @@ router.get('/my-appointments', authenticateToken, async (req: AuthRequest, res) 
     const appointments = await prisma.appointment.findMany({
       where: {
         clientId: clientId,
+        tenantId: req.user!.tenantId,
       },
       include: {
         client: {
@@ -278,9 +282,9 @@ router.post('/appointments', authenticateToken, async (req: AuthRequest, res) =>
       return res.status(400).json({ error: 'Campos requeridos faltantes' });
     }
 
-    // Verificar que el producto existe
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    // Verificar que el producto existe y pertenece al salón del cliente
+    const product = await prisma.product.findFirst({
+      where: { id: productId, tenantId: req.user!.tenantId },
     });
 
     if (!product) {
@@ -297,6 +301,7 @@ router.post('/appointments', authenticateToken, async (req: AuthRequest, res) =>
     let appointment;
     try {
       appointment = await createAppointmentSafely({
+        tenantId: req.user!.tenantId,
         dateStr: date.split('T')[0],
         startTime,
         endTime,
@@ -320,6 +325,7 @@ router.post('/appointments', authenticateToken, async (req: AuthRequest, res) =>
         type: 'SYSTEM',
         recipient: 'ADMIN',
         content: `Nueva cita agendada: cliente ${appointment.client.name} (${appointment.client.email}) - servicio ${appointment.product.name}, fecha ${new Date(appointment.date).toLocaleDateString('es-ES')} ${appointment.startTime}-${appointment.endTime}`,
+        tenantId: req.user!.tenantId,
       });
 
       // Notificación para el cliente
@@ -328,6 +334,7 @@ router.post('/appointments', authenticateToken, async (req: AuthRequest, res) =>
         recipient: clientId,
         clientId,
         content: `Tu cita ha sido agendada correctamente: ${appointment.product.name} el ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime}.`,
+        tenantId: req.user!.tenantId,
       });
     } catch (notifError) {
       console.error('Error creating appointment notifications:', notifError);
@@ -349,6 +356,7 @@ router.get('/products', authenticateToken, async (req: AuthRequest, res) => {
     const products = await prisma.product.findMany({
       where: {
         isPublic: true,
+        tenantId: req.user!.tenantId,
       },
       include: {
         category: {
@@ -379,9 +387,9 @@ router.patch('/appointments/:id/cancel', authenticateToken, async (req: AuthRequ
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    // Verificar que la cita existe y pertenece al cliente autenticado
-    const appointment = await prisma.appointment.findUnique({
-      where: { id },
+    // Verificar que la cita existe, pertenece al salón y al cliente autenticado
+    const appointment = await prisma.appointment.findFirst({
+      where: { id, tenantId: req.user!.tenantId },
       include: {
         client: true,
         product: true,
@@ -423,12 +431,14 @@ router.patch('/appointments/:id/cancel', authenticateToken, async (req: AuthRequ
         recipient: clientId,
         clientId: clientId,
         content: `Tu cita para ${updatedAppointment.product?.name ?? 'este servicio'} el ${new Date(updatedAppointment.date).toLocaleDateString('es-ES')} a las ${updatedAppointment.startTime} ha sido cancelada exitosamente.`,
+        tenantId: req.user!.tenantId,
       });
 
       await notificationService.createNotification({
         type: 'SYSTEM',
         recipient: 'ADMIN',
         content: `La cita #${updatedAppointment.id} del cliente ${updatedAppointment.client?.name ?? 'desconocido'} para ${updatedAppointment.product?.name ?? 'este servicio'} el ${new Date(updatedAppointment.date).toLocaleDateString('es-ES')} a las ${updatedAppointment.startTime} ha sido cancelada por el cliente.`,
+        tenantId: req.user!.tenantId,
       });
     } catch (notifError) {
       console.error('Error creating cancellation notifications:', notifError);
@@ -464,8 +474,8 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
 
     let durationMinutes: number | null = null;
     if (productId && typeof productId === 'string') {
-      const product = await prisma.product.findUnique({
-        where: { id: productId },
+      const product = await prisma.product.findFirst({
+        where: { id: productId, tenantId: req.user!.tenantId },
         select: { durationMinutes: true },
       });
       durationMinutes = product?.durationMinutes ?? null;
@@ -483,17 +493,21 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
     const dayOfWeek = dayOfWeekFromDateString(date);
 
     // Validar fecha cerrada
-    const closedDate = await prisma.closedDate.findUnique({ where: { date } });
+    const closedDate = await prisma.closedDate.findUnique({
+      where: { tenantId_date: { tenantId: req.user!.tenantId, date } },
+    });
     if (closedDate) {
       return res.json([]);
     }
 
     // Buscar override para el día solicitado
-    const scheduleOverride = await prisma.scheduleOverride.findUnique({ where: { date } });
+    const scheduleOverride = await prisma.scheduleOverride.findUnique({
+      where: { tenantId_date: { tenantId: req.user!.tenantId, date } },
+    });
 
     // Verificar si hay un horario comercial para el día de semana (fallback)
     const businessHour = await prisma.businessHour.findUnique({
-      where: { dayOfWeek },
+      where: { tenantId_dayOfWeek: { tenantId: req.user!.tenantId, dayOfWeek } },
     });
 
     // Si el día no tiene horario comercial o está cerrado y no hay override, no slots
@@ -508,6 +522,7 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
     // Contar citas agendadas para ese día
     const currentAppointmentsCount = await prisma.appointment.count({
       where: {
+        tenantId: req.user!.tenantId,
         date: {
           gte: startOfDay,
           lte: endOfDay,
@@ -528,6 +543,7 @@ router.get('/available-slots', authenticateToken, async (req: AuthRequest, res) 
     // Buscar citas agendadas para ese día (rango completo de fecha)
     const scheduledAppointments = await prisma.appointment.findMany({
       where: {
+        tenantId: req.user!.tenantId,
         date: {
           gte: startOfDay,
           lte: endOfDay,

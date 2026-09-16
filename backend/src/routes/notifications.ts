@@ -12,7 +12,7 @@ const router = Router();
  */
 router.get('/', authenticateToken, requireAdmin, async (req: any, res: Response) => {
   try {
-    const notifications = await notificationService.getAllNotifications();
+    const notifications = await notificationService.getAllNotifications(req.user.tenantId);
     res.json(notifications);
   } catch (error) {
     console.error('Error fetching notifications:', error);
@@ -33,7 +33,7 @@ router.get('/client', authenticateToken, async (req: any, res: Response) => {
       return res.json([]);
     }
 
-    const notifications = await notificationService.getClientNotifications(clientId);
+    const notifications = await notificationService.getClientNotifications(clientId, req.user.tenantId);
     res.json(notifications);
   } catch (error) {
     console.error('Error fetching client notifications:', error);
@@ -51,9 +51,9 @@ router.put('/:id/read', authenticateToken, async (req: any, res: Response) => {
     const { id } = req.params;
     const clientId = req.user?.clientId;
 
-    // Verificar que la notificación pertenece al cliente
-    const notification = await prisma.notification.findUnique({
-      where: { id },
+    // Verificar que la notificación pertenece al salón (y al cliente, si aplica)
+    const notification = await prisma.notification.findFirst({
+      where: { id, tenantId: req.user.tenantId },
     });
 
     if (!notification) {
@@ -84,6 +84,11 @@ router.put('/:id/status', authenticateToken, requireAdmin, async (req: any, res:
 
     if (!status) {
       return res.status(400).json({ error: 'Status is required' });
+    }
+
+    const existing = await prisma.notification.findFirst({ where: { id, tenantId: req.user.tenantId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Notification not found' });
     }
 
     const updatedNotification = await notificationService.updateNotificationStatus(id, status, errorLog);

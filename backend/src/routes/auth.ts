@@ -31,16 +31,19 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Usar transacción para crear Client y User de forma atómica
-    const { user } = await prisma.$transaction(async (tx) => {
+    const { user, tenantId } = await prisma.$transaction(async (tx) => {
       // Buscar usuario administrador
+      // NOTA (multitenant): mientras no exista un flujo de alta de salón
+      // propio, el registro público solo da de alta clientas del salón que
+      // ya existe (toma el primer admin, igual que antes).
       const adminUser = await tx.user.findFirst({
         where: { role: 'ADMIN' }
       });
-      
-      if (!adminUser) {
+
+      if (!adminUser || !adminUser.tenantId) {
         throw new Error('No admin user found to assign as client owner');
       }
-      
+
       // Crear registro en Client
       const newClient = await tx.client.create({
         data: {
@@ -48,29 +51,32 @@ router.post('/register', async (req, res) => {
           email,
           type: 'CUSTOMER',
           userId: adminUser.id, // Vinculado al admin
+          tenantId: adminUser.tenantId,
         }
       });
-      
+
       // Crear registro en User con clientId del nuevo cliente
       const newUser = await tx.user.create({
-        data: { 
-          email, 
-          password: hashedPassword, 
+        data: {
+          email,
+          password: hashedPassword,
           name,
           role: 'CLIENT',
           clientId: newClient.id, // Vinculado al cliente creado
+          tenantId: adminUser.tenantId,
         },
-        select: { id: true, email: true, name: true, role: true, clientId: true },
+        select: { id: true, email: true, name: true, role: true, clientId: true, tenantId: true },
       });
-      
-      return { user: newUser };
+
+      return { user: newUser, tenantId: adminUser.tenantId };
     });
 
     const token = jwt.sign(
-      { 
+      {
         userId: user.id,
         role: user.role,
         clientId: user.clientId,
+        tenantId,
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
@@ -92,7 +98,7 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({ 
+    const user = await prisma.user.findUnique({
       where: { email },
       select: {
         id: true,
@@ -102,9 +108,10 @@ router.post('/login', async (req, res) => {
         role: true,
         clientId: true,
         imageUrl: true,
+        tenantId: true,
       },
     });
-    
+
     if (!user) {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
@@ -114,11 +121,16 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
+    if (!user.tenantId) {
+      return res.status(400).json({ error: 'Esta cuenta no tiene un salón asociado. Contacta a soporte.' });
+    }
+
     const token = jwt.sign(
-      { 
+      {
         userId: user.id,
         role: user.role,
         clientId: user.clientId,
+        tenantId: user.tenantId,
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }

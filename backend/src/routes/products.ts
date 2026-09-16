@@ -34,10 +34,10 @@ const updateProductSchema = createProductSchema.partial();
 // GET /api/products - Get all products for the authenticated user
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
 
     const products = await prisma.product.findMany({
-      where: { userId },
+      where: { tenantId },
       include: {
         category: true,
         _count: {
@@ -82,12 +82,12 @@ router.get('/public', async (req, res) => {
 router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const userId = (req as any).user.id;
+    const tenantId = (req as any).user.tenantId;
 
     const product = await prisma.product.findFirst({
       where: {
         id,
-        userId,
+        tenantId,
       },
       include: {
         category: true,
@@ -125,17 +125,18 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
     const validatedData = createProductSchema.parse(req.body);
 
-    // Verify category exists and belongs to user
+    // Verify category exists and belongs to this salón
     const category = await prisma.category.findFirst({
       where: {
         id: validatedData.categoryId,
-        // Note: Categories might need user association in the future
+        tenantId,
       },
     });
 
@@ -147,6 +148,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       data: {
         ...validatedData,
         userId,
+        tenantId,
       },
       include: {
         category: true,
@@ -168,12 +170,12 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
     const validatedData = updateProductSchema.parse(req.body);
 
-    // Verify product exists and belongs to user
+    // Verify product exists and belongs to this salón
     const existingProduct = await prisma.product.findFirst({
-      where: { id, userId },
+      where: { id, tenantId },
     });
 
     if (!existingProduct) {
@@ -183,7 +185,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     // If category is being updated, verify it exists
     if (validatedData.categoryId) {
       const category = await prisma.category.findFirst({
-        where: { id: validatedData.categoryId },
+        where: { id: validatedData.categoryId, tenantId },
       });
 
       if (!category) {
@@ -214,11 +216,11 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
 
-    // Verify product exists and belongs to user
+    // Verify product exists and belongs to this salón
     const product = await prisma.product.findFirst({
-      where: { id, userId },
+      where: { id, tenantId },
     });
 
     if (!product) {

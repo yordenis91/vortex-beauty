@@ -16,7 +16,9 @@ const scheduleOverrideSchema = z.object({
 // GET /api/overrides - List all schedule overrides
 router.get('/', async (req, res) => {
   try {
+    const tenantId = (req as any).user.tenantId;
     const overrides = await prisma.scheduleOverride.findMany({
+      where: { tenantId },
       orderBy: { date: 'asc' },
     });
     res.json(overrides);
@@ -31,9 +33,10 @@ router.get('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.pick({ date: true }).parse({ date });
+    const tenantId = (req as any).user.tenantId;
 
     const override = await prisma.scheduleOverride.findUnique({
-      where: { date: parsed.date },
+      where: { tenantId_date: { tenantId, date: parsed.date } },
     });
 
     if (!override) {
@@ -54,8 +57,11 @@ router.get('/:date', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const parsed = scheduleOverrideSchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
-    const existing = await prisma.scheduleOverride.findUnique({ where: { date: parsed.date } });
+    const existing = await prisma.scheduleOverride.findUnique({
+      where: { tenantId_date: { tenantId, date: parsed.date } },
+    });
     if (existing) {
       return res.status(409).json({ error: 'Schedule override already exists for this date' });
     }
@@ -64,6 +70,7 @@ router.post('/', async (req, res) => {
       data: {
         date: parsed.date,
         timeSlots: parsed.timeSlots ?? [],
+        tenantId,
       },
     });
 
@@ -82,11 +89,12 @@ router.put('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.parse({ date, ...req.body });
+    const tenantId = (req as any).user.tenantId;
 
     const updated = await prisma.scheduleOverride.upsert({
-      where: { date: parsed.date },
+      where: { tenantId_date: { tenantId, date: parsed.date } },
       update: { timeSlots: parsed.timeSlots ?? [] },
-      create: { date: parsed.date, timeSlots: parsed.timeSlots ?? [] },
+      create: { date: parsed.date, timeSlots: parsed.timeSlots ?? [], tenantId },
     });
 
     res.json(updated);
@@ -104,13 +112,16 @@ router.delete('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.pick({ date: true }).parse({ date });
+    const tenantId = (req as any).user.tenantId;
 
-    const existing = await prisma.scheduleOverride.findUnique({ where: { date: parsed.date } });
+    const existing = await prisma.scheduleOverride.findUnique({
+      where: { tenantId_date: { tenantId, date: parsed.date } },
+    });
     if (!existing) {
       return res.status(404).json({ error: 'Schedule override not found for this date' });
     }
 
-    await prisma.scheduleOverride.delete({ where: { date: parsed.date } });
+    await prisma.scheduleOverride.delete({ where: { tenantId_date: { tenantId, date: parsed.date } } });
 
     res.json({ message: 'Schedule override deleted, using default business hours for this date' });
   } catch (error: any) {

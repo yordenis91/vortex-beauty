@@ -32,11 +32,11 @@
     });
 
     // Helper: Initialize default business hours if they don't exist
-    const initializeDefaultBusinessHours = async (): Promise<void> => {
+    const initializeDefaultBusinessHours = async (tenantId: string): Promise<void> => {
       try {
         console.log('Checking if business hours need initialization...');
 
-        const existingCount = await prisma.businessHour.count();
+        const existingCount = await prisma.businessHour.count({ where: { tenantId } });
 
         if (existingCount === 0) {
           console.log('No business hours found, creating defaults...');
@@ -52,7 +52,7 @@
           ];
 
           await prisma.businessHour.createMany({
-            data: defaultHours,
+            data: defaultHours.map((h) => ({ ...h, tenantId })),
           });
 
           console.log('Default business hours created successfully');
@@ -69,11 +69,13 @@
     router.get('/business-hours', authenticateToken, async (req, res) => {
     try {
         console.log('GET /api/settings/business-hours called');
+        const tenantId = (req as any).user.tenantId;
 
         // Initialize default hours if they don't exist
-        await initializeDefaultBusinessHours();
+        await initializeDefaultBusinessHours(tenantId);
 
         const businessHours = await prisma.businessHour.findMany({
+        where: { tenantId },
         orderBy: { dayOfWeek: 'asc' },
         });
 
@@ -95,13 +97,14 @@
     try {
         const { dayOfWeek } = req.params;
         const day = parseInt(dayOfWeek as string);
+        const tenantId = (req as any).user.tenantId;
 
         if (isNaN(day) || day < 0 || day > 6) {
         return res.status(400).json({ error: 'Invalid day of week (0-6)' });
         }
 
         const businessHour = await prisma.businessHour.findUnique({
-        where: { dayOfWeek: day },
+        where: { tenantId_dayOfWeek: { tenantId, dayOfWeek: day } },
         });
 
         if (!businessHour) {
@@ -120,6 +123,7 @@
     try {
         const { dayOfWeek } = req.params;
         const day = parseInt(dayOfWeek as string);
+        const tenantId = (req as any).user.tenantId;
 
         if (isNaN(day) || day < 0 || day > 6) {
         return res.status(400).json({ error: 'Invalid day of week (0-6)' });
@@ -134,16 +138,16 @@
 
         // Ensure the record exists (or create it)
         let businessHour = await prisma.businessHour.findUnique({
-        where: { dayOfWeek: day },
+        where: { tenantId_dayOfWeek: { tenantId, dayOfWeek: day } },
         });
 
         if (!businessHour) {
         businessHour = await prisma.businessHour.create({
-            data: validatedData,
+            data: { ...validatedData, tenantId },
         });
         } else {
         businessHour = await prisma.businessHour.update({
-            where: { dayOfWeek: day },
+            where: { tenantId_dayOfWeek: { tenantId, dayOfWeek: day } },
             data: validatedData,
         });
         }

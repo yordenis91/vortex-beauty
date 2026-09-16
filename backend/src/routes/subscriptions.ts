@@ -25,10 +25,10 @@ const updateSubscriptionSchema = z.object({
 // GET /api/subscriptions - Get all subscriptions for the authenticated user
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
     const { status, clientId, productId } = req.query;
 
-    const where: any = { userId };
+    const where: any = { tenantId };
 
     if (status) where.status = status;
     if (clientId) where.clientId = clientId;
@@ -54,12 +54,12 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
 
     const subscription = await prisma.subscription.findFirst({
       where: {
         id,
-        userId,
+        tenantId,
       },
       include: {
         product: true,
@@ -82,13 +82,14 @@ router.get('/:id', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
     const validatedData = createSubscriptionSchema.parse(req.body);
 
     // Verify product exists and belongs to user
     const product = await prisma.product.findFirst({
       where: {
         id: validatedData.productId,
-        userId,
+        tenantId,
         status: 'ACTIVE',
       },
     });
@@ -101,7 +102,7 @@ router.post('/', authenticateToken, async (req, res) => {
     const client = await prisma.client.findFirst({
       where: {
         id: validatedData.clientId,
-        userId,
+        tenantId,
       },
     });
 
@@ -111,7 +112,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Generate subscription number
     const subscriptionCount = await prisma.subscription.count({
-      where: { userId },
+      where: { tenantId },
     });
 
     const subscriptionNumber = `SUB-${String(subscriptionCount + 1).padStart(6, '0')}`;
@@ -144,6 +145,7 @@ router.post('/', authenticateToken, async (req, res) => {
         productId: validatedData.productId,
         clientId: validatedData.clientId,
         userId,
+        tenantId,
         startDate,
         nextBilling,
         notes: validatedData.notes,
@@ -170,12 +172,12 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
     const validatedData = updateSubscriptionSchema.parse(req.body);
 
     // Verify subscription exists and belongs to user
     const existingSubscription = await prisma.subscription.findFirst({
-      where: { id, userId },
+      where: { id, tenantId },
     });
 
     if (!existingSubscription) {
@@ -206,11 +208,11 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.put('/:id/cancel', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
 
     // Verify subscription exists and belongs to user
     const subscription = await prisma.subscription.findFirst({
-      where: { id: id as string, userId },
+      where: { id: id as string, tenantId },
     });
 
     if (!subscription) {
@@ -246,11 +248,11 @@ router.put('/:id/cancel', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
 
     // Verify subscription exists and belongs to user
     const subscription = await prisma.subscription.findFirst({
-      where: { id: id as string, userId },
+      where: { id: id as string, tenantId },
     });
 
     if (!subscription) {
@@ -273,11 +275,11 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 router.post('/:id/renew', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id as string;
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
 
     // Verify subscription exists and belongs to user
     const subscription = await prisma.subscription.findFirst({
-      where: { id: id as string, userId },
+      where: { id: id as string, tenantId },
       include: { product: true },
     });
 

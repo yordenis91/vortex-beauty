@@ -12,11 +12,12 @@ const galleryItemSchema = z.object({
   productId: z.string().uuid('Invalid product ID'),
 });
 
-// GET /api/gallery - Public active items
-router.get('/', async (req, res) => {
+// GET /api/gallery - Active items for the salón del usuario autenticado
+router.get('/', authenticateToken, async (req, res) => {
   try {
+    const tenantId = (req as any).user.tenantId;
     const galleryItems = await prisma.galleryItem.findMany({
-      where: { isActive: true },
+      where: { isActive: true, tenantId },
       include: { product: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -31,7 +32,9 @@ router.get('/', async (req, res) => {
 // GET /api/gallery/admin - All items for admins
 router.get('/admin', authenticateToken, requireAdmin, async (req, res) => {
   try {
+    const tenantId = (req as any).user.tenantId;
     const galleryItems = await prisma.galleryItem.findMany({
+      where: { tenantId },
       include: { product: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -47,8 +50,9 @@ router.get('/admin', authenticateToken, requireAdmin, async (req, res) => {
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validatedData = galleryItemSchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
-    const product = await prisma.product.findUnique({ where: { id: validatedData.productId } });
+    const product = await prisma.product.findFirst({ where: { id: validatedData.productId, tenantId } });
     if (!product) {
       return res.status(400).json({ error: 'Invalid product ID' });
     }
@@ -59,6 +63,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         imageUrl: validatedData.imageUrl,
         isActive: validatedData.isActive ?? true,
         productId: validatedData.productId,
+        tenantId,
       },
       include: { product: true },
     });
@@ -78,14 +83,15 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const validatedData = galleryItemSchema.partial().parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
-    const existingItem = await prisma.galleryItem.findUnique({ where: { id } });
+    const existingItem = await prisma.galleryItem.findFirst({ where: { id, tenantId } });
     if (!existingItem) {
       return res.status(404).json({ error: 'Gallery item not found' });
     }
 
     if (validatedData.productId) {
-      const product = await prisma.product.findUnique({ where: { id: validatedData.productId } });
+      const product = await prisma.product.findFirst({ where: { id: validatedData.productId, tenantId } });
       if (!product) {
         return res.status(400).json({ error: 'Invalid product ID' });
       }
@@ -116,7 +122,8 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const existingItem = await prisma.galleryItem.findUnique({ where: { id } });
+    const tenantId = (req as any).user.tenantId;
+    const existingItem = await prisma.galleryItem.findFirst({ where: { id, tenantId } });
     if (!existingItem) {
       return res.status(404).json({ error: 'Gallery item not found' });
     }

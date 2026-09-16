@@ -29,11 +29,11 @@ const updateArticleSchema = createArticleSchema.partial().extend({
 });
 
 // GET /api/knowledge-base - Get all knowledge base articles
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { category, status, search, public: isPublic } = req.query;
 
-    const where: any = {};
+    const where: any = { tenantId: (req as any).user.tenantId };
 
     if (category) where.categoryId = category;
     if (status) where.status = status;
@@ -143,7 +143,7 @@ router.get('/slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const article = await prisma.knowledgeBase.findUnique({
+    const article = await prisma.knowledgeBase.findFirst({
       where: { slug },
       include: {
         category: true,
@@ -188,6 +188,7 @@ router.get('/slug/:slug', async (req, res) => {
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
     const validatedData = createArticleSchema.parse(req.body);
 
     // Verify category exists and is for knowledge base
@@ -195,6 +196,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       where: {
         id: validatedData.categoryId,
         type: 'KNOWLEDGE_BASE',
+        tenantId,
       },
     });
 
@@ -208,10 +210,10 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    // Ensure slug is unique
+    // Ensure slug is unique dentro de este salón
     let uniqueSlug = slug;
     let counter = 1;
-    while (await prisma.knowledgeBase.findUnique({ where: { slug: uniqueSlug } })) {
+    while (await prisma.knowledgeBase.findUnique({ where: { tenantId_slug: { tenantId, slug: uniqueSlug } } })) {
       uniqueSlug = `${slug}-${counter}`;
       counter++;
     }
@@ -225,6 +227,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         categoryId: validatedData.categoryId,
         isPublic: validatedData.isPublic,
         userId,
+        tenantId,
       },
       include: {
         category: true,
@@ -247,12 +250,12 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
     const validatedData = updateArticleSchema.parse(req.body);
 
-    // Verify article exists and belongs to user
+    // Verify article exists and belongs to this salón
     const existingArticle = await prisma.knowledgeBase.findFirst({
-      where: { id, userId },
+      where: { id, tenantId },
     });
 
     if (!existingArticle) {
@@ -265,6 +268,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         where: {
           id: validatedData.categoryId,
           type: 'KNOWLEDGE_BASE',
+          tenantId,
         },
       });
 
@@ -285,10 +289,10 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       let counter = 1;
       while (
         await prisma.knowledgeBase.findFirst({
-          where: { slug: uniqueSlug, id: { not: id } },
+          where: { slug: uniqueSlug, tenantId, id: { not: id } },
         })
       ) {
-        uniqueSlug = `${slug}-${counter}`;  
+        uniqueSlug = `${slug}-${counter}`;
         counter++;
       }
 
@@ -356,11 +360,11 @@ router.post('/:id/vote', voteLimiter, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const userId = (req as any).userId;
+    const tenantId = (req as any).user.tenantId;
 
-    // Verify article exists and belongs to user
+    // Verify article exists and belongs to this salón
     const article = await prisma.knowledgeBase.findFirst({
-      where: { id, userId },
+      where: { id, tenantId },
     });
 
     if (!article) {

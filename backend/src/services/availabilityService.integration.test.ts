@@ -23,6 +23,7 @@ const hasDb = process.env.RUN_DB_TESTS === '1';
 const describeIfDb = hasDb ? describe : describe.skip;
 
 describeIfDb('availabilityService (integración con Postgres)', () => {
+  let tenantId: string;
   let clientId: string;
   let productId: string;
   let userId: string;
@@ -41,19 +42,25 @@ describeIfDb('availabilityService (integración con Postgres)', () => {
     await prisma.category.deleteMany();
     await prisma.client.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.tenant.deleteMany();
+
+    const tenant = await prisma.tenant.create({
+      data: { name: 'Salón Test', slug: 'salon-test' },
+    });
+    tenantId = tenant.id;
 
     const user = await prisma.user.create({
-      data: { email: 'admin@test.local', password: 'x', name: 'Admin Test', role: 'ADMIN' },
+      data: { email: 'admin@test.local', password: 'x', name: 'Admin Test', role: 'ADMIN', tenantId },
     });
     userId = user.id;
 
     const client = await prisma.client.create({
-      data: { name: 'Clienta Test', email: 'clienta@test.local', userId },
+      data: { name: 'Clienta Test', email: 'clienta@test.local', userId, tenantId },
     });
     clientId = client.id;
 
     const category = await prisma.category.create({
-      data: { name: 'Manicura', type: 'PRODUCT' },
+      data: { name: 'Manicura', type: 'PRODUCT', tenantId },
     });
     categoryId = category.id;
 
@@ -65,14 +72,15 @@ describeIfDb('availabilityService (integración con Postgres)', () => {
         billingCycle: 'ONE_TIME',
         categoryId,
         userId,
+        tenantId,
       },
     });
     productId = product.id;
 
     await prisma.businessHour.createMany({
       data: [
-        { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0 },
-        { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', timeSlots: ['10:00', '11:00', '12:00'], isOpen: true, maxAppointments: 2 },
+        { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0, tenantId },
+        { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', timeSlots: ['10:00', '11:00', '12:00'], isOpen: true, maxAppointments: 2, tenantId },
       ],
     });
   });
@@ -86,6 +94,7 @@ describeIfDb('availabilityService (integración con Postgres)', () => {
     await prisma.category.deleteMany();
     await prisma.client.deleteMany();
     await prisma.user.deleteMany();
+    await prisma.tenant.deleteMany();
     await prisma.$disconnect();
   });
 
@@ -96,7 +105,7 @@ describeIfDb('availabilityService (integración con Postgres)', () => {
   it('rechaza un día cerrado (F7/F8: businessHour.isOpen)', async () => {
     await expect(
       prisma.$transaction((tx) =>
-        assertSlotAvailable(tx, { dateStr: SUNDAY, startTime: '10:00', endTime: '11:00' })
+        assertSlotAvailable(tx, { tenantId, dateStr: SUNDAY, startTime: '10:00', endTime: '11:00' })
       )
     ).rejects.toBeInstanceOf(AvailabilityError);
   });
@@ -104,7 +113,7 @@ describeIfDb('availabilityService (integración con Postgres)', () => {
   it('rechaza un horario fuera de los timeSlots explícitos del día', async () => {
     await expect(
       prisma.$transaction((tx) =>
-        assertSlotAvailable(tx, { dateStr: MONDAY, startTime: '09:00', endTime: '10:00' })
+        assertSlotAvailable(tx, { tenantId, dateStr: MONDAY, startTime: '09:00', endTime: '10:00' })
       )
     ).rejects.toBeInstanceOf(AvailabilityError);
   });
@@ -112,34 +121,34 @@ describeIfDb('availabilityService (integración con Postgres)', () => {
   it('acepta un horario válido dentro de los timeSlots configurados', async () => {
     await expect(
       prisma.$transaction((tx) =>
-        assertSlotAvailable(tx, { dateStr: MONDAY, startTime: '10:00', endTime: '11:00' })
+        assertSlotAvailable(tx, { tenantId, dateStr: MONDAY, startTime: '10:00', endTime: '11:00' })
       )
     ).resolves.toBeUndefined();
   });
 
   it('respeta el cupo máximo diario (maxAppointments)', async () => {
     // El fixture del lunes permite como máximo 2 citas ese día.
-    await createAppointmentSafely({ dateStr: MONDAY, startTime: '10:00', endTime: '11:00', clientId, productId });
-    await createAppointmentSafely({ dateStr: MONDAY, startTime: '11:00', endTime: '12:00', clientId, productId });
+    await createAppointmentSafely({ tenantId, dateStr: MONDAY, startTime: '10:00', endTime: '11:00', clientId, productId });
+    await createAppointmentSafely({ tenantId, dateStr: MONDAY, startTime: '11:00', endTime: '12:00', clientId, productId });
 
     await expect(
-      createAppointmentSafely({ dateStr: MONDAY, startTime: '12:00', endTime: '13:00', clientId, productId })
+      createAppointmentSafely({ tenantId, dateStr: MONDAY, startTime: '12:00', endTime: '13:00', clientId, productId })
     ).rejects.toMatchObject({ message: expect.stringContaining('cupos') });
   });
 
   it('rechaza un hueco que solapa con una cita ya existente', async () => {
-    await createAppointmentSafely({ dateStr: MONDAY, startTime: '10:00', endTime: '11:00', clientId, productId });
+    await createAppointmentSafely({ tenantId, dateStr: MONDAY, startTime: '10:00', endTime: '11:00', clientId, productId });
 
     await expect(
       prisma.$transaction((tx) =>
-        assertSlotAvailable(tx, { dateStr: MONDAY, startTime: '10:00', endTime: '11:00' })
+        assertSlotAvailable(tx, { tenantId, dateStr: MONDAY, startTime: '10:00', endTime: '11:00' })
       )
     ).rejects.toMatchObject({ status: 409 });
   });
 
   it('F6: dos reservas simultáneas para el mismo hueco — solo una gana', async () => {
     const attempt = () =>
-      createAppointmentSafely({ dateStr: MONDAY, startTime: '10:00', endTime: '11:00', clientId, productId });
+      createAppointmentSafely({ tenantId, dateStr: MONDAY, startTime: '10:00', endTime: '11:00', clientId, productId });
 
     const results = await Promise.allSettled([attempt(), attempt()]);
 
