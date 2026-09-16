@@ -305,8 +305,8 @@ const ClientAppointments: React.FC = () => {
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Mis Citas</h1>
-        <p className="text-gray-600 mt-2">Selecciona una fecha para agendar tu próxima cita</p>
+        <h1 className="text-3xl font-bold text-foreground">Mis Citas</h1>
+        <p className="text-muted-foreground mt-2">Selecciona una fecha para agendar tu próxima cita</p>
       </div>
 
       <Tabs defaultValue="agendar" className="w-full mt-6">
@@ -321,7 +321,7 @@ const ClientAppointments: React.FC = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            <Card className="border-none shadow-xl bg-white rounded-3xl overflow-hidden mb-8 p-6">
+            <Card className="border-none shadow-xl bg-card rounded-3xl overflow-hidden mb-8 p-6">
               <div className="overflow-x-auto">
                 <Calendar
                   mode="single"
@@ -332,7 +332,7 @@ const ClientAppointments: React.FC = () => {
                   className="rounded-lg w-full min-w-[17rem]"
                   classNames={{
                     day_selected: "bg-blue-600 text-white hover:bg-blue-700 rounded-full",
-                    day_disabled: "text-gray-400 cursor-not-allowed",
+                    day_disabled: "text-muted-foreground cursor-not-allowed",
                   }}
                 />
               </div>
@@ -354,7 +354,7 @@ const ClientAppointments: React.FC = () => {
                 <form onSubmit={handleSubmit} className="space-y-6 mt-6">
                   {/* Seleccionar Servicio */}
                   <div>
-                    <label className="text-sm font-semibold text-gray-900 mb-3 block">
+                    <label className="text-sm font-semibold text-foreground mb-3 block">
                       Servicio <span className="text-red-500">*</span>
                     </label>
                     <Select
@@ -386,11 +386,11 @@ const ClientAppointments: React.FC = () => {
 
                   {/* Horarios disponibles */}
                   <div>
-                    <label className="text-sm font-semibold text-gray-900 mb-3 block">Hora <span className="text-red-500">*</span></label>
+                    <label className="text-sm font-semibold text-foreground mb-3 block">Hora <span className="text-red-500">*</span></label>
                     {slotsLoading ? (
                       <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="ml-3 text-gray-600">Cargando horarios...</span>
+                        <span className="ml-3 text-muted-foreground">Cargando horarios...</span>
                       </div>
                     ) : availableSlots.length > 0 ? (
                       <div className="grid grid-cols-3 gap-3">
@@ -407,8 +407,8 @@ const ClientAppointments: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <Clock className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Clock className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
                         <p className="font-medium">No hay horarios disponibles</p>
                         <p className="text-sm mt-1">Intenta seleccionar otra fecha</p>
                       </div>
@@ -456,15 +456,15 @@ const ClientAppointments: React.FC = () => {
           {appointmentsLoading ? (
             <div className="space-y-4">
               {[1, 2].map((i) => (
-                <Card key={i} className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden">
+                <Card key={i} className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden">
                   <div className="animate-pulse p-6">
                     <div className="flex items-center space-x-4">
-                      <div className="bg-slate-200 rounded-xl p-3 min-w-[70px] h-16"></div>
+                      <div className="bg-muted rounded-xl p-3 min-w-[70px] h-16"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="bg-slate-200 h-4 rounded w-3/4"></div>
-                        <div className="bg-slate-200 h-3 rounded w-1/2"></div>
+                        <div className="bg-muted h-4 rounded w-3/4"></div>
+                        <div className="bg-muted h-3 rounded w-1/2"></div>
                       </div>
-                      <div className="bg-slate-200 rounded-full w-10 h-10"></div>
+                      <div className="bg-muted rounded-full w-10 h-10"></div>
                     </div>
                   </div>
                 </Card>
@@ -472,28 +472,28 @@ const ClientAppointments: React.FC = () => {
             </div>
           ) : upcomingAppointments.length > 0 ? (
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">Mis Próximas Citas</h2>
+              <h2 className="text-xl font-semibold text-foreground">Mis Próximas Citas</h2>
               {upcomingAppointments.map((appointment) => {
                 const appointmentDate = parseISO(appointment.date);
                 const day = format(appointmentDate, 'd', { locale: es });
                 const month = format(appointmentDate, 'MMM', { locale: es });
 
                 return (
-                  <Card key={appointment.id} className="rounded-2xl border border-slate-100 shadow-sm bg-white overflow-hidden hover:shadow-md transition-shadow">
+                  <Card key={appointment.id} className="rounded-2xl border border-border shadow-sm bg-card overflow-hidden hover:shadow-md transition-shadow">
                     <div className="p-6">
                       <div className="flex items-center space-x-4">
                         {/* Recuadro con día y mes */}
-                        <div className="bg-blue-50 text-blue-700 rounded-xl p-3 text-center min-w-[70px]">
+                        <div className="bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-xl p-3 text-center min-w-[70px]">
                           <div className="text-lg font-bold">{day}</div>
                           <div className="text-xs uppercase">{month}</div>
                         </div>
 
                         {/* Información de la cita */}
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 text-lg">
+                          <h3 className="font-semibold text-foreground text-lg">
                             {appointment.product?.name || 'Servicio'}
                           </h3>
-                          <div className="flex items-center mt-1 text-gray-600">
+                          <div className="flex items-center mt-1 text-muted-foreground">
                             <Clock className="w-3 h-3 mr-1" />
                             <span className="text-sm">{appointment.startTime}</span>
                           </div>
@@ -519,20 +519,20 @@ const ClientAppointments: React.FC = () => {
 
           {cancelledAppointments.length > 0 && (
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">Citas Canceladas</h2>
+              <h2 className="text-xl font-semibold text-foreground">Citas Canceladas</h2>
               {cancelledAppointments.map((appointment) => (
-                <Card key={appointment.id} className="rounded-2xl border border-red-100 bg-red-50/50 shadow-sm overflow-hidden opacity-75">
+                <Card key={appointment.id} className="rounded-2xl border border-red-100 dark:border-red-900 bg-red-50/50 dark:bg-red-950/30 shadow-sm overflow-hidden opacity-75">
                   <div className="p-4 flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold text-gray-900 line-through decoration-red-300">
+                      <h3 className="font-semibold text-foreground line-through decoration-red-300">
                         {appointment.product?.name || 'Servicio'}
                       </h3>
-                      <p className="text-sm text-gray-500 flex items-center mt-1">
+                      <p className="text-sm text-muted-foreground flex items-center mt-1">
                         <Clock className="w-3 h-3 mr-1" />
                         {formatDate(appointment.date, appointment.startTime)}
                       </p>
                     </div>
-                    <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50">Cancelada</Badge>
+                    <Badge variant="outline" className="text-red-600 dark:text-red-300 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40">Cancelada</Badge>
                   </div>
                 </Card>
               ))}
@@ -555,17 +555,17 @@ const ClientAppointments: React.FC = () => {
 
             <div className="space-y-6">
               {/* Servicio */}
-              <div className="border-b border-gray-200 pb-4">
-                <p className="text-sm font-medium text-gray-500">Servicio</p>
-                <p className="text-lg font-semibold text-gray-900 mt-1">
+              <div className="border-b border-border pb-4">
+                <p className="text-sm font-medium text-muted-foreground">Servicio</p>
+                <p className="text-lg font-semibold text-foreground mt-1">
                   {selectedEventModal.product?.name || 'Servicio'}
                 </p>
               </div>
 
               {/* Fecha y Hora */}
-              <div className="border-b border-gray-200 pb-4">
-                <p className="text-sm font-medium text-gray-500">Fecha y Hora</p>
-                <p className="text-lg font-semibold text-gray-900 mt-1 flex items-center gap-2">
+              <div className="border-b border-border pb-4">
+                <p className="text-sm font-medium text-muted-foreground">Fecha y Hora</p>
+                <p className="text-lg font-semibold text-foreground mt-1 flex items-center gap-2">
                   <CalendarIcon className="h-5 w-5 text-blue-600" />
                   {formatDate(selectedEventModal.date, selectedEventModal.startTime)}
                 </p>
@@ -573,8 +573,8 @@ const ClientAppointments: React.FC = () => {
 
               {/* Precio */}
               {selectedEventModal.product?.price && (
-                <div className="border-b border-gray-200 pb-4">
-                  <p className="text-sm font-medium text-gray-500">Precio</p>
+                <div className="border-b border-border pb-4">
+                  <p className="text-sm font-medium text-muted-foreground">Precio</p>
                   <p className="text-lg font-semibold text-blue-600 mt-1">
                     ${Number(selectedEventModal.product.price).toFixed(2)}
                   </p>
@@ -583,7 +583,7 @@ const ClientAppointments: React.FC = () => {
 
               {/* Estado */}
               <div className="pb-2">
-                <p className="text-sm font-medium text-gray-500">Estado</p>
+                <p className="text-sm font-medium text-muted-foreground">Estado</p>
                 <Badge className="mt-1">
                   {selectedEventModal.status === 'SCHEDULED' && 'Agendada'}
                   {selectedEventModal.status === 'COMPLETED' && 'Completada'}
@@ -592,7 +592,7 @@ const ClientAppointments: React.FC = () => {
               </div>
 
               {/* Botones */}
-              <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <div className="flex gap-3 pt-4 border-t border-border">
                 <Button
                   type="button"
                   variant="outline"
@@ -635,17 +635,17 @@ const ClientAppointments: React.FC = () => {
             const appointment = upcomingAppointments.find(apt => apt.id === appointmentToCancel);
             return appointment ? (
               <div className="py-4">
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                  <p className="text-sm text-yellow-800">
+                <div className="bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-900 rounded-lg p-4 mb-4">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
                     Esta acción no se puede deshacer. Se enviará una notificación al salón sobre la cancelación.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-600">Cita a Cancelar:</p>
-                  <p className="text-base font-semibold text-gray-900">
+                  <p className="text-sm font-medium text-muted-foreground">Cita a Cancelar:</p>
+                  <p className="text-base font-semibold text-foreground">
                     {appointment.product?.name}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {formatDate(appointment.date, appointment.startTime)}
                   </p>
                 </div>

@@ -73,9 +73,9 @@ const ClientGallery: React.FC = () => {
       <div>
         <div className="flex items-center gap-3 mb-4">
           <Sparkles className="h-8 w-8 text-purple-600" />
-          <h1 className="text-4xl font-bold text-gray-900">Inspiración</h1>
+          <h1 className="text-4xl font-bold text-foreground">Inspiración</h1>
         </div>
-        <p className="text-gray-600 text-lg">
+        <p className="text-muted-foreground text-lg">
           Explora diseños de manicura y reserva la cita sin pasos adicionales.
         </p>
       </div>
@@ -93,7 +93,7 @@ const ClientGallery: React.FC = () => {
               setSelectedDate('');
               setSelectedSlot('');
             }}
-            className="group flex flex-col relative overflow-hidden rounded-xl cursor-pointer shadow-md bg-white border border-gray-100 transition-transform hover:-translate-y-1"
+            className="group flex flex-col relative overflow-hidden rounded-xl cursor-pointer shadow-md bg-card border border-border transition-transform hover:-translate-y-1"
           >
             <div className="relative h-64 w-full overflow-hidden">
               <img
@@ -108,9 +108,9 @@ const ClientGallery: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex flex-col p-4 bg-white">
+            <div className="flex flex-col p-4 bg-card">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900 truncate pr-2" title={item.title}>
+                <h3 className="text-lg font-bold text-foreground truncate pr-2" title={item.title}>
                   {item.title}
                 </h3>
                 <span className="font-bold text-pink-600 whitespace-nowrap">
@@ -118,7 +118,7 @@ const ClientGallery: React.FC = () => {
                 </span>
               </div>
               
-              <div className="mt-3 md:hidden w-full rounded-md bg-pink-50 py-2 text-center text-sm font-semibold text-pink-600 border border-pink-100">
+              <div className="mt-3 md:hidden w-full rounded-md bg-pink-50 dark:bg-pink-950/40 py-2 text-center text-sm font-semibold text-pink-600 dark:text-pink-300 border border-pink-100 dark:border-pink-900">
                 Toca para agendar
               </div>
             </div>
@@ -128,7 +128,7 @@ const ClientGallery: React.FC = () => {
 
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-8">
-          <div className="relative w-full max-w-4xl rounded-2xl bg-white/80 border border-white/30 shadow-2xl backdrop-blur-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-4xl rounded-2xl bg-card/80 border border-white/30 shadow-2xl backdrop-blur-xl overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between">
               <h3 className="text-2xl font-bold text-white">Reserva: {selectedItem.title}</h3>
               <button
@@ -142,18 +142,18 @@ const ClientGallery: React.FC = () => {
             <div className="p-8 space-y-8">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Fecha <span className="text-red-500">*</span></label>
                   <input
                     type="date"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Hora <span className="text-red-500">*</span></label>
+                  <label className="block text-sm font-medium text-foreground mb-2">Hora <span className="text-red-500">*</span></label>
                   <select
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     value={selectedSlot}
                     onChange={(e) => setSelectedSlot(e.target.value)}
                     disabled={!selectedDate || slotsLoading || availableSlots.length === 0}
@@ -170,20 +170,20 @@ const ClientGallery: React.FC = () => {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-900 mb-4 pb-3 border-b border-gray-200">Detalles del estilo seleccionado</h4>
-                <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white">
+                <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">Detalles del estilo seleccionado</h4>
+                <div className="rounded-2xl overflow-hidden border border-border bg-card">
                   <img src={selectedItem.imageUrl} alt={selectedItem.title} className="w-full h-60 object-cover" />
                   <div className="p-4">
-                    <p className="text-lg font-semibold text-gray-900">{selectedItem.title}</p>
-                    <p className="text-sm text-gray-500 mt-1">{selectedItem.product?.price ?? '—'} {selectedItem.product?.currency ?? ''}</p>
+                    <p className="text-lg font-semibold text-foreground">{selectedItem.title}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedItem.product?.price ?? '—'} {selectedItem.product?.currency ?? ''}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
+              <div className="flex justify-end gap-3 pt-6 border-t border-border">
                 <button
                   onClick={closeModal}
-                  className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition font-medium"
+                  className="px-6 py-2 text-foreground bg-muted rounded-lg hover:bg-muted transition font-medium"
                 >
                   Cancelar
                 </button>

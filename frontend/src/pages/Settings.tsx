@@ -246,26 +246,26 @@ const Settings: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+        <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
           Configuración
         </h2>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Gestiona los horarios comerciales del salón de belleza.
         </p>
       </div>
 
       {/* Business Hours Card */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
+      <div className="bg-card rounded-lg shadow overflow-hidden">
+        <div className="px-4 py-5 sm:px-6 border-b border-border">
+          <h3 className="text-lg leading-6 font-medium text-foreground">
             Horarios Comerciales
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Define los horarios de apertura y cierre para cada día de la semana. Los clientes no podrán agendar citas fuera de estos horarios.
           </p>
         </div>
 
-        <div className="divide-y divide-gray-200">
+        <div className="divide-y divide-border">
           {dayNames.map((dayName, dayOfWeek) => {
             const dayData = formData[dayOfWeek];
             if (!dayData) return null;
@@ -276,7 +276,7 @@ const Settings: React.FC = () => {
               <div key={dayOfWeek} className="px-4 py-6 sm:px-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex-1">
-                    <h4 className="text-base font-medium text-gray-900">{dayName}</h4>
+                    <h4 className="text-base font-medium text-foreground">{dayName}</h4>
                   </div>
 
                   {/* Toggle Switch */}
@@ -288,12 +288,12 @@ const Settings: React.FC = () => {
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        className={`inline-block h-4 w-4 transform rounded-full bg-card transition-transform ${
                           dayData.isOpen ? 'translate-x-6' : 'translate-x-1'
                         }`}
                       />
                     </button>
-                    <span className="ml-3 text-sm font-medium text-gray-700">
+                    <span className="ml-3 text-sm font-medium text-foreground">
                       {dayData.isOpen ? 'Abierto' : 'Cerrado'}
                     </span>
                   </div>
@@ -304,7 +304,7 @@ const Settings: React.FC = () => {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Hora de Apertura
                         </label>
                         <input
@@ -314,12 +314,12 @@ const Settings: React.FC = () => {
                             handleTimeChange(dayOfWeek, 'startTime', e.target.value)
                           }
                           disabled={!dayData.isOpen}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          className="block w-full rounded-md border-border shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2 disabled:bg-muted disabled:cursor-not-allowed"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-foreground mb-2">
                           Hora de Cierre
                         </label>
                         <input
@@ -329,14 +329,14 @@ const Settings: React.FC = () => {
                             handleTimeChange(dayOfWeek, 'endTime', e.target.value)
                           }
                           disabled={!dayData.isOpen}
-                          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          className="block w-full rounded-md border-border shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2 disabled:bg-muted disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
 
                     {/* Max Appointments Input */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Límite de citas (0 = Sin límite)
                       </label>
                       <input
@@ -346,16 +346,16 @@ const Settings: React.FC = () => {
                         onChange={(e) =>
                           handleTimeChange(dayOfWeek, 'maxAppointments', parseInt(e.target.value) || 0)
                         }
-                        className="block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                        className="block w-24 rounded-md border-border shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
                       />
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Número máximo de citas permitidas en este día.
                       </p>
                     </div>
 
                     {/* Time Slots Management */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground mb-2">
                         Agregar horario exacto (HH:mm)
                       </label>
                       <div className="flex gap-2 items-center">
@@ -365,7 +365,7 @@ const Settings: React.FC = () => {
                           onChange={(e) =>
                             setNewSlotInput((prev) => ({ ...prev, [dayOfWeek]: e.target.value }))
                           }
-                          className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                          className="rounded-md border-border shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
                         />
                         <button
                           onClick={() => handleAddTimeSlot(dayOfWeek)}
@@ -374,7 +374,7 @@ const Settings: React.FC = () => {
                           +
                         </button>
                       </div>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Pulsa + para añadir cada slot. Se requiere formato HH:mm.
                       </p>
 
@@ -419,7 +419,7 @@ const Settings: React.FC = () => {
                             }
                             setEditingDay(null);
                           }}
-                          className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="inline-flex items-center px-3 py-2 border border-border text-sm font-medium rounded-md text-foreground bg-card hover:bg-muted focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           Cancelar
                         </button>
@@ -434,12 +434,12 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Closed Dates Card */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mt-8">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
+      <div className="bg-card rounded-lg shadow overflow-hidden mt-8">
+        <div className="px-4 py-5 sm:px-6 border-b border-border">
+          <h3 className="text-lg leading-6 font-medium text-foreground">
             Días de Cierre Específicos (Vacaciones/Feriados)
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Configura fechas específicas en las que el salón estará cerrado, como vacaciones o feriados.
           </p>
         </div>
@@ -449,18 +449,18 @@ const Settings: React.FC = () => {
           <div className="mb-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Fecha de Cierre
                 </label>
                 <input
                   type="date"
                   value={newClosedDate}
                   onChange={(e) => setNewClosedDate(e.target.value)}
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                  className="block w-full rounded-md border-border shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Motivo (Opcional)
                 </label>
                 <input
@@ -468,7 +468,7 @@ const Settings: React.FC = () => {
                   value={newClosedReason}
                   onChange={(e) => setNewClosedReason(e.target.value)}
                   placeholder="Ej: Vacaciones"
-                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
+                  className="block w-full rounded-md border-border shadow-sm focus:border-blue-500 focus:ring-blue-500 border px-3 py-2"
                 />
               </div>
               <div className="flex items-end">
@@ -485,15 +485,15 @@ const Settings: React.FC = () => {
 
           {/* Lista de días cerrados */}
           <div>
-            <h4 className="text-base font-medium text-gray-900 mb-4">Días Configurados</h4>
+            <h4 className="text-base font-medium text-foreground mb-4">Días Configurados</h4>
             {closedDates.length === 0 ? (
-              <p className="text-sm text-gray-500">No hay días de cierre configurados.</p>
+              <p className="text-sm text-muted-foreground">No hay días de cierre configurados.</p>
             ) : (
               <div className="space-y-2">
                 {closedDates.map((closedDate) => (
-                  <div key={closedDate.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
+                  <div key={closedDate.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
                     <div>
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-foreground">
                         {new Date(closedDate.date).toLocaleDateString('es-ES', {
                           day: '2-digit',
                           month: '2-digit',
@@ -501,7 +501,7 @@ const Settings: React.FC = () => {
                         })}
                       </span>
                       {closedDate.reason && (
-                        <span className="text-sm text-gray-600 ml-2">({closedDate.reason})</span>
+                        <span className="text-sm text-muted-foreground ml-2">({closedDate.reason})</span>
                       )}
                     </div>
                     <button

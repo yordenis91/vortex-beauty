@@ -132,9 +132,9 @@ const KnowledgeBasePage: React.FC = () => {
       case 'DRAFT':
         return 'bg-yellow-100 text-yellow-800';
       case 'ARCHIVED':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -155,10 +155,10 @@ const KnowledgeBasePage: React.FC = () => {
       {/* Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
             Base de Conocimiento
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Crea y gestiona artículos de ayuda para tus clientes
           </p>
         </div>
@@ -178,25 +178,25 @@ const KnowledgeBasePage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white shadow rounded-lg">
+      <div className="bg-card shadow rounded-lg">
         <div className="px-4 py-5 sm:p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
+                <Search className="h-5 w-5 text-muted-foreground" />
               </div>
               <input
                 type="text"
                 placeholder="Buscar artículos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full pl-10 pr-3 py-2 border border-border rounded-md leading-5 bg-card placeholder:text-muted-foreground focus:outline-none focus:placeholder:text-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todas las Categorías</option>
               {categories.map(cat => (
@@ -206,7 +206,7 @@ const KnowledgeBasePage: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="">Todos los Estados</option>
               <option value="PUBLISHED">Publicado</option>
@@ -220,10 +220,10 @@ const KnowledgeBasePage: React.FC = () => {
       {/* Articles List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredArticles.length === 0 ? (
-          <div className="col-span-full bg-white rounded-lg shadow px-4 py-8 text-center text-gray-500">
-            <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Sin artículos</h3>
-            <p className="mt-1 text-sm text-gray-500">Comienza creando tu primer artículo.</p>
+          <div className="col-span-full bg-card rounded-lg shadow px-4 py-8 text-center text-muted-foreground">
+            <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-2 text-sm font-medium text-foreground">Sin artículos</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Comienza creando tu primer artículo.</p>
             <div className="mt-6">
               <button
                 onClick={() => {
@@ -240,14 +240,14 @@ const KnowledgeBasePage: React.FC = () => {
           </div>
         ) : (
           filteredArticles.map((article) => (
-            <div key={article.id} className="bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
+            <div key={article.id} className="bg-card rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow">
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 line-clamp-2">
+                    <h3 className="text-lg font-medium text-foreground line-clamp-2">
                       {article.title}
                     </h3>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {getCategoryName(article.categoryId)}
                     </p>
                   </div>
@@ -256,12 +256,12 @@ const KnowledgeBasePage: React.FC = () => {
                   </span>
                 </div>
 
-                <p className="mt-3 text-sm text-gray-600 line-clamp-3">
+                <p className="mt-3 text-sm text-muted-foreground line-clamp-3">
                   {article.content}
                 </p>
 
                 {/* Stats */}
-                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between text-xs text-gray-600">
+                <div className="mt-4 pt-4 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center">
                       <Eye className="h-4 w-4 mr-1" />
@@ -278,7 +278,7 @@ const KnowledgeBasePage: React.FC = () => {
                 <div className="mt-4 flex space-x-2">
                   <button
                     onClick={() => openEditModal(article)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="flex-1 px-3 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-muted"
                   >
                     <Edit className="h-4 w-4 inline mr-1" />
                     Editar
@@ -308,24 +308,24 @@ const KnowledgeBasePage: React.FC = () => {
           </DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Título *</label>
+                  <label className="block text-sm font-medium text-foreground">Título *</label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Título del artículo"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Categoría *</label>
+                  <label className="block text-sm font-medium text-foreground">Categoría *</label>
                   <select
                     required
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Selecciona una categoría</option>
                     {categories.filter(c => c.type === 'KNOWLEDGE_BASE').map(cat => (
@@ -335,24 +335,24 @@ const KnowledgeBasePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Content *</label>
+                  <label className="block text-sm font-medium text-foreground">Content *</label>
                   <textarea
                     required
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={8}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Article content (Markdown supported)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Status *</label>
+                  <label className="block text-sm font-medium text-foreground">Status *</label>
                   <select
                     required
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as KnowledgeBase['status'] })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="DRAFT">Draft</option>
                     <option value="PUBLISHED">Published</option>
@@ -367,7 +367,7 @@ const KnowledgeBasePage: React.FC = () => {
                       setShowCreateModal(false);
                       resetForm();
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-muted"
                   >
                     Cancelar
                   </button>
@@ -395,23 +395,23 @@ const KnowledgeBasePage: React.FC = () => {
             </DialogHeader>
               <form onSubmit={handleUpdate} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Título *</label>
+                  <label className="block text-sm font-medium text-foreground">Título *</label>
                   <input
                     type="text"
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Título del artículo"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Categoría</label>
+                  <label className="block text-sm font-medium text-foreground">Categoría</label>
                   <select
                     value={formData.categoryId}
                     onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Selecciona una categoría</option>
                     {categories.filter(c => c.type === 'KNOWLEDGE_BASE').map(cat => (
@@ -421,24 +421,24 @@ const KnowledgeBasePage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Content *</label>
+                  <label className="block text-sm font-medium text-foreground">Content *</label>
                   <textarea
                     required
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={8}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Article content (Markdown supported)"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Status *</label>
+                  <label className="block text-sm font-medium text-foreground">Status *</label>
                   <select
                     required
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as KnowledgeBase['status'] })}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="mt-1 block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="DRAFT">Borrador</option>
                     <option value="PUBLISHED">Publicado</option>
@@ -446,8 +446,8 @@ const KnowledgeBasePage: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                  <p className="text-xs text-gray-600">
+                <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-md p-4">
+                  <p className="text-xs text-muted-foreground">
                     <strong>Vistas:</strong> {selectedArticle.views} | 
                     <strong className="ml-4">Votos:</strong> {selectedArticle.helpful}
                   </p>
@@ -461,7 +461,7 @@ const KnowledgeBasePage: React.FC = () => {
                       setSelectedArticle(null);
                       resetForm();
                     }}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-muted"
                   >
                     Cancelar
                   </button>

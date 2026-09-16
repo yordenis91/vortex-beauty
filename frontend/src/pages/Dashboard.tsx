@@ -60,9 +60,9 @@ const Dashboard: React.FC = () => {
       case 'OVERDUE':
         return 'bg-red-100 text-red-800';
       case 'CANCELLED':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-muted text-foreground';
     }
   };
 
@@ -79,10 +79,10 @@ const Dashboard: React.FC = () => {
       {/* Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
             Panel de Control
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Resumen de tu sistema de gestión empresarial
           </p>
         </div>
@@ -93,7 +93,7 @@ const Dashboard: React.FC = () => {
         {statCards.map((stat) => {
           const Icon = stat.icon;
           return (
-            <div key={stat.name} className="bg-white overflow-hidden shadow rounded-lg">
+            <div key={stat.name} className="bg-card overflow-hidden shadow rounded-lg">
               <div className="p-5">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
@@ -103,10 +103,10 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div className="ml-5 w-0 flex-1">
                     <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
+                      <dt className="text-sm font-medium text-muted-foreground truncate">
                         {stat.name}
                       </dt>
-                      <dd className="text-lg font-medium text-gray-900">
+                      <dd className="text-lg font-medium text-foreground">
                         {stat.value}
                       </dd>
                     </dl>
@@ -119,12 +119,12 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Access */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
+      <div className="bg-card shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:px-6 border-b border-border">
+          <h3 className="text-lg leading-6 font-medium text-foreground">
             Gestión Rápida
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Acceso directo a las funciones principales de tu plataforma SaaS
           </p>
         </div>
@@ -166,24 +166,24 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Recent Invoices */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+      <div className="bg-card shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:px-6 border-b border-border">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
+            <h3 className="text-lg leading-6 font-medium text-foreground">
               Facturas Recientes
             </h3>
-            <div className="flex items-center text-sm text-gray-500">
-              <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5 text-muted-foreground" />
               Últimas 5 facturas
             </div>
           </div>
         </div>
-        <ul className="divide-y divide-gray-200">
+        <ul className="divide-y divide-border">
           {recentInvoices.length === 0 ? (
-            <li className="px-4 py-8 text-center text-gray-500">
-              <FileText className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No hay facturas</h3>
-              <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva factura.</p>
+            <li className="px-4 py-8 text-center text-muted-foreground">
+              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium text-foreground">No hay facturas</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Comienza creando una nueva factura.</p>
             </li>
           ) : (
             recentInvoices.map((invoice) => (
@@ -191,19 +191,19 @@ const Dashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center min-w-0 flex-1 pr-4">
                       <div className="flex-shrink-0">
-                        <FileText className="h-8 w-8 text-gray-400" />
+                        <FileText className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <div className="ml-4 min-w-0 flex-1">
-                        <div className="text-sm font-medium text-gray-900 truncate">
+                        <div className="text-sm font-medium text-foreground truncate">
                           {invoice.invoiceNumber}
                         </div>
-                        <div className="text-sm text-gray-500 truncate">
+                        <div className="text-sm text-muted-foreground truncate">
                           {invoice.client?.name} • {new Date(invoice.issueDate).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
                   <div className="flex items-center space-x-4">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-foreground">
                       ${Number(invoice.totalAmount).toLocaleString()}
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
@@ -218,9 +218,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
+      <div className="bg-card shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:px-6 border-b border-border">
+          <h3 className="text-lg leading-6 font-medium text-foreground">
             Acciones Rápidas
           </h3>
         </div>
