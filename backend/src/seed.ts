@@ -1,11 +1,24 @@
-import { PrismaClient, Role, ProductType } from '@prisma/client';
+import 'dotenv/config';
+import { Role, ProductType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-
-const prisma = new PrismaClient();
+import prisma from './prismaClient';
 
 async function seed() {
   try {
     console.log('🌱 Starting database seed...');
+
+    // Crear el salón (tenant) por defecto
+    const tenant = await prisma.tenant.upsert({
+      where: { slug: 'salon-principal' },
+      update: {},
+      create: {
+        name: 'Vortex Beauty',
+        slug: 'salon-principal',
+        currency: 'USD',
+        timezone: 'UTC',
+      },
+    });
+    console.log('✅ Tenant created:', tenant.name);
 
     // Crear usuario administrador
     const adminPassword = await bcrypt.hash('admin123', 10);
@@ -18,6 +31,7 @@ async function seed() {
         password: adminPassword,
         name: 'Administrador',
         role: Role.ADMIN,
+        tenantId: tenant.id,
       },
     });
     console.log('✅ Admin user created:', admin.email);
@@ -51,14 +65,14 @@ async function seed() {
       const client = await prisma.user.upsert({
         where: { email: clientData.email },
         update: {},
-        create: clientData,
+        create: { ...clientData, tenantId: tenant.id },
       });
       console.log('✅ Client user created:', client.email);
     }
 
     // Asegurar categoría y productos de ejemplo
     const defaultCategory = await prisma.category.upsert({
-      where: { name_type: { name: 'Servicios', type: 'PRODUCT' } },
+      where: { tenantId_name_type: { tenantId: tenant.id, name: 'Servicios', type: 'PRODUCT' } },
       update: {},
       create: {
         name: 'Servicios',
@@ -67,6 +81,7 @@ async function seed() {
         color: '#6366f1',
         icon: 'Star',
         order: 1,
+        tenantId: tenant.id,
       },
     });
 
@@ -94,7 +109,7 @@ async function seed() {
     ];
 
     for (const productData of products) {
-      const existingProduct = await prisma.product.findFirst({ where: { name: productData.name } });
+      const existingProduct = await prisma.product.findFirst({ where: { name: productData.name, tenantId: tenant.id } });
       if (!existingProduct) {
 
         const productType: ProductType = productData.name.includes('Pedicura')
@@ -112,6 +127,7 @@ async function seed() {
             billingCycle: 'ONE_TIME',
             categoryId: defaultCategory.id,
             userId: admin.id,
+            tenantId: tenant.id,
           },
         });
         console.log('✅ Product created:', product.name);
@@ -133,11 +149,11 @@ async function seed() {
 
     for (const hours of businessHours) {
       const existing = await prisma.businessHour.findFirst({
-        where: { dayOfWeek: hours.dayOfWeek }
+        where: { dayOfWeek: hours.dayOfWeek, tenantId: tenant.id }
       });
 
       if (!existing) {
-        await prisma.businessHour.create({ data: hours });
+        await prisma.businessHour.create({ data: { ...hours, tenantId: tenant.id } });
         console.log(`✅ Business hours created for day ${hours.dayOfWeek}`);
       }
     }

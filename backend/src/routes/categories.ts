@@ -24,9 +24,10 @@ const updateCategorySchema = createCategorySchema.partial();
 // GET /api/categories - Get all categories
 router.get('/', async (req, res) => {
   try {
+    const tenantId = (req as any).user.tenantId;
     const { type } = req.query;
 
-    const where = type ? { type: type as any } : {};
+    const where = type ? { tenantId, type: type as any } : { tenantId };
 
     const categories = await prisma.category.findMany({
       where,
@@ -53,9 +54,10 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
+    const tenantId = (req as any).user.tenantId;
 
-    const category = await prisma.category.findUnique({
-      where: { id },
+    const category = await prisma.category.findFirst({
+      where: { id, tenantId },
       include: {
         _count: {
           select: {
@@ -82,10 +84,12 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const validatedData = createCategorySchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
     // Check for duplicate name/type combination
     const existingCategory = await prisma.category.findFirst({
       where: {
+        tenantId,
         name: validatedData.name,
         type: validatedData.type,
       },
@@ -98,7 +102,7 @@ router.post('/', async (req, res) => {
     }
 
     const category = await prisma.category.create({
-      data: validatedData,
+      data: { ...validatedData, tenantId },
       include: {
         _count: {
           select: {
@@ -126,10 +130,11 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const validatedData = updateCategorySchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
     // Verify category exists
-    const existingCategory = await prisma.category.findUnique({
-      where: { id },
+    const existingCategory = await prisma.category.findFirst({
+      where: { id, tenantId },
     });
 
     if (!existingCategory) {
@@ -140,6 +145,7 @@ router.put('/:id', async (req, res) => {
     if (validatedData.name && validatedData.type) {
       const duplicateCategory = await prisma.category.findFirst({
         where: {
+          tenantId,
           name: validatedData.name,
           type: validatedData.type,
           id: { not: id },
@@ -182,10 +188,11 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
+    const tenantId = (req as any).user.tenantId;
 
     // Verify category exists
-    const category = await prisma.category.findUnique({
-      where: { id },
+    const category = await prisma.category.findFirst({
+      where: { id, tenantId },
       include: {
         _count: {
           select: {

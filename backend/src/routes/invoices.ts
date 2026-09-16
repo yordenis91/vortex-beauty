@@ -28,7 +28,7 @@ const invoiceSchema = z.object({
 router.get('/', async (req, res) => {
   try {
     const invoices = await prisma.invoice.findMany({
-      where: { userId: (req as any).userId },
+      where: { tenantId: (req as any).user.tenantId },
       include: { client: true, project: true, items: true },
       orderBy: { createdAt: 'desc' },
     });
@@ -62,6 +62,7 @@ router.post('/', async (req, res) => {
         taxRate,
         totalAmount,
         userId: (req as any).userId,
+        tenantId: (req as any).user.tenantId,
         items: {
           create: items.map(item => ({
             description: item.description,
@@ -93,7 +94,7 @@ router.put('/:id', async (req, res) => {
 
     // Verifica que la factura existe y pertenece al admin autenticado
     const existingInvoice = await prisma.invoice.findFirst({
-      where: { id: req.params.id as string, userId: (req as any).userId },
+      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
     });
 
     if (!existingInvoice) {
@@ -149,7 +150,7 @@ router.delete('/:id', async (req, res) => {
   try {
     // Verifica que la factura existe y pertenece al admin autenticado
     const existingInvoice = await prisma.invoice.findFirst({
-      where: { id: req.params.id as string, userId: (req as any).userId },
+      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
     });
 
     if (!existingInvoice) {

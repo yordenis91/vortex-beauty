@@ -37,6 +37,7 @@ const updateAppointmentSchema = createAppointmentSchema.partial();
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const appointments = await prisma.appointment.findMany({
+      where: { tenantId: (req as any).user.tenantId },
       include: {
         client: true,
         product: true,
@@ -55,9 +56,11 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 // GET /api/appointments/fully-booked-dates - Get dates that are fully booked
 router.get('/fully-booked-dates', authenticateToken, async (req, res) => {
   try {
+    const tenantId = (req as any).user.tenantId;
     // Obtener todas las citas SCHEDULED y COMPLETED
     const appointments = await prisma.appointment.findMany({
       where: {
+        tenantId,
         status: {
           in: ['SCHEDULED', 'COMPLETED'],
         },
@@ -85,7 +88,7 @@ router.get('/fully-booked-dates', authenticateToken, async (req, res) => {
 
       // Obtener BusinessHour para ese día
       const businessHour = await prisma.businessHour.findUnique({
-        where: { dayOfWeek },
+        where: { tenantId_dayOfWeek: { tenantId, dayOfWeek } },
       });
 
       // Si la fecha tiene maxAppointments configurado y está llena, agregar al array
@@ -105,9 +108,10 @@ router.get('/fully-booked-dates', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
+    const tenantId = (req as any).user.tenantId;
 
-    const appointment = await prisma.appointment.findUnique({
-      where: { id },
+    const appointment = await prisma.appointment.findFirst({
+      where: { id, tenantId },
       include: {
         client: true,
         product: true,
@@ -130,10 +134,11 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validatedData = createAppointmentSchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
     // Verify client exists
-    const client = await prisma.client.findUnique({
-      where: { id: validatedData.clientId },
+    const client = await prisma.client.findFirst({
+      where: { id: validatedData.clientId, tenantId },
     });
 
     if (!client) {
@@ -141,8 +146,8 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     }
 
     // Verify product exists
-    const product = await prisma.product.findUnique({
-      where: { id: validatedData.productId },
+    const product = await prisma.product.findFirst({
+      where: { id: validatedData.productId, tenantId },
     });
 
     if (!product) {
@@ -151,7 +156,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 
     // Si se indica profesional, debe existir y estar activo
     if (validatedData.staffId) {
-      const staff = await prisma.staff.findUnique({ where: { id: validatedData.staffId } });
+      const staff = await prisma.staff.findFirst({ where: { id: validatedData.staffId, tenantId } });
       if (!staff || !staff.isActive) {
         return res.status(400).json({ error: 'Profesional no válido' });
       }
@@ -167,6 +172,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     let appointment;
     try {
       appointment = await createAppointmentSafely({
+        tenantId,
         dateStr: validatedData.date.split('T')[0],
         startTime: validatedData.startTime,
         endTime,
@@ -191,6 +197,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         type: 'SYSTEM',
         recipient: 'ADMIN',
         content: `Nueva cita agendada (admin): cliente ${appointment.client.name} - servicio ${appointment.product.name}, fecha ${new Date(appointment.date).toLocaleDateString('es-ES')} ${appointment.startTime}-${appointment.endTime}`,
+        tenantId,
       });
 
       await notificationService.createNotification({
@@ -198,6 +205,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         recipient: appointment.clientId,
         clientId: appointment.clientId,
         content: `Tu cita para ${appointment.product.name} ha sido agendada para ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime}.`,
+        tenantId,
       });
     } catch (notifError) {
       console.error('Error crearing appointment notifications:', notifError);
@@ -219,10 +227,11 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const validatedData = updateAppointmentSchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
     // Verify appointment exists
-    const existingAppointment = await prisma.appointment.findUnique({
-      where: { id },
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: { id, tenantId },
     });
 
     if (!existingAppointment) {
@@ -231,8 +240,8 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 
     // If client is being changed, verify new client exists
     if (validatedData.clientId && validatedData.clientId !== existingAppointment.clientId) {
-      const client = await prisma.client.findUnique({
-        where: { id: validatedData.clientId },
+      const client = await prisma.client.findFirst({
+        where: { id: validatedData.clientId, tenantId },
       });
 
       if (!client) {
@@ -244,8 +253,8 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     // si no cambia, se reutiliza el ya cargado en la cita existente.
     let effectiveProduct: { durationMinutes: number } | null = null;
     if (validatedData.productId && validatedData.productId !== existingAppointment.productId) {
-      effectiveProduct = await prisma.product.findUnique({
-        where: { id: validatedData.productId },
+      effectiveProduct = await prisma.product.findFirst({
+        where: { id: validatedData.productId, tenantId },
         select: { durationMinutes: true },
       });
 
@@ -254,15 +263,15 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       }
     } else if (validatedData.startTime) {
       // El servicio no cambia pero sí la hora: hace falta su duración igualmente.
-      effectiveProduct = await prisma.product.findUnique({
-        where: { id: existingAppointment.productId },
+      effectiveProduct = await prisma.product.findFirst({
+        where: { id: existingAppointment.productId, tenantId },
         select: { durationMinutes: true },
       });
     }
 
     // Si se indica profesional, debe existir y estar activo. null explícito = quitar profesional.
     if (validatedData.staffId) {
-      const staff = await prisma.staff.findUnique({ where: { id: validatedData.staffId } });
+      const staff = await prisma.staff.findFirst({ where: { id: validatedData.staffId, tenantId } });
       if (!staff || !staff.isActive) {
         return res.status(400).json({ error: 'Profesional no válido' });
       }
@@ -301,6 +310,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     try {
       appointment = await updateAppointmentSafely({
         id,
+        tenantId,
         dateStr,
         startTime: startTimeToCheck,
         endTime: endTimeToCheck,
@@ -327,6 +337,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
             recipient: appointment.clientId,
             clientId: appointment.clientId,
             content: `Tu cita para ${appointment.product?.name ?? 'este servicio'} el ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime} ha sido cancelada.`,
+            tenantId,
           });
         }
 
@@ -334,6 +345,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
           type: 'SYSTEM',
           recipient: 'ADMIN',
           content: `La cita #${appointment.id} ha sido cancelada por el admin.`,
+          tenantId,
         });
       } catch (notifError) {
         console.error('Error creating cancellation notifications:', notifError);
@@ -355,10 +367,11 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
+    const tenantId = (req as any).user.tenantId;
 
     // Verify appointment exists
-    const appointment = await prisma.appointment.findUnique({
-      where: { id },
+    const appointment = await prisma.appointment.findFirst({
+      where: { id, tenantId },
     });
 
     if (!appointment) {
@@ -376,6 +389,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
           recipient: appointment.clientId,
           clientId: appointment.clientId,
           content: `Tu cita programada para ${new Date(appointment.date).toLocaleDateString('es-ES')} a las ${appointment.startTime} ha sido eliminada por el salón.`,
+          tenantId,
         });
       }
 
@@ -383,6 +397,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
         type: 'SYSTEM',
         recipient: 'ADMIN',
         content: `La cita #${appointment.id} ha sido eliminada del sistema.`,
+        tenantId,
       });
     } catch (notifError) {
       console.error('Error creating delete notifications:', notifError);

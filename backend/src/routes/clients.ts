@@ -40,7 +40,7 @@ const updateClientSchema = clientSchema.partial();
 router.get('/', async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
-      where: { userId: (req as any).userId },
+      where: { tenantId: (req as any).user.tenantId },
       include: { projects: true, invoices: true },
     });
     res.json(clients);
@@ -53,7 +53,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const client = await prisma.client.findFirst({
-      where: { id: req.params.id as string, userId: (req as any).userId },
+      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
       include: { projects: true, invoices: true },
     });
 
@@ -78,12 +78,14 @@ router.post('/', async (req, res) => {
       ...clientData
     } = parsed;
 
+    const tenantId = (req as any).user.tenantId;
     const result = await prisma.$transaction(async (tx) => {
       const newClient = await tx.client.create({
         data: {
           ...clientData,
           type: clientData.type || 'CUSTOMER',
           userId: (req as any).userId,
+          tenantId,
         },
       });
 
@@ -98,6 +100,7 @@ router.post('/', async (req, res) => {
             name: clientData.displayName || clientData.name,
             role: 'CLIENT',
             clientId: newClient.id,
+            tenantId,
           },
         });
 
@@ -127,7 +130,7 @@ router.put('/:id', async (req, res) => {
     const data = updateClientSchema.parse(req.body);
 
     const client = await prisma.client.updateMany({
-      where: { id: req.params.id as string, userId: (req as any).userId },
+      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
       data: {
         ...data,
         type: data.type || undefined,
@@ -159,7 +162,7 @@ router.delete('/:id', async (req, res) => {
   try {
     // Verify client exists and belongs to user
     const existingClient = await prisma.client.findFirst({
-      where: { id: req.params.id as string, userId: (req as any).userId },
+      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
     });
 
     if (!existingClient) {

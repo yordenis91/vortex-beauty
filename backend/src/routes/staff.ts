@@ -22,8 +22,9 @@ const updateStaffSchema = staffSchema.partial();
 // GET /api/staff - Lista de profesionales
 router.get('/', async (req, res) => {
   try {
+    const tenantId = (req as any).user.tenantId;
     const { active } = req.query;
-    const where = active === 'true' ? { isActive: true } : {};
+    const where = active === 'true' ? { tenantId, isActive: true } : { tenantId };
 
     const staff = await prisma.staff.findMany({
       where,
@@ -41,8 +42,9 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
+    const tenantId = (req as any).user.tenantId;
 
-    const staff = await prisma.staff.findUnique({ where: { id } });
+    const staff = await prisma.staff.findFirst({ where: { id, tenantId } });
 
     if (!staff) {
       return res.status(404).json({ error: 'Staff not found' });
@@ -59,9 +61,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const data = staffSchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
     const staff = await prisma.staff.create({
-      data: { ...data, email: data.email || undefined },
+      data: { ...data, email: data.email || undefined, tenantId },
     });
 
     res.status(201).json(staff);
@@ -80,8 +83,9 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const data = updateStaffSchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
 
-    const existing = await prisma.staff.findUnique({ where: { id } });
+    const existing = await prisma.staff.findFirst({ where: { id, tenantId } });
     if (!existing) {
       return res.status(404).json({ error: 'Staff not found' });
     }
@@ -106,8 +110,9 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
+    const tenantId = (req as any).user.tenantId;
 
-    const existing = await prisma.staff.findUnique({ where: { id } });
+    const existing = await prisma.staff.findFirst({ where: { id, tenantId } });
     if (!existing) {
       return res.status(404).json({ error: 'Staff not found' });
     }

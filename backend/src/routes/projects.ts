@@ -20,7 +20,7 @@ const projectSchema = z.object({
 router.get('/', async (req, res) => {
   try {
     const projects = await prisma.project.findMany({
-      where: { userId: (req as any).userId },
+      where: { tenantId: (req as any).user.tenantId },
       include: { client: true, invoices: true },
     });
     res.json(projects);
@@ -35,7 +35,7 @@ router.post('/', async (req, res) => {
     const data = projectSchema.parse(req.body);
 
     const project = await prisma.project.create({
-      data: { ...data, userId: (req as any).userId },
+      data: { ...data, userId: (req as any).userId, tenantId: (req as any).user.tenantId },
       include: { client: true },
     });
 
@@ -45,7 +45,7 @@ router.post('/', async (req, res) => {
     if (error?.name === 'ZodError') {
       return res.status(400).json({ error: error.errors });
     }
-    
+
     console.error(error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }
@@ -55,6 +55,12 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const data = projectSchema.parse(req.body);
+    const tenantId = (req as any).user.tenantId;
+
+    const existing = await prisma.project.findFirst({ where: { id: req.params.id as string, tenantId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
 
     const project = await prisma.project.update({
       where: { id: req.params.id as string },
@@ -68,7 +74,7 @@ router.put('/:id', async (req, res) => {
     if (error?.name === 'ZodError') {
       return res.status(400).json({ error: error.errors });
     }
-    
+
     console.error(error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }
@@ -77,6 +83,12 @@ router.put('/:id', async (req, res) => {
 // DELETE /api/projects/:id - Delete project
 router.delete('/:id', async (req, res) => {
   try {
+    const tenantId = (req as any).user.tenantId;
+    const existing = await prisma.project.findFirst({ where: { id: req.params.id as string, tenantId } });
+    if (!existing) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
     await prisma.project.delete({
       where: { id: req.params.id as string },
     });

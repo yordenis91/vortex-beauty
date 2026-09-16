@@ -56,6 +56,7 @@ export function dayRangeUTC(dateStr: string): { start: Date; end: Date } {
 }
 
 interface SlotParams {
+  tenantId: string;
   dateStr: string; // YYYY-MM-DD
   startTime: string; // HH:mm
   endTime: string; // HH:mm
@@ -68,20 +69,24 @@ interface SlotParams {
  * Debe ejecutarse dentro de la misma transacción que la creación/actualización
  * de la cita (ver createAppointmentSafely / updateAppointmentSafely) para que
  * la comprobación y la escritura sean atómicas.
+ *
+ * Todas las comprobaciones (día cerrado, horario, cupo, solape) se acotan al
+ * tenantId del salón: sin esto, el cupo/solape de un salón contaría las citas
+ * de todos los demás salones de la instalación.
  */
 export async function assertSlotAvailable(
   tx: Prisma.TransactionClient,
-  { dateStr, startTime, endTime, excludeAppointmentId }: SlotParams
+  { tenantId, dateStr, startTime, endTime, excludeAppointmentId }: SlotParams
 ): Promise<void> {
-  const closedDate = await tx.closedDate.findUnique({ where: { date: dateStr } });
+  const closedDate = await tx.closedDate.findUnique({ where: { tenantId_date: { tenantId, date: dateStr } } });
   if (closedDate) {
     throw new AvailabilityError('El salón está cerrado ese día');
   }
 
   const dayOfWeek = dayOfWeekFromDateString(dateStr);
   const [scheduleOverride, businessHour] = await Promise.all([
-    tx.scheduleOverride.findUnique({ where: { date: dateStr } }),
-    tx.businessHour.findUnique({ where: { dayOfWeek } }),
+    tx.scheduleOverride.findUnique({ where: { tenantId_date: { tenantId, date: dateStr } } }),
+    tx.businessHour.findUnique({ where: { tenantId_dayOfWeek: { tenantId, dayOfWeek } } }),
   ]);
 
   // Un override para la fecha es la fuente de verdad: su sola presencia abre
@@ -113,6 +118,7 @@ export async function assertSlotAvailable(
 
   const otherScheduled = await tx.appointment.findMany({
     where: {
+      tenantId,
       date: { gte: startOfDay, lte: endOfDay },
       status: 'SCHEDULED' as AppointmentStatus,
       ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
@@ -139,6 +145,7 @@ export async function assertSlotAvailable(
 }
 
 interface CreateAppointmentParams {
+  tenantId: string;
   dateStr: string;
   startTime: string;
   endTime: string;
@@ -160,11 +167,11 @@ const appointmentInclude = { client: true, product: true, staff: true } as const
  * P2034 de Prisma (conflicto de serialización) y responder en consecuencia.
  */
 export async function createAppointmentSafely(params: CreateAppointmentParams) {
-  const { dateStr, startTime, endTime, clientId, productId, staffId, notes, status } = params;
+  const { tenantId, dateStr, startTime, endTime, clientId, productId, staffId, notes, status } = params;
 
   return prisma.$transaction(
     async (tx) => {
-      await assertSlotAvailable(tx, { dateStr, startTime, endTime });
+      await assertSlotAvailable(tx, { tenantId, dateStr, startTime, endTime });
 
       return tx.appointment.create({
         data: {
@@ -176,6 +183,7 @@ export async function createAppointmentSafely(params: CreateAppointmentParams) {
           clientId,
           productId,
           staffId: staffId ?? null,
+          tenantId,
         },
         include: appointmentInclude,
       });
@@ -186,6 +194,7 @@ export async function createAppointmentSafely(params: CreateAppointmentParams) {
 
 interface UpdateAppointmentParams {
   id: string;
+  tenantId: string;
   dateStr: string;
   startTime: string;
   endTime: string;
@@ -195,12 +204,12 @@ interface UpdateAppointmentParams {
 }
 
 export async function updateAppointmentSafely(params: UpdateAppointmentParams) {
-  const { id, dateStr, startTime, endTime, data, skipAvailabilityCheck } = params;
+  const { id, tenantId, dateStr, startTime, endTime, data, skipAvailabilityCheck } = params;
 
   return prisma.$transaction(
     async (tx) => {
       if (!skipAvailabilityCheck) {
-        await assertSlotAvailable(tx, { dateStr, startTime, endTime, excludeAppointmentId: id });
+        await assertSlotAvailable(tx, { tenantId, dateStr, startTime, endTime, excludeAppointmentId: id });
       }
 
       return tx.appointment.update({

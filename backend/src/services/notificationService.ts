@@ -8,6 +8,7 @@ interface CreateNotificationData {
   clientId?: string;
   errorLog?: string;
   status?: NotificationStatus;
+  tenantId: string;
 }
 
 /**
@@ -26,6 +27,7 @@ export async function createNotification(data: CreateNotificationData) {
         errorLog: data.errorLog,
         status: data.status || NotificationStatus.PENDING,
         isRead: false,
+        tenantId: data.tenantId,
       },
       include: {
         client: {
@@ -51,9 +53,10 @@ export async function createNotification(data: CreateNotificationData) {
  * Obtiene todas las notificaciones (para admin)
  * @returns Array de notificaciones ordenadas por fecha descendente
  */
-export async function getAllNotifications() {
+export async function getAllNotifications(tenantId: string) {
   try {
     const notifications = await prisma.notification.findMany({
+      where: { tenantId },
       include: {
         client: {
           select: {
@@ -78,11 +81,12 @@ export async function getAllNotifications() {
  * @param clientId - ID del cliente
  * @returns Array de notificaciones del cliente
  */
-export async function getClientNotifications(clientId: string) {
+export async function getClientNotifications(clientId: string, tenantId: string) {
   try {
     const notifications = await prisma.notification.findMany({
       where: {
         clientId,
+        tenantId,
       },
       include: {
         client: {
