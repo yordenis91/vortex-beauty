@@ -3,9 +3,16 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PlatformAuthProvider, usePlatformAuth } from './contexts/PlatformAuthContext';
 import { queryClient } from './lib/queryClient';
 import AdminLayout from './components/AdminLayout';
 import ClientLayout from './components/ClientLayout';
+import SuperAdminLayout from './components/superadmin/SuperAdminLayout';
+import SuperAdminLogin from './pages/superadmin/Login';
+import SuperAdminDashboard from './pages/superadmin/Dashboard';
+import SuperAdminTenants from './pages/superadmin/Tenants';
+import SuperAdminTenantDetail from './pages/superadmin/TenantDetail';
+import SuperAdminPlans from './pages/superadmin/Plans';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -80,6 +87,28 @@ const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 /**
+ * Protected route component para el portal de Super Admin (plataforma).
+ * Usa su propio contexto de auth, completamente separado del de tenant.
+ */
+const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { admin, isLoading } = usePlatformAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return <Navigate to="/superadmin/login" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+/**
  * Root redirect component que redirige a los usuarios según su rol
  */
 const RootRedirect: React.FC = () => {
@@ -107,12 +136,30 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
+        <PlatformAuthProvider>
+          <Router>
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/design-system" element={<DesignSystem />} />
+
+            {/* Super Admin (plataforma) routes — sistema de auth separado */}
+            <Route path="/superadmin/login" element={<SuperAdminLogin />} />
+            <Route
+              path="/superadmin"
+              element={
+                <SuperAdminRoute>
+                  <SuperAdminLayout />
+                </SuperAdminRoute>
+              }
+            >
+              <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
+              <Route path="dashboard" element={<SuperAdminDashboard />} />
+              <Route path="tenants" element={<SuperAdminTenants />} />
+              <Route path="tenants/:id" element={<SuperAdminTenantDetail />} />
+              <Route path="plans" element={<SuperAdminPlans />} />
+            </Route>
 
             {/* Root redirect */}
             <Route path="/" element={<RootRedirect />} />
@@ -161,10 +208,11 @@ function App() {
 
             {/* Catch all - redirect to root */}
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
-        <Toaster position="top-right" />
-        <ReactQueryDevtools initialIsOpen={false} />
+            </Routes>
+          </Router>
+          <Toaster position="top-right" />
+          <ReactQueryDevtools initialIsOpen={false} />
+        </PlatformAuthProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
