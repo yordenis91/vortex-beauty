@@ -35,91 +35,155 @@ enum ClientType {
   SUPPLIER
 }
 
+enum TenantStatus {
+  ACTIVE
+  TRIAL
+  SUSPENDED
+}
+
 // ================= Models =================
 
+// Un Tenant representa un salón individual suscrito al SaaS. Es la base de la
+// separación multitenant: toda tabla de datos de negocio lleva tenantId para
+// que los datos de un salón nunca sean visibles para otro.
+//
+// NOTA DE MIGRACIÓN (fase 1 de 2): tenantId se introduce aquí como columna
+// opcional en cada tabla, y la migración *_backfill_default_tenant crea un
+// tenant "de arranque" y le asigna todas las filas existentes. Se deja
+// intencionalmente opcional (no NOT NULL todavía): hacerla obligatoria sin
+// que las rutas del backend filtren y escriban tenantId en cada operación
+// rompería la compilación y, peor, dejaría filas nuevas sin tenant. Esa
+// migración (columna NOT NULL + índices únicos definitivos) va junto con el
+// trabajo de la fase 2: resolver el tenant en el login/JWT y filtrar cada
+// ruta por tenantId.
+model Tenant {
+  id       String       @id @default(uuid())
+  name     String // Nombre comercial del salón
+  slug     String       @unique // Para URLs/subdominio futuro (ej. saloncarla)
+  currency String       @default("USD")
+  timezone String       @default("UTC")
+  status   TenantStatus @default(ACTIVE)
+
+  users             User[]
+  clients           Client[]
+  products          Product[]
+  categories        Category[]
+  staff             Staff[]
+  appointments      Appointment[]
+  businessHours     BusinessHour[]
+  closedDates       ClosedDate[]
+  scheduleOverrides ScheduleOverride[]
+  invoices          Invoice[]
+  subscriptions     Subscription[]
+  tickets           Ticket[]
+  knowledgeBase     KnowledgeBase[]
+  notifications     Notification[]
+  galleryItems      GalleryItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
-  username  String?   @unique
-  password  String    // Hash de la contraseña (e.g., bcrypt)
-  name      String
-  role      Role      @default(CLIENT) // ADMIN o CLIENT
-  
+  id       String  @id @default(uuid())
+  email    String  @unique
+  username String? @unique
+  password String // Hash de la contraseña (e.g., bcrypt)
+  name     String
+  role     Role    @default(CLIENT) // ADMIN o CLIENT
+
+  // Salón al que pertenece este usuario (admin o clienta).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   // Foto de perfil (Base64)
-  imageUrl  String?   @db.Text
-  
+  imageUrl String? @db.Text
+
   // Relación con Client (un user puede estar asociado a un cliente)
-  clientId  String?
-  client    Client?   @relation("UserAsClient", fields: [clientId], references: [id], onDelete: SetNull)
-  
+  clientId String?
+  client   Client? @relation("UserAsClient", fields: [clientId], references: [id], onDelete: SetNull)
+
   // Relaciones existentes
-  projects  Project[] 
-  clients   Client[]  @relation("AdminofClient") // Relación inversa: admin de varios clientes
-  invoices  Invoice[]
-  
+  projects Project[]
+  clients  Client[]  @relation("AdminofClient") // Relación inversa: admin de varios clientes
+  invoices Invoice[]
+
   // Nuevas relaciones para HostBilling
-  products      Product[]
-  subscriptions Subscription[]
-  tickets       Ticket[]       @relation("TicketAssignee")
-  ticketCreators Ticket[]      @relation("TicketCreator")
+  products       Product[]
+  subscriptions  Subscription[]
+  tickets        Ticket[]        @relation("TicketAssignee")
+  ticketCreators Ticket[]        @relation("TicketCreator")
   ticketMessages TicketMessage[]
-  knowledgeBase KnowledgeBase[]
-  
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  knowledgeBase  KnowledgeBase[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([clientId])
+  @@index([tenantId])
 }
 
 model Client {
-  id             String      @id @default(uuid())
-  name           String
-  email          String      @unique
-  code           String?
+  id    String  @id @default(uuid())
+  name  String
+  email String  @unique
+  code  String?
+
+  // Salón al que pertenece esta clienta (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   displayName    String?
   businessNumber String?
-  type           ClientType  @default(CUSTOMER)
+  type           ClientType @default(CUSTOMER)
   phone          String?
   company        String?
-  address        String?     @db.Text
+  address        String?    @db.Text
   city           String?
   state          String?
   zipCode        String?
   country        String?
   secondaryEmail String?
-  currency       String      @default("USD")
+  currency       String     @default("USD")
   groupId        String?
   ownerId        String?
-  taxId          String?     // CIF/NIF/RUT para la facturación
-  
+  taxId          String? // CIF/NIF/RUT para la facturación
+
   // Foto de perfil (Base64)
-  imageUrl       String?     @db.Text
-  
+  imageUrl String? @db.Text
+
   // Claves foráneas
-  userId    String
-  user      User      @relation("AdminofClient", fields: [userId], references: [id], onDelete: Cascade)
-  
+  userId String
+  user   User   @relation("AdminofClient", fields: [userId], references: [id], onDelete: Cascade)
+
   // Usuarios (clientes) vinculados a este cliente
-  clientUsers User[]   @relation("UserAsClient")
-  
+  clientUsers User[] @relation("UserAsClient")
+
   // Relaciones existentes
-  projects  Project[]
-  invoices  Invoice[]
+  projects Project[]
+  invoices Invoice[]
 
   // Nuevas relaciones para HostBilling
   subscriptions Subscription[]
   tickets       Ticket[]
 
   // Relación con citas
-  appointments  Appointment[]
+  appointments Appointment[]
 
   // Relación con notificaciones
   notifications Notification[]
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // NOTA (fase 2 pendiente): email seguirá siendo único global hasta que las
+  // rutas filtren por tenant. Acotarlo a @@unique([tenantId, email]) ahora
+  // rompería los lookups existentes por email (login, checks de duplicado)
+  // que no pasan tenantId; se hace junto con esa migración.
   @@index([userId])
+  @@index([tenantId])
 }
 
 model Project {
@@ -127,19 +191,19 @@ model Project {
   name        String
   description String?       @db.Text
   status      ProjectStatus @default(ACTIVE)
-  
+
   // Claves foráneas
-  clientId    String
-  client      Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   // Relaciones
-  invoices    Invoice[]
-  
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([clientId])
 }
@@ -150,33 +214,41 @@ model Invoice {
   issueDate     DateTime      @default(now())
   dueDate       DateTime
   status        InvoiceStatus @default(PENDING)
-  
+
   // Usamos Decimal para evitar errores de coma flotante en dinero
-  subtotal      Decimal       @db.Decimal(10, 2)
-  taxRate       Decimal       @default(0) @db.Decimal(5, 2) // Porcentaje de impuestos (ej. 21.00)
-  totalAmount   Decimal       @db.Decimal(10, 2)
-  notes         String?       @db.Text
+  subtotal    Decimal @db.Decimal(10, 2)
+  taxRate     Decimal @default(0) @db.Decimal(5, 2) // Porcentaje de impuestos (ej. 21.00)
+  totalAmount Decimal @db.Decimal(10, 2)
+  notes       String? @db.Text
+
+  // Salón al que pertenece esta factura (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Claves foráneas
-  userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  clientId      String
-  client        Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  
-  projectId     String?
-  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   // Relaciones
-  items         InvoiceItem[]
-  orderItems    OrderItem[]
+  items      InvoiceItem[]
+  orderItems OrderItem[]
 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // NOTA (fase 2 pendiente): invoiceNumber seguirá siendo único global hasta
+  // que las rutas filtren por tenant y generen numeración por salón.
   @@index([clientId])
   @@index([invoiceNumber])
   @@index([userId])
+  @@index([tenantId])
 }
 
 model InvoiceItem {
@@ -187,9 +259,9 @@ model InvoiceItem {
   total       Decimal @db.Decimal(10, 2)
 
   // Clave foránea
-  invoiceId   String
+  invoiceId String
   // Si se borra la factura, se borran sus items (Cascade)
-  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@index([invoiceId])
 }
@@ -198,118 +270,148 @@ model InvoiceItem {
 
 // Categorías para organizar productos y tickets
 model Category {
-  id          String   @id @default(uuid())
+  id          String       @id @default(uuid())
   name        String
   description String?
   type        CategoryType // PRODUCT, TICKET, KNOWLEDGE_BASE
-  color       String?  // Para UI (hex color)
-  icon        String?  // Nombre del icono
-  order       Int      @default(0) // Para ordenar categorías
+  color       String? // Para UI (hex color)
+  icon        String? // Nombre del icono
+  order       Int          @default(0) // Para ordenar categorías
+
+  // Salón al que pertenece esta categoría (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Relaciones
-  products    Product[]
-  tickets     Ticket[]
-  articles    KnowledgeBase[]
+  products Product[]
+  tickets  Ticket[]
+  articles KnowledgeBase[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // NOTA (fase 2 pendiente): (name, type) seguirá siendo único global hasta
+  // que las rutas filtren por tenant — hoy dos salones no podrían tener cada
+  // uno su propia categoría "Uñas" con el mismo nombre.
   @@unique([name, type])
+  @@index([tenantId])
 }
 
 // Productos y Servicios
 model Product {
-  id          String        @id @default(uuid())
+  id          String      @id @default(uuid())
   name        String
-  description String?       @db.Text
-  type        ProductType   // MANICURA_BASICA, DISENO_ARTISTICO, UÑAS_ACRILICAS, UÑAS_GEL, PEDICURA, REPARACION, EXTENSIONES, TRATAMIENTO_SPA
+  description String?     @db.Text
+  type        ProductType // MANICURA_BASICA, DISENO_ARTISTICO, UÑAS_ACRILICAS, UÑAS_GEL, PEDICURA, REPARACION, EXTENSIONES, TRATAMIENTO_SPA
 
   // Precios
-  price       Decimal       @db.Decimal(10, 2)
-  currency    String        @default("USD")
+  price        Decimal      @db.Decimal(10, 2)
+  currency     String       @default("USD")
   billingCycle BillingCycle // MONTHLY, YEARLY, ONE_TIME, QUARTERLY
 
   // Estado y configuración
-  status      ProductStatus @default(ACTIVE)
-  isPublic    Boolean       @default(true)  // Visible en portal de cliente
-  stock       Int?          // Para productos limitados (null = unlimited)
-  durationMinutes Int       @default(60) // Duración del servicio; determina la hora de fin de la cita
+  status          ProductStatus @default(ACTIVE)
+  isPublic        Boolean       @default(true) // Visible en portal de cliente
+  stock           Int? // Para productos limitados (null = unlimited)
+  durationMinutes Int           @default(60) // Duración del servicio; determina la hora de fin de la cita
+
+  // Salón al que pertenece este producto/servicio (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Categorización
-  categoryId  String
-  category    Category      @relation(fields: [categoryId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 
   // Usuario que creó el producto
-  userId      String
-  user        User          @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   // Relaciones
   subscriptions Subscription[]
-  orderItems   OrderItem[]
-  appointments Appointment[]
-  galleryItems GalleryItem[]
+  orderItems    OrderItem[]
+  appointments  Appointment[]
+  galleryItems  GalleryItem[]
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([categoryId])
   @@index([userId])
   @@index([type])
+  @@index([tenantId])
 }
 
 model GalleryItem {
-  id          String   @id @default(uuid())
-  title       String
-  imageUrl    String   @db.Text
-  isActive    Boolean  @default(true)
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id       String  @id @default(uuid())
+  title    String
+  imageUrl String  @db.Text
+  isActive Boolean @default(true)
+
+  // Salón al que pertenece este diseño (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId])
+  @@index([tenantId])
 }
 
 // Órdenes/Suscripciones
 model Subscription {
-  id            String            @id @default(uuid())
-  subscriptionNumber String       @unique
-  status        SubscriptionStatus @default(ACTIVE)
+  id                 String             @id @default(uuid())
+  subscriptionNumber String             @unique
+  status             SubscriptionStatus @default(ACTIVE)
 
   // Fechas importantes
-  startDate     DateTime          @default(now())
-  endDate       DateTime?
-  nextBilling   DateTime?
-  cancelledAt   DateTime?
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  nextBilling DateTime?
+  cancelledAt DateTime?
+
+  // Salón al que pertenece esta suscripción (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Producto suscrito
-  productId     String
-  product       Product           @relation(fields: [productId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
 
   // Cliente suscriptor
-  clientId      String
-  client        Client            @relation(fields: [clientId], references: [id])
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id])
 
   // Usuario que gestiona
-  userId        String
-  user          User              @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   // Configuración de facturación
-  autoRenew     Boolean           @default(true)
-  notes         String?           @db.Text
+  autoRenew Boolean @default(true)
+  notes     String? @db.Text
 
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // NOTA (fase 2 pendiente): igual que invoiceNumber, se acotará por tenant
+  // junto con el filtrado de rutas.
   @@index([clientId])
   @@index([productId])
   @@index([userId])
   @@index([status])
+  @@index([tenantId])
 }
 
 // Items de órdenes (para compras únicas)
 model OrderItem {
-  id        String  @id @default(uuid())
+  id String @id @default(uuid())
 
   productId String
   product   Product @relation(fields: [productId], references: [id])
@@ -330,54 +432,62 @@ model OrderItem {
 
 // Sistema de Tickets de Soporte
 model Ticket {
-  id          String       @id @default(uuid())
-  ticketNumber String      @unique
-  subject     String
-  description String       @db.Text
-  status      TicketStatus @default(OPEN)
-  priority    Priority     @default(MEDIUM)
+  id           String       @id @default(uuid())
+  ticketNumber String       @unique
+  subject      String
+  description  String       @db.Text
+  status       TicketStatus @default(OPEN)
+  priority     Priority     @default(MEDIUM)
+
+  // Salón al que pertenece este ticket (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Categorización
-  categoryId  String?
-  category    Category?    @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
 
   // Cliente que creó el ticket
-  clientId    String?
-  client      Client?      @relation(fields: [clientId], references: [id])
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id])
 
   // Usuario asignado (agente de soporte)
   assignedToId String?
-  assignedTo   User?       @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id])
 
   // Usuario que creó el ticket
-  userId      String
-  user        User         @relation("TicketCreator", fields: [userId], references: [id])
+  userId String
+  user   User   @relation("TicketCreator", fields: [userId], references: [id])
 
   // Relaciones
-  messages    TicketMessage[]
+  messages TicketMessage[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // NOTA (fase 2 pendiente): igual que invoiceNumber, se acotará por tenant
+  // junto con el filtrado de rutas.
   @@index([clientId])
   @@index([categoryId])
   @@index([assignedToId])
   @@index([status])
+  @@index([tenantId])
 }
 
 // Mensajes en tickets
 model TicketMessage {
-  id        String   @id @default(uuid())
-  message   String   @db.Text
+  id         String  @id @default(uuid())
+  message    String  @db.Text
   isInternal Boolean @default(false) // Solo visible para agentes
 
   // Usuario que envió el mensaje
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   // Ticket al que pertenece
-  ticketId  String
-  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -387,35 +497,42 @@ model TicketMessage {
 
 // Knowledge Base (Base de Conocimiento)
 model KnowledgeBase {
-  id          String   @id @default(uuid())
-  title       String
-  content     String   @db.Text
-  excerpt     String?  @db.Text // Resumen corto
-  slug        String   @unique // Para URLs amigables
+  id      String  @id @default(uuid())
+  title   String
+  content String  @db.Text
+  excerpt String? @db.Text // Resumen corto
+  slug    String  @unique // Para URLs amigables
+
+  // Salón al que pertenece este artículo (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Categorización
-  categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id])
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
 
   // Estado
-  status      KBStatus @default(PUBLISHED)
-  isPublic    Boolean  @default(true) // Visible para clientes
+  status   KBStatus @default(PUBLISHED)
+  isPublic Boolean  @default(true) // Visible para clientes
 
   // Usuario que creó el artículo
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   // Metadata
-  views       Int      @default(0)
-  helpful     Int      @default(0) // Votos positivos
-  notHelpful  Int      @default(0) // Votos negativos
+  views      Int @default(0)
+  helpful    Int @default(0) // Votos positivos
+  notHelpful Int @default(0) // Votos negativos
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  // NOTA (fase 2 pendiente): slug seguirá siendo único global hasta que las
+  // rutas filtren por tenant.
   @@index([categoryId])
   @@index([userId])
-  @@index([slug])
+  @@index([tenantId])
   @@index([status])
 }
 
@@ -423,106 +540,148 @@ model KnowledgeBase {
 // general para todo el salón; asignar una cita a un Staff es informativo por
 // ahora y no implica horarios ni cupos independientes por profesional.
 model Staff {
-  id           String        @id @default(uuid())
-  name         String
-  email        String?
-  phone        String?
-  color        String?       // Para distinguir profesionales en la agenda (hex color)
-  isActive     Boolean       @default(true)
+  id       String  @id @default(uuid())
+  name     String
+  email    String?
+  phone    String?
+  color    String? // Para distinguir profesionales en la agenda (hex color)
+  isActive Boolean @default(true)
+
+  // Salón al que pertenece este profesional (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   appointments Appointment[]
 
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([isActive])
+  @@index([tenantId])
 }
 
 // Sistema de Citas (Appointments)
 model Appointment {
-  id          String              @id @default(uuid())
-  date        DateTime            // Fecha exacta de la cita
-  startTime   String              // Hora de inicio (Ej: "10:00")
-  endTime     String              // Hora de fin (Ej: "11:30")
-  status      AppointmentStatus   @default(SCHEDULED)
-  notes       String?             @db.Text
+  id        String            @id @default(uuid())
+  date      DateTime // Fecha exacta de la cita
+  startTime String // Hora de inicio (Ej: "10:00")
+  endTime   String // Hora de fin (Ej: "11:30")
+  status    AppointmentStatus @default(SCHEDULED)
+  notes     String?           @db.Text
+
+  // Salón al que pertenece esta cita (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Relaciones
-  clientId    String
-  client      Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 
-  productId   String
-  product     Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
 
   // Profesional que atiende la cita (opcional: el horario sigue siendo general del salón)
-  staffId     String?
-  staff       Staff?              @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  staffId String?
+  staff   Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([clientId])
   @@index([productId])
   @@index([staffId])
   @@index([date])
   @@index([status])
+  @@index([tenantId])
 }
 
 model Notification {
-  id          String              @id @default(uuid())
-  type        NotificationType    // WHATSAPP, EMAIL, SYSTEM
-  recipient   String              // Número de teléfono, email o ID interno
-  content     String              @db.Text // Texto del mensaje
-  status      NotificationStatus  @default(PENDING)
-  isRead      Boolean             @default(false) // Para la campanita del cliente
-  errorLog    String?             @db.Text // Log de errores si falla el envío
+  id        String             @id @default(uuid())
+  type      NotificationType // WHATSAPP, EMAIL, SYSTEM
+  recipient String // Número de teléfono, email o ID interno
+  content   String             @db.Text // Texto del mensaje
+  status    NotificationStatus @default(PENDING)
+  isRead    Boolean            @default(false) // Para la campanita del cliente
+  errorLog  String?            @db.Text // Log de errores si falla el envío
+
+  // Salón que envió esta notificación (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Relaciones
-  clientId    String?
-  client      Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientId String?
+  client   Client? @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([clientId])
   @@index([status])
   @@index([isRead])
   @@index([createdAt])
+  @@index([tenantId])
 }
 
 // Horarios Comerciales
 model BusinessHour {
-  id        String   @id @default(uuid())
-  dayOfWeek Int      // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
-  startTime String   // Ej: "09:00" (retrocompatibilidad)
-  endTime   String   // Ej: "18:00" (retrocompatibilidad)
-  timeSlots String[] @default([]) // Horarios explícitos definidos por el administrador
-  isOpen    Boolean  @default(true) // Si es false, ese día está cerrado
-  maxAppointments Int @default(0)  // 0 = sin límite, >0 = límite máximo de citas por día
+  id              String   @id @default(uuid())
+  dayOfWeek       Int // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  startTime       String // Ej: "09:00" (retrocompatibilidad)
+  endTime         String // Ej: "18:00" (retrocompatibilidad)
+  timeSlots       String[] @default([]) // Horarios explícitos definidos por el administrador
+  isOpen          Boolean  @default(true) // Si es false, ese día está cerrado
+  maxAppointments Int      @default(0) // 0 = sin límite, >0 = límite máximo de citas por día
+
+  // Salón al que pertenece este horario (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // NOTA (fase 2 pendiente): dayOfWeek seguirá siendo único global (un solo
+  // horario comercial para toda la instalación) hasta que las rutas filtren
+  // por tenant.
   @@unique([dayOfWeek])
   @@index([dayOfWeek])
+  @@index([tenantId])
 }
 
 model ClosedDate {
-  id        String   @id @default(uuid())
-  date      String   @unique // YYYY-MM-DD
-  reason    String?  @db.Text
+  id     String  @id @default(uuid())
+  date   String  @unique // YYYY-MM-DD
+  reason String? @db.Text
+
+  // Salón al que pertenece este día cerrado (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
 }
 
 model ScheduleOverride {
-  id         String   @id @default(uuid())
-  date       String   @unique // YYYY-MM-DD
-  timeSlots  String[] @default([])
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
+  id        String   @id @default(uuid())
+  date      String   @unique // YYYY-MM-DD
+  timeSlots String[] @default([])
 
+  // Salón al que pertenece esta excepción de horario (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
+  tenantId String?
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
 
 // ================= Enums adicionales =================
 
