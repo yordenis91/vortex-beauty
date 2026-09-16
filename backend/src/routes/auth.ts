@@ -11,6 +11,11 @@ const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
+  // Slug del salón en el que se está registrando (viene de la URL pública
+  // /:tenantSlug/register). Opcional por retrocompatibilidad mientras el
+  // frontend termina de migrar a esa página; si no llega, se usa el
+  // comportamiento legacy (el primer admin encontrado).
+  tenantSlug: z.string().optional(),
 });
 
 const loginSchema = z.object({
@@ -21,24 +26,31 @@ const loginSchema = z.object({
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name } = registerSchema.parse(req.body);
+    const { email, password, name, tenantSlug } = registerSchema.parse(req.body);
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
 
+    if (tenantSlug) {
+      const tenant = await prisma.tenant.findUnique({ where: { slug: tenantSlug }, select: { status: true } });
+      if (!tenant || tenant.status === 'SUSPENDED') {
+        return res.status(404).json({ error: 'Salón no encontrado o no disponible' });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Usar transacción para crear Client y User de forma atómica
     const { user, tenantId } = await prisma.$transaction(async (tx) => {
-      // Buscar usuario administrador
-      // NOTA (multitenant): mientras no exista un flujo de alta de salón
-      // propio, el registro público solo da de alta clientas del salón que
-      // ya existe (toma el primer admin, igual que antes).
-      const adminUser = await tx.user.findFirst({
-        where: { role: 'ADMIN' }
-      });
+      // Con tenantSlug (viene de /:tenantSlug/register): el admin de ESE
+      // salón. Sin tenantSlug: comportamiento legacy (el primer admin
+      // encontrado), que se mantiene solo por retrocompatibilidad mientras
+      // el frontend termina de migrar a la página con slug.
+      const adminUser = tenantSlug
+        ? await tx.user.findFirst({ where: { role: 'ADMIN', tenant: { slug: tenantSlug } } })
+        : await tx.user.findFirst({ where: { role: 'ADMIN' } });
 
       if (!adminUser || !adminUser.tenantId) {
         throw new Error('No admin user found to assign as client owner');

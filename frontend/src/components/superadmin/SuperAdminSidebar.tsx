@@ -56,8 +56,24 @@ const SuperAdminSidebar: React.FC = () => {
     return result.filter((group) => group.items.length > 0 || group.label);
   }, []);
 
+  // El portal de plataforma es un tema oscuro fijo, independiente del modo
+  // claro/oscuro del salón. Los componentes base de Sidebar (hover, estado
+  // activo, bordes) se pintan a partir de las variables --sidebar-* del tema
+  // global, que están pensadas para el sidebar CLARO por defecto; sin fijarlas
+  // aquí, esos estados heredan texto oscuro sobre nuestro fondo oscuro y
+  // pierden contraste. Se fijan explícitamente para este sidebar en vez de
+  // pelear con el orden de cascada de las utilidades de Tailwind.
+  const sidebarThemeVars = {
+    '--sidebar': '#111827', // gray-900
+    '--sidebar-foreground': '#f3f4f6', // gray-100
+    '--sidebar-accent': '#1f2937', // gray-800 (fondo de hover)
+    '--sidebar-accent-foreground': '#ffffff',
+    '--sidebar-border': '#1f2937', // gray-800
+    '--sidebar-ring': '#6366f1', // indigo-500
+  } as React.CSSProperties;
+
   return (
-    <Sidebar className="bg-gray-900 border-r border-gray-800" collapsible="icon">
+    <Sidebar style={sidebarThemeVars} className="border-r border-gray-800" collapsible="icon">
       <div className="flex h-16 items-center gap-3 px-4 border-b border-gray-800">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-600 text-sm font-bold text-white">
           SA
@@ -72,7 +88,7 @@ const SuperAdminSidebar: React.FC = () => {
           <SidebarGroup key={groupIndex}>
             {group.label && (
               <SidebarGroupLabel
-                className={group.highlight ? 'text-indigo-400 font-bold' : 'text-gray-500'}
+                className={group.highlight ? 'text-indigo-400 font-bold' : 'text-gray-400'}
               >
                 {group.label}
               </SidebarGroupLabel>
@@ -84,7 +100,7 @@ const SuperAdminSidebar: React.FC = () => {
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.href}
-                      className="text-gray-300 hover:text-white hover:bg-gray-800 data-[active=true]:bg-indigo-600 data-[active=true]:text-white"
+                      className="text-gray-200 data-[active=true]:bg-indigo-600 data-[active=true]:text-white data-[active=true]:hover:bg-indigo-600 data-[active=true]:hover:text-white"
                     >
                       <Link to={item.href} className="flex w-full items-center gap-2">
                         <item.icon className="h-5 w-5" />

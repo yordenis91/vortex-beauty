@@ -63,6 +63,22 @@ export interface TenantSubscription {
   canceledAt?: string | null;
 }
 
+export interface CreateTenantRequest {
+  name: string;
+  slug?: string;
+  planId: string;
+  billingCycle: 'MONTHLY' | 'YEARLY';
+  adminName: string;
+  adminEmail: string;
+}
+
+export interface CreateTenantResponse {
+  tenant: { id: string; name: string; slug: string };
+  admin: { id: string; email: string; name: string };
+  tempPassword: string;
+  registerUrl: string;
+}
+
 export interface TenantListItem {
   id: string;
   name: string;

@@ -142,6 +142,7 @@ function App() {
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/:tenantSlug/register" element={<Register />} />
             <Route path="/design-system" element={<DesignSystem />} />
 
             {/* Super Admin (plataforma) routes — sistema de auth separado */}
