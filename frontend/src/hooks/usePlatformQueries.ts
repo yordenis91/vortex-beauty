@@ -13,6 +13,8 @@ import type {
   GrowthPoint,
   RevenueByPlan,
   PaginatedResponse,
+  CreateTenantRequest,
+  CreateTenantResponse,
 } from '../types/superadmin';
 
 type MutationOptions<TData = unknown, TVariables = unknown> = {
@@ -52,6 +54,17 @@ export const useTenants = (filters: TenantFilters) =>
     queryKey: ['platform', 'tenants', filters],
     queryFn: async () => (await platformApi.get<PaginatedResponse<TenantListItem>>('/tenants', { params: filters })).data,
   });
+
+export const useCreateTenant = (options?: MutationOptions<CreateTenantResponse, CreateTenantRequest>) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CreateTenantRequest) => (await platformApi.post<CreateTenantResponse>('/tenants', data)).data,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['platform', 'tenants'] });
+      options?.onSuccess?.(data, variables, context);
+    },
+  });
+};
 
 export const useTenantDetail = (id: string | undefined) =>
   useQuery({

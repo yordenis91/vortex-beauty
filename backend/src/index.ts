@@ -25,6 +25,7 @@ import platformAuthRoutes from './routes/platformAuth';
 import platformTenantsRoutes from './routes/platformTenants';
 import platformPlansRoutes from './routes/platformPlans';
 import platformDashboardRoutes from './routes/platformDashboard';
+import publicTenantsRoutes from './routes/publicTenants';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -118,6 +119,9 @@ app.use('/api/platform/auth', platformAuthRoutes);
 app.use('/api/platform/tenants', platformTenantsRoutes);
 app.use('/api/platform/plans', platformPlansRoutes);
 app.use('/api/platform/dashboard', platformDashboardRoutes);
+
+// Info pública por salón (sin auth): usada por la página de registro /:tenantSlug/register
+app.use('/api/public/tenants', publicTenantsRoutes);
 
 // Health check
 const healthResponse = { status: 'OK', timestamp: new Date().toISOString() };

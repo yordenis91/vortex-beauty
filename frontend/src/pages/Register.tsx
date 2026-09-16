@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
+import api from '../lib/api';
+import { getErrorMessage } from '../hooks/useQueries';
+import { Eye, EyeOff, Mail, Lock, User, Building2 } from 'lucide-react';
 
 const Register: React.FC = () => {
+  const { tenantSlug } = useParams<{ tenantSlug?: string }>();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -14,6 +18,20 @@ const Register: React.FC = () => {
 
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Cuando la página se abre con un slug de salón en la URL (/:tenantSlug/register),
+  // resolvemos su nombre para mostrar "Te estás registrando en <Salón>" y para
+  // detectar temprano si el salón no existe o no está disponible.
+  const {
+    data: tenantInfo,
+    isLoading: tenantLoading,
+    isError: tenantError,
+  } = useQuery({
+    queryKey: ['public-tenant', tenantSlug],
+    queryFn: async () => (await api.get<{ name: string; slug: string }>(`/public/tenants/${tenantSlug}`)).data,
+    enabled: !!tenantSlug,
+    retry: false,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,20 +45,43 @@ const Register: React.FC = () => {
     }
 
     try {
-      await register(email, password, name);
+      await register(email, password, name, tenantSlug);
       navigate('/');
-    } catch {
-      setError('El registro falló. Por favor, inténtalo de nuevo.');
+    } catch (err) {
+      setError(getErrorMessage(err, 'El registro falló. Por favor, inténtalo de nuevo.'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  if (tenantSlug && tenantLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (tenantSlug && tenantError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full text-center space-y-3">
+          <Building2 className="mx-auto h-10 w-10 text-gray-400" />
+          <h2 className="text-xl font-bold text-gray-900">Salón no encontrado</h2>
+          <p className="text-sm text-gray-600">El enlace que usaste no corresponde a ningún salón disponible.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          {tenantInfo && (
+            <p className="text-center text-sm font-medium text-blue-600 mb-2">Te estás registrando en {tenantInfo.name}</p>
+          )}
+          <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
             Crea tu cuenta
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">

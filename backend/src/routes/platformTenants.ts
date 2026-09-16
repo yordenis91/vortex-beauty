@@ -1,10 +1,28 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import prisma from '../prismaClient';
 import { authenticatePlatformAdmin, requireSuperAdmin, PlatformAuthRequest } from '../middleware/platformAuth';
 import { logAudit } from '../services/auditLogService';
 import { TenantStatus } from '@prisma/client';
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // quita acentos
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/** Contraseña temporal legible (evita caracteres ambiguos como 0/O, 1/l/I). */
+function generateTempPassword(): string {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  return Array.from(crypto.randomBytes(12))
+    .map((byte) => alphabet[byte % alphabet.length])
+    .join('');
+}
 
 const router = express.Router();
 
@@ -58,6 +76,114 @@ router.get('/', async (req, res) => {
       return res.status(400).json({ error: error.errors });
     }
     console.error('Error listando tenants:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+const createTenantSchema = z.object({
+  name: z.string().min(2),
+  slug: z.string().min(2).regex(/^[a-z0-9-]+$/, 'El slug solo puede tener minúsculas, números y guiones').optional(),
+  planId: z.string(),
+  billingCycle: z.enum(['MONTHLY', 'YEARLY']).default('MONTHLY'),
+  adminName: z.string().min(2),
+  adminEmail: z.string().email(),
+});
+
+// POST /api/platform/tenants — alta de un salón nuevo con su primer usuario
+// ADMIN. Único punto de entrada para crear salones en esta fase (sin
+// registro público todavía): genera una contraseña temporal que se devuelve
+// UNA sola vez en la respuesta, nunca se guarda en texto plano ni se reenvía
+// después — no hay SMTP conectado, así que es responsabilidad de quien crea
+// el salón comunicarla por fuera.
+router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
+  try {
+    const data = createTenantSchema.parse(req.body);
+    const slug = data.slug ? slugify(data.slug) : slugify(data.name);
+
+    if (!slug) {
+      return res.status(400).json({ error: 'No se pudo generar un identificador válido a partir del nombre' });
+    }
+
+    const [existingTenant, existingUser, plan] = await Promise.all([
+      prisma.tenant.findUnique({ where: { slug } }),
+      prisma.user.findUnique({ where: { email: data.adminEmail } }),
+      prisma.plan.findUnique({ where: { id: data.planId } }),
+    ]);
+
+    if (existingTenant) {
+      return res.status(409).json({ error: `Ya existe un salón con el identificador "${slug}"` });
+    }
+    if (existingUser) {
+      return res.status(409).json({ error: 'Ya existe un usuario con ese correo electrónico' });
+    }
+    if (!plan) {
+      return res.status(400).json({ error: 'Plan no encontrado' });
+    }
+
+    const tempPassword = generateTempPassword();
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    const now = new Date();
+    const periodEnd = new Date(now);
+    if (data.billingCycle === 'YEARLY') {
+      periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    } else {
+      periodEnd.setMonth(periodEnd.getMonth() + 1);
+    }
+    const trialEndsAt = plan.trialDays > 0 ? new Date(now.getTime() + plan.trialDays * 24 * 60 * 60 * 1000) : null;
+
+    const { tenant, adminUser } = await prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({ data: { name: data.name, slug } });
+
+      const adminUser = await tx.user.create({
+        data: {
+          email: data.adminEmail,
+          name: data.adminName,
+          password: hashedPassword,
+          role: 'ADMIN',
+          tenantId: tenant.id,
+        },
+      });
+
+      await tx.tenantSubscription.create({
+        data: {
+          tenantId: tenant.id,
+          planId: plan.id,
+          status: trialEndsAt ? 'TRIALING' : 'ACTIVE',
+          billingCycle: data.billingCycle,
+          currentPeriodStart: now,
+          currentPeriodEnd: periodEnd,
+          trialEndsAt,
+          gateway: 'manual',
+        },
+      });
+
+      return { tenant, adminUser };
+    });
+
+    await logAudit({
+      actorType: 'PLATFORM_ADMIN',
+      actorId: req.platformAdmin!.id,
+      actorEmail: req.platformAdmin!.email,
+      action: 'tenant.create',
+      targetType: 'Tenant',
+      targetId: tenant.id,
+      tenantId: tenant.id,
+      metadata: { name: tenant.name, slug: tenant.slug, planId: plan.id, adminEmail: adminUser.email },
+      ip: req.ip,
+    });
+
+    res.status(201).json({
+      tenant,
+      admin: { id: adminUser.id, email: adminUser.email, name: adminUser.name },
+      tempPassword,
+      registerUrl: `/${tenant.slug}/register`,
+    });
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Error creando salón:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

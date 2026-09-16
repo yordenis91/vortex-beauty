@@ -22,7 +22,7 @@ const SuperAdminLayout: React.FC = () => {
 
         <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-gray-800 bg-gray-900 px-4 sm:px-6">
-            <SidebarTrigger />
+            <SidebarTrigger className="text-gray-300 hover:text-white hover:bg-gray-800" />
 
             <div className="flex items-center gap-2 text-sm text-gray-400">
               <ShieldCheck className="h-4 w-4 text-indigo-400" />
