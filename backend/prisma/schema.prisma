@@ -839,6 +839,13 @@ model Plan {
   isPublic  Boolean @default(true) // visible en la página pública de precios
   sortOrder Int     @default(0)
 
+  // Id del "preapproval_plan" (plantilla de suscripción) creado en Mercado
+  // Pago para este plan, por ciclo de cobro. Se crean de forma perezosa la
+  // primera vez que un salón intenta pagar ese ciclo, y se cachean acá para
+  // no crear un plan duplicado en Mercado Pago en cada checkout.
+  mpPlanIdMonthly String?
+  mpPlanIdYearly  String?
+
   tenantSubscriptions TenantSubscription[]
 
   createdAt DateTime @default(now())

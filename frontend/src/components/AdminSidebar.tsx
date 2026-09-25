@@ -23,6 +23,7 @@ import {
   Sparkles,
   Bell,
   Settings as SettingsIcon,
+  CreditCard,
 } from 'lucide-react';
 
 interface NavLink {
@@ -53,6 +54,7 @@ const navigation: NavItem[] = [
   { name: 'Galería', href: '/admin/gallery', icon: Sparkles },
   { section: 'Operaciones', highlight: true },
   { name: 'Notificaciones', href: '/admin/notifications', icon: Bell },
+  { name: 'Facturación', href: '/admin/billing', icon: CreditCard },
   { name: 'Configuraciones', href: '/admin/settings', icon: SettingsIcon },
 ];
 
