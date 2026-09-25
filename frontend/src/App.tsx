@@ -32,6 +32,7 @@ import ClientGallery from './pages/client/ClientGallery';
 import ClientAppointments from './pages/client/ClientAppointments';
 import ClientProfile from './pages/client/ClientProfile';
 import Settings from './pages/Settings';
+import Billing from './pages/Billing';
 import AdminGallery from './pages/AdminGallery';
 import Staff from './pages/Staff';
 
@@ -186,6 +187,7 @@ function App() {
               <Route path="gallery" element={<AdminGallery />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="profile" element={<MyProfile />} />
+              <Route path="billing" element={<Billing />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

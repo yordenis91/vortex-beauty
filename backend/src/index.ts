@@ -26,6 +26,8 @@ import platformTenantsRoutes from './routes/platformTenants';
 import platformPlansRoutes from './routes/platformPlans';
 import platformDashboardRoutes from './routes/platformDashboard';
 import publicTenantsRoutes from './routes/publicTenants';
+import billingRoutes from './routes/billing';
+import mercadoPagoWebhookRoutes from './routes/mercadoPagoWebhook';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -122,6 +124,10 @@ app.use('/api/platform/dashboard', platformDashboardRoutes);
 
 // Info pública por salón (sin auth): usada por la página de registro /:tenantSlug/register
 app.use('/api/public/tenants', publicTenantsRoutes);
+
+// Facturación del propio salón a la plataforma (Mercado Pago)
+app.use('/api/billing', billingRoutes);
+app.use('/api/webhooks/mercadopago', mercadoPagoWebhookRoutes);
 
 // Health check
 const healthResponse = { status: 'OK', timestamp: new Date().toISOString() };
