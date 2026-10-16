@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
+import { imageSchema } from '../lib/images';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
 const galleryItemSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  imageUrl: z.string().min(1, 'Image URL is required'),
+  imageUrl: imageSchema,
   isActive: z.boolean().optional().default(true),
   serviceId: z.string().uuid('Invalid service ID'),
 });

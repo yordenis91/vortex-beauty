@@ -1,4 +1,5 @@
 import express from 'express';
+import { zodResponse } from '../lib/validation';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import prisma from '../prismaClient';
@@ -49,7 +50,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     console.error('Error en login de plataforma:', error);
     res.status(500).json({ error: 'Error interno del servidor' });

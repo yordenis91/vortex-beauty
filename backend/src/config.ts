@@ -34,6 +34,11 @@ export const config = {
   queueMode: (process.env.QUEUE_MODE || 'pgboss') as 'pgboss' | 'memory' | 'off',
   // Ejecuta el worker dentro del proceso de la API. Pon false si lo despliegas aparte.
   workerEmbedded: process.env.WORKER_EMBEDDED !== 'false',
+  // Duración del access token y de la sesión renovable
+  accessTokenTtl: '15m' as const,
+  refreshTtlDays: Number(process.env.REFRESH_TTL_DAYS) || 30,
+  // SameSite de la cookie de sesión. Usa 'none' solo si frontend y API están en dominios distintos (exige HTTPS).
+  cookieSameSite: (process.env.COOKIE_SAMESITE || 'lax') as 'lax' | 'strict' | 'none',
   turnstileSecret: process.env.TURNSTILE_SECRET || '',
   // Orígenes permitidos por CORS, separados por comas (CORS_ORIGINS). Si no se
   // define, cae en los dominios de la demo actual en Easypanel.

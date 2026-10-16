@@ -1,11 +1,11 @@
 import express from 'express';
+import { zodResponse } from '../lib/validation';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import prisma, { basePrisma } from '../prismaClient';
 import { runInTransaction } from '../lib/db';
 import { runWithTenant } from '../lib/tenantContext';
-import { config } from '../config';
+import { endSession, refreshSession, startSession, clearRefreshCookie } from '../services/sessions';
 import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
@@ -16,7 +16,7 @@ const INVALID_CREDENTIALS = { error: 'Credenciales inválidas' };
 
 const registerSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(128),
   name: z.string().min(2),
   // Slug del salón (viene de la URL pública /:tenantSlug/register).
   tenantSlug: z.string().min(1),
@@ -28,14 +28,6 @@ const loginSchema = z.object({
   // Slug del salón (viene de la URL /:tenantSlug/login).
   tenantSlug: z.string().min(1),
 });
-
-function signToken(user: { id: string; role: string; clientId: string | null }, tenantId: string) {
-  return jwt.sign(
-    { userId: user.id, role: user.role, clientId: user.clientId, tenantId },
-    config.jwtSecret,
-    { expiresIn: '7d' }
-  );
-}
 
 // El salón se resuelve por slug en la tabla Tenant (sin RLS) y a partir de ahí
 // todo corre dentro del contexto de ese salón.
@@ -88,10 +80,11 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Ya existe una cuenta con ese email en este salón' });
     }
 
-    res.json({ user: result, token: signToken(result, tenant.id) });
+    const token = await startSession(req, res, { id: result.id, role: result.role, clientId: result.clientId, tenantId: tenant.id });
+    res.json({ user: result, token });
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     console.error(error);
     return res.status(500).json({ error: 'Error interno del servidor' });
@@ -113,25 +106,67 @@ router.post('/login', async (req, res) => {
     const user = await runWithTenant(tenant.id, () =>
       prisma.user.findUnique({
         where: { tenantId_email: { tenantId: tenant.id, email } },
-        select: { id: true, email: true, name: true, password: true, role: true, clientId: true, imageUrl: true },
+        select: { id: true, email: true, name: true, password: true, role: true, clientId: true, imageUrl: true, isActive: true },
       })
     );
 
     const isValidPassword = user ? await bcrypt.compare(password, user.password) : false;
-    if (!user || !isValidPassword) {
+    if (!user || !isValidPassword || !user.isActive) {
       return res.status(400).json(INVALID_CREDENTIALS);
     }
 
+    const token = await startSession(req, res, { id: user.id, role: user.role, clientId: user.clientId, tenantId: tenant.id });
     res.json({
       user: { id: user.id, email: user.email, name: user.name, role: user.role, clientId: user.clientId },
-      token: signToken(user, tenant.id),
+      token,
     });
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     console.error('Login error:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Las rutas que usan la cookie exigen una cabecera propia: un formulario de otro sitio no puede
+// enviarla, y una petición XHR con ella obliga a pasar por la verificación CORS (defensa CSRF).
+const requireAjax: express.RequestHandler = (req, res, next) => {
+  if (req.headers['x-requested-with'] !== 'XMLHttpRequest') {
+    return res.status(400).json({ error: 'Petición no válida' });
+  }
+  next();
+};
+
+// Renueva la sesión con la cookie httpOnly (rota el refresh token)
+router.post('/refresh', requireAjax, async (req, res) => {
+  try {
+    const result = await refreshSession(req, res);
+    if (!result.ok) {
+      clearRefreshCookie(res);
+      return res.status(401).json({ error: 'Sesión no válida', reason: result.reason });
+    }
+    const user = await runWithTenant(result.tenantId, () =>
+      prisma.user.findUnique({
+        where: { id: result.userId },
+        select: { id: true, email: true, name: true, role: true, clientId: true, imageUrl: true },
+      })
+    );
+    res.json({ user, token: result.accessToken });
+  } catch (error) {
+    console.error('Refresh error:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Cierra la sesión actual
+router.post('/logout', requireAjax, async (req, res) => {
+  try {
+    await endSession(req, res);
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

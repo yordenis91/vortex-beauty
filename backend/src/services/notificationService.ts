@@ -68,6 +68,7 @@ export async function getAllNotifications(tenantId: string) {
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: 300,
     });
     return notifications;
   } catch (error) {

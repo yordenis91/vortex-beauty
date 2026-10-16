@@ -286,7 +286,7 @@ export interface BookingSettings {
 }
 
 // Notification types
-export type NotificationChannel = 'WHATSAPP' | 'EMAIL' | 'SYSTEM';
+export type NotificationChannel = 'WHATSAPP' | 'EMAIL' | 'TELEGRAM' | 'SYSTEM';
 export type NotificationStatus = 'PENDING' | 'SENT' | 'FAILED';
 
 export interface Notification {

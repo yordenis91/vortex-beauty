@@ -26,6 +26,7 @@ export const useAuth = () => {
 };
 
 import { saveTenantSlug } from '../lib/tenantSlug';
+import { clearImpersonation, consumeImpersonationToken, endSession, refreshSession, rememberSession, setAccessToken } from '../lib/session';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -36,21 +37,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Verify token and get user info
-      api.get('/auth/me').then(response => {
-        setUser(response.data.user);
-      }).catch(() => {
-        localStorage.removeItem('token');
-      }).finally(() => {
-        setIsLoading(false);
-      });
-    } else {
-      // No hay token que verificar: se resuelve la carga inicial de una vez.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsLoading(false);
-    }
+    let cancelled = false;
+
+    // Al abrir la app se intenta recuperar la sesión: primero la de impersonación (soporte,
+    // solo en esta pestaña) y, si no hay, la cookie de renovación.
+    const restore = async () => {
+      const impersonation = consumeImpersonationToken();
+      if (impersonation) {
+        setAccessToken(impersonation);
+        try {
+          const response = await api.get<{ user: User }>('/auth/me');
+          if (!cancelled) setUser(response.data.user);
+        } catch {
+          clearImpersonation();
+          setAccessToken(null);
+        }
+      } else {
+        const session = await refreshSession();
+        if (!cancelled && session) setUser(session.user);
+      }
+      if (!cancelled) setIsLoading(false);
+    };
+    void restore();
 
     // Listen for auth errors
     const handleAuthError = () => {
@@ -60,6 +68,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     window.addEventListener('auth-error', handleAuthError);
 
     return () => {
+      cancelled = true;
       window.removeEventListener('auth-error', handleAuthError);
     };
   }, []);
@@ -68,7 +77,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await api.post<AuthResponse>('/auth/login', { email, password, tenantSlug });
       const { user, token } = response.data;
-      localStorage.setItem('token', token);
+      setAccessToken(token);
+      rememberSession();
       saveTenantSlug(tenantSlug);
       setUser(user);
     } catch {
@@ -79,13 +89,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (email: string, password: string, name: string, tenantSlug?: string) => {
     const response = await api.post<AuthResponse>('/auth/register', { email, password, name, tenantSlug });
     const { user, token } = response.data;
-    localStorage.setItem('token', token);
+    setAccessToken(token);
+    rememberSession();
     if (tenantSlug) saveTenantSlug(tenantSlug);
     setUser(user);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    void endSession();
     queryClient.clear();
     setUser(null);
   };

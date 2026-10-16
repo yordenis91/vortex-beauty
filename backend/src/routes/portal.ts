@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authenticateToken } from '../middleware/auth';
 import { validateBody } from '../middleware/validate';
 import prisma from '../prismaClient';
+import { imageSchema } from '../lib/images';
 import { runInTransaction } from '../lib/db';
 import notificationService from '../services/notificationService';
 import {
@@ -47,7 +48,7 @@ const profileSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().max(40).optional(),
   address: z.string().max(500).optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: imageSchema.optional(),
 });
 
 // PUT /api/portal/my-profile

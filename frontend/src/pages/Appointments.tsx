@@ -4,7 +4,7 @@ import { useAppointments, useClients, useServices, useProfessionals, useCreateAp
 import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle, UserCog } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
-import { format, isBefore, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, isBefore, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { api } from '../lib/api';
 import type { Appointment, AppointmentStatus } from '../types';
@@ -134,7 +134,16 @@ const Appointments: React.FC = () => {
   const [agendaProfessionalId, setAgendaProfessionalId] = useState('');
 
   // Hooks
-  const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
+  // Solo se piden las citas del mes visible y el seleccionado (± 1 mes)
+  const appointmentRange = useMemo(() => {
+    const first = isBefore(visibleMonth, currentDate) ? visibleMonth : currentDate;
+    const last = isBefore(visibleMonth, currentDate) ? currentDate : visibleMonth;
+    return {
+      from: format(startOfMonth(addMonths(first, -1)), 'yyyy-MM-dd'),
+      to: format(endOfMonth(addMonths(last, 1)), 'yyyy-MM-dd'),
+    };
+  }, [visibleMonth, currentDate]);
+  const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments(appointmentRange);
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: services = [], isLoading: servicesLoading } = useServices();
   const { data: professionalList = [] } = useProfessionals(true);

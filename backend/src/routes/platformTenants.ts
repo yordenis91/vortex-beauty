@@ -1,4 +1,5 @@
 import express from 'express';
+import { zodResponse } from '../lib/validation';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
@@ -77,7 +78,7 @@ router.get('/', async (req, res) => {
     });
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     console.error('Error listando tenants:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -185,7 +186,7 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
     });
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     console.error('Error creando salón:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -288,7 +289,7 @@ router.patch('/:id/status', requireSuperAdmin, async (req: PlatformAuthRequest, 
     res.json(tenant);
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     console.error('Error actualizando estado del tenant:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
@@ -331,7 +332,7 @@ router.delete('/:id', requireSuperAdmin, async (req: PlatformAuthRequest, res) =
     res.status(204).send();
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     console.error('Error eliminando tenant:', error);
     res.status(500).json({ error: 'Error interno del servidor' });

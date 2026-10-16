@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
+import { isImpersonating } from '../lib/session';
 
 const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -29,6 +30,11 @@ const AdminLayout: React.FC = () => {
         <AdminSidebar />
 
         <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
+          {isImpersonating() && (
+            <div role="status" className="bg-amber-500 text-black text-center text-sm font-medium px-4 py-1.5">
+              Estás viendo este salón como soporte de la plataforma. La sesión dura 1 hora y queda registrada.
+            </div>
+          )}
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
             <SidebarTrigger />
 

@@ -75,8 +75,8 @@ const SuperAdminTenantDetail: React.FC = () => {
     if (!id) return;
     impersonate.mutate(id, {
       onSuccess: (result) => {
-        localStorage.setItem('token', result.token);
-        window.open('/admin/dashboard', '_blank');
+        // El token viaja en el hash (no llega a ningún servidor) y la pestaña nueva lo guarda solo para sí.
+        window.open(`/admin/dashboard#impersonate=${encodeURIComponent(result.token)}`, '_blank', 'noopener');
         toast.success('Sesión de impersonación iniciada en una nueva pestaña');
       },
       onError: (error) => toast.error(getErrorMessage(error, 'No se pudo impersonar el salón')),

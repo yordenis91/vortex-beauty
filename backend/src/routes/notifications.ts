@@ -1,9 +1,15 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import notificationService from '../services/notificationService';
 import prisma from '../prismaClient';
 
 const router = Router();
+
+const statusSchema = z.object({
+  status: z.enum(['PENDING', 'SENT', 'FAILED']),
+  errorLog: z.string().max(2000).optional(),
+});
 
 /**
  * GET /api/notifications
@@ -80,11 +86,11 @@ router.put('/:id/read', authenticateToken, async (req: any, res: Response) => {
 router.put('/:id/status', authenticateToken, requireAdmin, async (req: any, res: Response) => {
   try {
     const { id } = req.params;
-    const { status, errorLog } = req.body;
-
-    if (!status) {
-      return res.status(400).json({ error: 'Status is required' });
+    const parsed = statusSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: 'Validation error', details: parsed.error.issues });
     }
+    const { status, errorLog } = parsed.data;
 
     const existing = await prisma.notification.findFirst({ where: { id, tenantId: req.user.tenantId } });
     if (!existing) {

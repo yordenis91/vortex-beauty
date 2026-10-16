@@ -1,3 +1,4 @@
+import { compressImage } from '../../lib/image';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { User, Phone, Mail, Heart, Loader, Upload, X, Pencil } from 'lucide-react';
@@ -42,20 +43,19 @@ const ClientProfile: React.FC = () => {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
-        setImageUrl(base64);
-        updateProfileMutation.mutate({ imageUrl: base64 }, {
-          onSuccess: () => {
-            if (user && setUser) {
-              setUser({ ...user, imageUrl: base64 });
-            }
-            toast.success('Foto de perfil actualizada correctamente');
-          },
-        });
-      };
-      reader.readAsDataURL(file);
+      compressImage(file)
+        .then((base64) => {
+          setImageUrl(base64);
+          updateProfileMutation.mutate({ imageUrl: base64 }, {
+            onSuccess: () => {
+              if (user && setUser) {
+                setUser({ ...user, imageUrl: base64 });
+              }
+              toast.success('Foto de perfil actualizada correctamente');
+            },
+          });
+        })
+        .catch(() => toast.error('No se pudo procesar la imagen'));
     }
   };
 
