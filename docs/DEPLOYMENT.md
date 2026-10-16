@@ -91,3 +91,19 @@ npm run seed   # opcional
 Si quieres, puedo:
 - crear un `health` endpoint si no existe (revisar `src/index.ts`),
 - o preparar un pequeño `runbook.md` con comandos de emergencia (rollback, restauración DB).
+
+## Aislamiento entre salones (RLS)
+
+La base aplica Row-Level Security: cada petición fija `app.tenant_id` y las políticas solo dejan ver filas de ese salón. **RLS no se aplica a superusuarios ni a roles con BYPASSRLS.** Si la app se conecta con el usuario por defecto de Postgres (superusuario), el aislamiento depende solo del código; al arrancar, el API avisa con `[seguridad] ... las políticas RLS NO se aplican`.
+
+Para activarlo en producción, la migración `row_level_security` crea el rol `vortex_app` (sin login). Crea un usuario que lo herede y apunta `DATABASE_URL` a él en el servicio del API:
+
+```sql
+CREATE ROLE vortex_api LOGIN PASSWORD '<una-clave-larga>' IN ROLE vortex_app;
+```
+
+Las migraciones (`prisma migrate deploy`) siguen corriendo con el usuario administrador: usa una `DATABASE_URL` distinta para el paso de migración, o ejecútalo desde un job aparte.
+
+## Acceso por salón
+
+El login y el registro son siempre por salón: `/:slug/login` y `/:slug/register`. El mismo email puede existir en salones distintos.

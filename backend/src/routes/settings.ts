@@ -69,7 +69,7 @@
     router.get('/business-hours', authenticateToken, async (req, res) => {
     try {
         console.log('GET /api/settings/business-hours called');
-        const tenantId = (req as any).user.tenantId;
+        const tenantId = req.user!.tenantId;
 
         // Initialize default hours if they don't exist
         await initializeDefaultBusinessHours(tenantId);
@@ -97,7 +97,7 @@
     try {
         const { dayOfWeek } = req.params;
         const day = parseInt(dayOfWeek as string);
-        const tenantId = (req as any).user.tenantId;
+        const tenantId = req.user!.tenantId;
 
         if (isNaN(day) || day < 0 || day > 6) {
         return res.status(400).json({ error: 'Invalid day of week (0-6)' });
@@ -123,7 +123,7 @@
     try {
         const { dayOfWeek } = req.params;
         const day = parseInt(dayOfWeek as string);
-        const tenantId = (req as any).user.tenantId;
+        const tenantId = req.user!.tenantId;
 
         if (isNaN(day) || day < 0 || day > 6) {
         return res.status(400).json({ error: 'Invalid day of week (0-6)' });

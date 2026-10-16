@@ -11,7 +11,7 @@ router.use(authenticateToken);
 // su pantalla de Facturación.
 router.get('/status', async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const subscription = await prisma.tenantSubscription.findUnique({
       where: { tenantId },
@@ -37,11 +37,11 @@ router.post('/checkout', requireAdmin, async (req, res) => {
       return res.status(503).json({ error: 'La pasarela de pago todavía no está configurada en esta plataforma.' });
     }
 
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const [subscription, requester] = await Promise.all([
       prisma.tenantSubscription.findUnique({ where: { tenantId }, include: { plan: true } }),
-      prisma.user.findUnique({ where: { id: (req as any).user.userId }, select: { email: true } }),
+      prisma.user.findUnique({ where: { id: req.user!.userId }, select: { email: true } }),
     ]);
 
     if (!subscription) {

@@ -1,5 +1,6 @@
 import { Prisma, AppointmentStatus } from '@prisma/client';
 import prisma from '../prismaClient';
+import { runInTransaction } from '../lib/db';
 
 /**
  * Regla única de disponibilidad de la agenda, usada por el portal de clientas
@@ -169,7 +170,7 @@ const appointmentInclude = { client: true, product: true, staff: true } as const
 export async function createAppointmentSafely(params: CreateAppointmentParams) {
   const { tenantId, dateStr, startTime, endTime, clientId, productId, staffId, notes, status } = params;
 
-  return prisma.$transaction(
+  return runInTransaction(
     async (tx) => {
       await assertSlotAvailable(tx, { tenantId, dateStr, startTime, endTime });
 
@@ -206,7 +207,7 @@ interface UpdateAppointmentParams {
 export async function updateAppointmentSafely(params: UpdateAppointmentParams) {
   const { id, tenantId, dateStr, startTime, endTime, data, skipAvailabilityCheck } = params;
 
-  return prisma.$transaction(
+  return runInTransaction(
     async (tx) => {
       if (!skipAvailabilityCheck) {
         await assertSlotAvailable(tx, { tenantId, dateStr, startTime, endTime, excludeAppointmentId: id });

@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { getSavedTenantSlug } from '../lib/tenantSlug';
+import { Eye, EyeOff, Mail, Lock, Store } from 'lucide-react';
 
 const Login: React.FC = () => {
+  const { tenantSlug: slugFromUrl } = useParams<{ tenantSlug?: string }>();
+  const [tenantSlug, setTenantSlug] = useState(slugFromUrl ?? getSavedTenantSlug());
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,10 +22,10 @@ const Login: React.FC = () => {
     setError('');
 
     try {
-      await login(email, password);
+      await login(email, password, tenantSlug.trim().toLowerCase());
       navigate('/');
     } catch {
-      setError('Correo electrónico o contraseña inválidos');
+      setError('Salón, correo electrónico o contraseña inválidos');
     } finally {
       setIsLoading(false);
     }
@@ -38,6 +41,26 @@ const Login: React.FC = () => {
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
+            {!slugFromUrl && (
+              <div>
+                <label htmlFor="tenantSlug" className="sr-only">Código del salón</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Store className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="tenantSlug"
+                    name="tenantSlug"
+                    type="text"
+                    required
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    placeholder="Código del salón (ej. mi-salon)"
+                    value={tenantSlug}
+                    onChange={(e) => setTenantSlug(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="sr-only">
                 Dirección de correo electrónico

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { PlatformRole } from '@prisma/client';
 import { config } from '../config';
+import { runAsAdmin } from '../lib/tenantContext';
 
 export interface PlatformAuthRequest extends Request {
   platformAdmin?: {
@@ -48,7 +49,8 @@ export const authenticatePlatformAdmin = (req: PlatformAuthRequest, res: Respons
       email: decodedAdmin.email,
       role: decodedAdmin.role,
     };
-    next();
+    // El portal de plataforma opera sobre todos los salones: sin restricción RLS.
+    runAsAdmin(() => next());
   });
 };
 

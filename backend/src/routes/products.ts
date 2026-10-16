@@ -22,7 +22,7 @@ const updateProductSchema = createProductSchema.partial();
 // GET /api/products - Get all products for the authenticated user
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const products = await prisma.product.findMany({
       where: { tenantId },
@@ -65,7 +65,7 @@ router.get('/public', async (req, res) => {
 router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const product = await prisma.product.findFirst({
       where: {
@@ -92,8 +92,8 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 // POST /api/products - Create a new product
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const userId = (req as any).userId;
-    const tenantId = (req as any).user.tenantId;
+    const userId = req.userId!;
+    const tenantId = req.user!.tenantId;
     if (!userId) {
       return res.status(401).json({ error: 'User not authenticated' });
     }
@@ -138,7 +138,7 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
 router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const validatedData = updateProductSchema.parse(req.body);
 
     // Verify product exists and belongs to this salón
@@ -184,7 +184,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     // Verify product exists and belongs to this salón
     const product = await prisma.product.findFirst({

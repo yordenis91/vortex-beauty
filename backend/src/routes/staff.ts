@@ -22,7 +22,7 @@ const updateStaffSchema = staffSchema.partial();
 // GET /api/staff - Lista de profesionales
 router.get('/', async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const { active } = req.query;
     const where = active === 'true' ? { tenantId, isActive: true } : { tenantId };
 
@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const staff = await prisma.staff.findFirst({ where: { id, tenantId } });
 
@@ -61,7 +61,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const data = staffSchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const staff = await prisma.staff.create({
       data: { ...data, email: data.email || undefined, tenantId },
@@ -83,7 +83,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const data = updateStaffSchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existing = await prisma.staff.findFirst({ where: { id, tenantId } });
     if (!existing) {
@@ -110,7 +110,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existing = await prisma.staff.findFirst({ where: { id, tenantId } });
     if (!existing) {

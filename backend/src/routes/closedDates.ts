@@ -13,7 +13,7 @@ const createClosedDateSchema = z.object({
 // GET /api/closed-dates
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const closedDates = await prisma.closedDate.findMany({
       where: { tenantId },
       orderBy: { date: 'asc' },
@@ -29,7 +29,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const parsed = createClosedDateSchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existing = await prisma.closedDate.findUnique({
       where: { tenantId_date: { tenantId, date: parsed.date } },
@@ -63,7 +63,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
     if (!id) {
       return res.status(400).json({ error: 'Invalid ID' });
     }
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existing = await prisma.closedDate.findFirst({ where: { id, tenantId } });
     if (!existing) {
