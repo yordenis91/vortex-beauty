@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { PlatformRole } from '@prisma/client';
+import { config } from '../config';
 
 export interface PlatformAuthRequest extends Request {
   platformAdmin?: {
@@ -13,7 +14,7 @@ export interface PlatformAuthRequest extends Request {
 // JWT_SECRET separado del de los tenants: un token de plataforma nunca debe
 // poder usarse en rutas de un salón, ni viceversa. Si no se define una
 // secreta propia, cae al secreto general (solo aceptable en desarrollo).
-const PLATFORM_JWT_SECRET = process.env.PLATFORM_JWT_SECRET || process.env.JWT_SECRET!;
+const PLATFORM_JWT_SECRET = config.platformJwtSecret;
 
 export function signPlatformToken(admin: { id: string; email: string; role: PlatformRole }): string {
   return jwt.sign(

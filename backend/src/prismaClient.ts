@@ -23,7 +23,7 @@ const adapter = new PrismaPg(pool);
 // 3. Instanciamos Prisma con la opción mínima válida (adapter) y logs opcionales (debug útil en dev).
 const prisma = new PrismaClient({
   adapter,
-  log: ['error', 'warn', 'query'],
+  log: process.env.PRISMA_LOG_QUERIES === '1' ? ['error', 'warn', 'query'] : ['error', 'warn'],
 });
 
 // 4. Exportamos la instancia para usarla en cualquier parte de la app

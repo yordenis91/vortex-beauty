@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientAppointments } from '../../hooks/useQueries';
-import { Calendar, Clock, CheckCircle, AlertCircle, Image, Sparkles, CreditCard, User } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, Image, Sparkles, User } from 'lucide-react';
 import { format, parseISO, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 
@@ -262,14 +262,6 @@ const ClientDashboard: React.FC = () => {
           >
             <Image className="h-5 w-5 text-purple-600" />
             Galería
-          </button>
-
-          <button
-            onClick={() => navigate('/portal/my-invoices')}
-            className="flex items-center gap-3 rounded-lg border border-border px-4 py-3 text-left transition hover:bg-purple-50 dark:hover:bg-purple-950/40"
-          >
-            <CreditCard className="h-5 w-5 text-purple-600" />
-            Mis facturas
           </button>
 
           <button

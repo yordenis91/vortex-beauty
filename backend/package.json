@@ -1,7 +1,7 @@
 {
-  "name": "api-facturacion",
+  "name": "vortex-beauty-api",
   "version": "1.0.0",
-  "description": "api para la aplicacion vortex crm",
+  "description": "API de reservas de citas multi-tenant (vortex-beauty)",
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -43,8 +43,5 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11"
-  },
-  "prisma": {
-    "seed": "ts-node prisma/seed.ts"
   }
 }

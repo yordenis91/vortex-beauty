@@ -10,22 +10,10 @@ const router = Router();
 const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  type: z.enum([
-    'MANICURA_BASICA',
-    'DISENO_ARTISTICO',
-    'UÑAS_ACRILICAS',
-    'UÑAS_GEL',
-    'PEDICURA',
-    'REPARACION',
-    'EXTENSIONES',
-    'TRATAMIENTO_SPA',
-  ]),
   price: z.number().min(0, 'Price must be positive'),
   currency: z.string().default('USD'),
-  billingCycle: z.enum(['ONE_TIME', 'MONTHLY', 'QUARTERLY', 'SEMI_ANNUAL', 'YEARLY']),
   categoryId: z.string().uuid('Invalid category ID'),
   isPublic: z.boolean().default(true),
-  stock: z.number().int().min(0).optional(),
   durationMinutes: z.number().int().min(5, 'La duración mínima es 5 minutos').default(60),
 });
 
@@ -40,12 +28,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
       where: { tenantId },
       include: {
         category: true,
-        _count: {
-          select: {
-            subscriptions: true,
-            orderItems: true,
-          },
-        },
+        _count: { select: { appointments: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -91,22 +74,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
       },
       include: {
         category: true,
-        subscriptions: {
-          include: {
-            client: true,
-          },
-        },
-        orderItems: {
-          include: {
-            invoice: true,
-          },
-        },
-        _count: {
-          select: {
-            subscriptions: true,
-            orderItems: true,
-          },
-        },
+        _count: { select: { appointments: true } },
       },
     });
 
@@ -227,20 +195,6 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    // Check if product has active subscriptions
-    const activeSubscriptions = await prisma.subscription.count({
-      where: {
-        productId: id,
-        status: 'ACTIVE',
-      },
-    });
-
-    if (activeSubscriptions > 0) {
-      return res.status(400).json({
-        error: 'Cannot delete product with active subscriptions. Cancel all subscriptions first.',
-      });
-    }
-
     await prisma.product.delete({
       where: { id },
     });
@@ -249,7 +203,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   } catch (error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
       return res.status(409).json({
-        error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. facturas, proyectos o suscripciones).',
+        error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. citas).',
       });
     }
     console.error('Error deleting product:', error);

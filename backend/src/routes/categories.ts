@@ -13,7 +13,6 @@ router.use(authenticateToken, requireAdmin);
 const createCategorySchema = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
-  type: z.enum(['PRODUCT', 'TICKET', 'KNOWLEDGE_BASE']),
   color: z.string().optional(),
   icon: z.string().optional(),
   order: z.number().int().default(0),
@@ -25,9 +24,7 @@ const updateCategorySchema = createCategorySchema.partial();
 router.get('/', async (req, res) => {
   try {
     const tenantId = (req as any).user.tenantId;
-    const { type } = req.query;
-
-    const where = type ? { tenantId, type: type as any } : { tenantId };
+    const where = { tenantId };
 
     const categories = await prisma.category.findMany({
       where,
@@ -35,8 +32,6 @@ router.get('/', async (req, res) => {
         _count: {
           select: {
             products: true,
-            tickets: true,
-            articles: true,
           },
         },
       },
@@ -62,8 +57,6 @@ router.get('/:id', async (req, res) => {
         _count: {
           select: {
             products: true,
-            tickets: true,
-            articles: true,
           },
         },
       },
@@ -86,18 +79,16 @@ router.post('/', async (req, res) => {
     const validatedData = createCategorySchema.parse(req.body);
     const tenantId = (req as any).user.tenantId;
 
-    // Check for duplicate name/type combination
     const existingCategory = await prisma.category.findFirst({
       where: {
         tenantId,
         name: validatedData.name,
-        type: validatedData.type,
       },
     });
 
     if (existingCategory) {
       return res.status(400).json({
-        error: `A ${validatedData.type.toLowerCase()} category with this name already exists`,
+        error: 'Ya existe una categoría con ese nombre',
       });
     }
 
@@ -107,8 +98,6 @@ router.post('/', async (req, res) => {
         _count: {
           select: {
             products: true,
-            tickets: true,
-            articles: true,
           },
         },
       },
@@ -141,20 +130,19 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Category not found' });
     }
 
-    // Check for duplicate name/type combination (excluding current category)
-    if (validatedData.name && validatedData.type) {
+    // Evitar duplicados de nombre (excluyendo la categoría actual)
+    if (validatedData.name) {
       const duplicateCategory = await prisma.category.findFirst({
         where: {
           tenantId,
           name: validatedData.name,
-          type: validatedData.type,
-          id: { not: id },
+            id: { not: id },
         },
       });
 
       if (duplicateCategory) {
         return res.status(400).json({
-          error: `A ${validatedData.type.toLowerCase()} category with this name already exists`,
+          error: 'Ya existe una categoría con ese nombre',
         });
       }
     }
@@ -166,8 +154,6 @@ router.put('/:id', async (req, res) => {
         _count: {
           select: {
             products: true,
-            tickets: true,
-            articles: true,
           },
         },
       },
@@ -197,8 +183,6 @@ router.delete('/:id', async (req, res) => {
         _count: {
           select: {
             products: true,
-            tickets: true,
-            articles: true,
           },
         },
       },
@@ -209,15 +193,13 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Check if category has associated items
-    const totalItems = category._count.products + category._count.tickets + category._count.articles;
+    const totalItems = category._count.products;
 
     if (totalItems > 0) {
       return res.status(400).json({
         error: 'Cannot delete category with associated items. Move or delete all items first.',
         details: {
           products: category._count.products,
-          tickets: category._count.tickets,
-          articles: category._count.articles,
         },
       });
     }
@@ -230,7 +212,7 @@ router.delete('/:id', async (req, res) => {
   } catch (error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {
       return res.status(409).json({
-        error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. facturas, proyectos o suscripciones).',
+        error: 'No se puede eliminar este registro porque tiene datos asociados en el sistema (ej. citas o servicios).',
       });
     }
     console.error('Error deleting category:', error);

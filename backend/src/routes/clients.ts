@@ -15,16 +15,12 @@ const clientSchema = z.object({
   email: z.string().email(),
   code: z.string().optional(),
   displayName: z.string().optional(),
-  type: z.enum(['CUSTOMER', 'SUPPLIER']).optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
-  groupId: z.string().optional(),
-  ownerId: z.string().optional(),
-  taxId: z.string().optional(),
   imageUrl: z.string().optional(),
 });
 
@@ -41,8 +37,7 @@ router.get('/', async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
       where: { tenantId: (req as any).user.tenantId },
-      include: { projects: true, invoices: true },
-    });
+          });
     res.json(clients);
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
@@ -54,8 +49,7 @@ router.get('/:id', async (req, res) => {
   try {
     const client = await prisma.client.findFirst({
       where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
-      include: { projects: true, invoices: true },
-    });
+          });
 
     if (!client) {
       return res.status(404).json({ error: 'Client not found' });
@@ -83,7 +77,6 @@ router.post('/', async (req, res) => {
       const newClient = await tx.client.create({
         data: {
           ...clientData,
-          type: clientData.type || 'CUSTOMER',
           userId: (req as any).userId,
           tenantId,
         },
@@ -133,7 +126,6 @@ router.put('/:id', async (req, res) => {
       where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
       data: {
         ...data,
-        type: data.type || undefined,
       },
     });
 

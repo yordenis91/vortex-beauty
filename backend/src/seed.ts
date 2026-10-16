@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Role, ProductType } from '@prisma/client';
+import { Role, } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import prisma from './prismaClient';
 
@@ -72,12 +72,11 @@ async function seed() {
 
     // Asegurar categoría y productos de ejemplo
     const defaultCategory = await prisma.category.upsert({
-      where: { tenantId_name_type: { tenantId: tenant.id, name: 'Servicios', type: 'PRODUCT' } },
+      where: { tenantId_name: { tenantId: tenant.id, name: 'Servicios' } },
       update: {},
       create: {
         name: 'Servicios',
         description: 'Categoría de servicios de belleza',
-        type: 'PRODUCT',
         color: '#6366f1',
         icon: 'Star',
         order: 1,
@@ -112,19 +111,11 @@ async function seed() {
       const existingProduct = await prisma.product.findFirst({ where: { name: productData.name, tenantId: tenant.id } });
       if (!existingProduct) {
 
-        const productType: ProductType = productData.name.includes('Pedicura')
-          ? ProductType.PEDICURA
-          : productData.name.includes('Tratamiento')
-          ? ProductType.TRATAMIENTO_SPA
-          : ProductType.MANICURA_BASICA;
-
         const product = await prisma.product.create({
           data: {
             name: productData.name,
             description: productData.description,
-            type: productType,
             price: productData.price,
-            billingCycle: 'ONE_TIME',
             categoryId: defaultCategory.id,
             userId: admin.id,
             tenantId: tenant.id,

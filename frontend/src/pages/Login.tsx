@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 
@@ -33,14 +33,8 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Iniciar sesión en Vortex Nails
+            Iniciar sesión
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            O{' '}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              crea una nueva cuenta
-            </Link>
-          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">

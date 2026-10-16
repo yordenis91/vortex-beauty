@@ -53,7 +53,6 @@ router.post('/register', async (req, res) => {
         data: {
           name,
           email,
-          type: 'CUSTOMER',
           userId: adminUser.id, // Vinculado al admin
           tenantId: adminUser.tenantId,
         }

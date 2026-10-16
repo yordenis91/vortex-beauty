@@ -4,163 +4,105 @@ import { useProducts, useCategories, useCreateProduct, useUpdateProduct, useDele
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import Pagination from '../components/Pagination';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import {
-  Package,
-  Plus,
-  Edit,
-  Trash2,
-  Search,
-  DollarSign,
-  Calendar,
-  Clock,
-  Eye,
-  EyeOff
-} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Package, Plus, Edit, Trash2, Search, DollarSign, Clock, Eye, EyeOff } from 'lucide-react';
+
+const ITEMS_PER_PAGE = 10;
+
+const emptyForm = {
+  name: '',
+  description: '',
+  price: '',
+  currency: 'USD',
+  categoryId: '',
+  isPublic: true,
+  durationMinutes: '60',
+};
+
+const inputClass =
+  'w-full px-4 py-2 border border-border rounded-lg bg-card focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition';
 
 const Products: React.FC = () => {
-  const ITEMS_PER_PAGE = 10;
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCategory, setFilterCategory] = useState<string>('ALL');
-  const [filterVisibility, setFilterVisibility] = useState<string>('ALL');
+  const [filterCategory, setFilterCategory] = useState('ALL');
+  const [filterVisibility, setFilterVisibility] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    type: 'MANICURA_BASICA' as Product['type'],
-    price: '',
-    currency: 'CUP',
-    billingCycle: 'ONE_TIME' as Product['billingCycle'],
-    categoryId: '',
-    isPublic: true,
-    stock: '',
-    durationMinutes: '60',
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
-  // Use React Query hooks
   const { data: products = [], isLoading: productsLoading } = useProducts();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
-  const createProduct = useCreateProduct({
-    onSuccess: () => toast.success('Producto creado correctamente'),
-  });
-  const updateProduct = useUpdateProduct({
-    onSuccess: () => toast.success('Producto actualizado correctamente'),
-  });
-  const deleteProduct = useDeleteProduct({
-    onSuccess: () => toast.success('Producto eliminado correctamente'),
-  });
+  const createProduct = useCreateProduct({ onSuccess: () => toast.success('Servicio creado correctamente') });
+  const updateProduct = useUpdateProduct({ onSuccess: () => toast.success('Servicio actualizado correctamente') });
+  const deleteProduct = useDeleteProduct({ onSuccess: () => toast.success('Servicio eliminado correctamente') });
 
   const loading = productsLoading || categoriesLoading;
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterCategory, filterVisibility]);
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.category?.name.toLowerCase().includes(searchTerm.toLowerCase());
-
+  const filteredProducts = products.filter((product) => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch =
+      product.name.toLowerCase().includes(term) ||
+      product.description?.toLowerCase().includes(term) ||
+      product.category?.name.toLowerCase().includes(term);
     const matchesCategory = filterCategory === 'ALL' || product.categoryId === filterCategory;
-
-    let matchesVisibility = true;
-    if (filterVisibility === 'PUBLIC') matchesVisibility = product.isPublic === true;
-    if (filterVisibility === 'HIDDEN') matchesVisibility = product.isPublic === false;
-
+    const matchesVisibility =
+      filterVisibility === 'ALL' || (filterVisibility === 'PUBLIC' ? product.isPublic : !product.isPublic);
     return matchesSearch && matchesCategory && matchesVisibility;
   });
 
-  // Pagination calculations
   const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const paginatedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      description: '',
-      type: 'MANICURA_BASICA',
-      price: '',
-      currency: 'CUP',
-      billingCycle: 'ONE_TIME',
-      categoryId: '',
-      isPublic: true,
-      stock: '',
-      durationMinutes: '60',
-    });
-  };
+  const buildPayload = () => ({
+    name: formData.name,
+    description: formData.description || undefined,
+    price: parseFloat(formData.price),
+    currency: formData.currency,
+    categoryId: formData.categoryId,
+    isPublic: formData.isPublic,
+    durationMinutes: parseInt(formData.durationMinutes) || 60,
+  });
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.categoryId || formData.categoryId === '') {
+    if (!formData.categoryId) {
       toast.error('Por favor selecciona una categoría');
       return;
     }
     try {
-      const productData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        stock: formData.stock ? parseInt(formData.stock) : undefined,
-        durationMinutes: parseInt(formData.durationMinutes) || 60,
-      };
-
-      await createProduct.mutateAsync(productData);
+      await createProduct.mutateAsync(buildPayload());
       setShowCreateModal(false);
-      resetForm();
+      setFormData(emptyForm);
     } catch (error) {
       console.error('Error creating product:', error);
-      toast.error('Error creando el producto');
     }
   };
 
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
-    if (!formData.categoryId || formData.categoryId === '') {
-      toast.error('Por favor selecciona una categoría');
-      return;
-    }
     try {
-      const productData = {
-        ...formData,
-        price: parseFloat(formData.price),
-        stock: formData.stock ? parseInt(formData.stock) : undefined,
-        durationMinutes: parseInt(formData.durationMinutes) || 60,
-      };
-
-      await updateProduct.mutateAsync({ id: editingProduct.id, productData });
+      await updateProduct.mutateAsync({ id: editingProduct.id, productData: buildPayload() });
       setEditingProduct(null);
-      resetForm();
+      setFormData(emptyForm);
     } catch (error) {
       console.error('Error updating product:', error);
-      toast.error('Error actualizando el producto');
     }
-  };
-
-  const handleDelete = (id: string) => {
-    setItemToDelete(id);
   };
 
   const confirmDelete = async () => {
     if (!itemToDelete) return;
-
     try {
       await deleteProduct.mutateAsync(itemToDelete);
-    } catch (error) {
-      console.error('Error deleting record:', error);
     } finally {
       setItemToDelete(null);
     }
-  };
-
-  const cancelDelete = () => {
-    setItemToDelete(null);
   };
 
   const openEditModal = (product: Product) => {
@@ -168,448 +110,165 @@ const Products: React.FC = () => {
     setFormData({
       name: product.name,
       description: product.description || '',
-      type: product.type,
       price: product.price.toString(),
       currency: product.currency,
-      billingCycle: product.billingCycle,
       categoryId: product.categoryId,
       isPublic: product.isPublic,
-      stock: product.stock?.toString() || '',
       durationMinutes: product.durationMinutes?.toString() || '60',
     });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'bg-green-100 text-green-800';
-      case 'INACTIVE':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'DISCONTINUED':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-muted text-foreground';
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'MANICURA_BASICA':
-        return 'bg-pink-100 text-pink-800';
-      case 'DISENO_ARTISTICO':
-        return 'bg-purple-100 text-purple-800';
-      case 'UÑAS_ACRILICAS':
-        return 'bg-blue-100 text-blue-800';
-      case 'UÑAS_GEL':
-        return 'bg-indigo-100 text-indigo-800';
-      case 'PEDICURA':
-        return 'bg-green-100 text-green-800';
-      case 'REPARACION':
-        return 'bg-orange-100 text-orange-800';
-      case 'EXTENSIONES':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'TRATAMIENTO_SPA':
-        return 'bg-teal-100 text-teal-800';
-      default:
-        return 'bg-muted text-foreground';
-    }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
   }
 
+  const isOpen = showCreateModal || editingProduct !== null;
+  const closeModal = () => {
+    setShowCreateModal(false);
+    setEditingProduct(null);
+    setFormData(emptyForm);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
-            Productos & Servicios
+            Servicios
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Gestiona tus suscripciones SaaS, servicios de desarrollo y ofertas de soporte.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Los servicios que tus clientes pueden reservar.</p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
           >
             <Plus className="h-5 w-5 mr-2" />
-            Agregar Producto
+            Agregar servicio
           </button>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-card shadow rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-muted-foreground" />
-              </div>
-              <input
-                type="text"
-                placeholder="Buscar productos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-border rounded-md leading-5 bg-card placeholder:text-muted-foreground focus:outline-none focus:placeholder:text-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <select
-                value={filterCategory}
-                onChange={(e) => setFilterCategory(e.target.value)}
-                className="block w-full sm:w-auto px-3 py-2 border border-border rounded-md bg-card focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="ALL">Todas las categorías</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={filterVisibility}
-                onChange={(e) => setFilterVisibility(e.target.value)}
-                className="block w-full sm:w-auto px-3 py-2 border border-border rounded-md bg-card focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="ALL">Toda visibilidad</option>
-                <option value="PUBLIC">Públicos</option>
-                <option value="HIDDEN">Ocultos</option>
-              </select>
-            </div>
-          </div>
+      <div className="bg-card shadow rounded-lg px-4 py-5 sm:p-6 flex flex-col md:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar servicios..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 border border-border rounded-md bg-card"
+          />
         </div>
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="px-3 py-2 border border-border rounded-md bg-card">
+          <option value="ALL">Todas las categorías</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+        <select value={filterVisibility} onChange={(e) => setFilterVisibility(e.target.value)} className="px-3 py-2 border border-border rounded-md bg-card">
+          <option value="ALL">Toda visibilidad</option>
+          <option value="PUBLIC">Públicos</option>
+          <option value="HIDDEN">Ocultos</option>
+        </select>
       </div>
 
-      {/* Products List */}
       <div className="bg-card shadow overflow-hidden sm:rounded-md">
         {filteredProducts.length === 0 ? (
           <div className="px-4 py-8 text-center text-muted-foreground">
-            <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-2 text-sm font-medium text-foreground">Sin productos</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Para empezar, crea un nuevo producto o servicio.</p>
-            <div className="mt-6">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-5 w-5 mr-2" />
-                Agregar Producto
-              </button>
-            </div>
+            <Package className="mx-auto h-12 w-12" />
+            <h3 className="mt-2 text-sm font-medium text-foreground">Sin servicios</h3>
+            <p className="mt-1 text-sm">Crea tu primer servicio para empezar a recibir reservas.</p>
           </div>
         ) : (
           <ul className="divide-y divide-border">
             {paginatedProducts.map((product) => (
-              <li key={product.id} className="px-4 py-4 sm:px-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center min-w-0 flex-1">
-                    <div className="flex-shrink-0">
-                      <Package className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <div className="ml-4 min-w-0 flex-1">
-                      <div className="text-sm font-medium text-foreground truncate">
-                        {product.name}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {product.category?.name}
-                      </div>
-                      {product.description && (
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {product.description}
-                        </div>
-                      )}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-xs text-muted-foreground">
-                        <div className="flex items-center">
-                          <DollarSign className="h-4 w-4 mr-1" />
-                          ${product.price} {product.currency}
-                        </div>
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {product.billingCycle.replace('_', ' ')}
-                        </div>
-                        <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
-                          {product.durationMinutes} min
-                        </div>
-                        {product.stock && (
-                          <div className="flex items-center">
-                            <Package className="h-4 w-4 mr-1" />
-                            Stock: {product.stock}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 sm:space-x-3 w-full sm:w-auto shrink-0">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(product.type)}`}>
-                      {product.type.replace('_', ' ')}
+              <li key={product.id} className="px-4 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-foreground truncate">{product.name}</div>
+                  <div className="text-sm text-muted-foreground">{product.category?.name}</div>
+                  {product.description && <div className="text-sm text-muted-foreground mt-1">{product.description}</div>}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-xs text-muted-foreground">
+                    <span className="flex items-center"><DollarSign className="h-4 w-4 mr-1" />{product.price} {product.currency}</span>
+                    <span className="flex items-center"><Clock className="h-4 w-4 mr-1" />{product.durationMinutes} min</span>
+                    <span className="flex items-center">
+                      {product.isPublic ? <Eye className="h-4 w-4 mr-1" /> : <EyeOff className="h-4 w-4 mr-1" />}
+                      {product.isPublic ? 'Visible' : 'Oculto'}
                     </span>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(product.status)}`}>
-                      {product.status}
-                    </span>
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      {product.isPublic ? (
-                        <Eye className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => openEditModal(product)}
-                        className="p-1 rounded-full text-muted-foreground hover:text-muted-foreground hover:bg-muted"
-                      >
-                        <Edit className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="p-1 rounded-full text-muted-foreground hover:text-red-500 hover:bg-muted"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </div>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => openEditModal(product)} className="p-2 text-blue-600 hover:bg-muted rounded-md" aria-label="Editar">
+                    <Edit className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => setItemToDelete(product.id)} className="p-2 text-red-600 hover:bg-muted rounded-md" aria-label="Eliminar">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </li>
             ))}
           </ul>
         )}
+        {totalPages > 1 && (
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} totalItems={filteredProducts.length} itemsPerPage={ITEMS_PER_PAGE} />
+        )}
       </div>
 
-      {/* Pagination */}
-      {filteredProducts.length > 0 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={filteredProducts.length}
-          itemsPerPage={ITEMS_PER_PAGE}
-          onPageChange={setCurrentPage}
-        />
-      )}
-
-      {/* Create/Edit Modal */}
-      <Dialog open={showCreateModal || !!editingProduct} onOpenChange={(open) => { if (!open) { setShowCreateModal(false); setEditingProduct(null); resetForm(); } }}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <Dialog open={isOpen} onOpenChange={(open) => !open && closeModal()}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingProduct ? 'Editar Producto' : 'Agregar Nuevo Producto'}</DialogTitle>
+            <DialogTitle>{editingProduct ? 'Editar servicio' : 'Nuevo servicio'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={editingProduct ? handleEdit : handleCreate} className="space-y-8">
+          <form onSubmit={editingProduct ? handleEdit : handleCreate} className="space-y-4">
             <div>
-              <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">
-                Información básica
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Nombre <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Nombre del producto"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Tipo <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value as Product['type'] })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  >
-                    <option value="MANICURA_BASICA">Manicura Básica</option>
-                    <option value="DISENO_ARTISTICO">Diseño Artístico</option>
-                    <option value="UÑAS_ACRILICAS">Uñas Acrílicas</option>
-                    <option value="UÑAS_GEL">Uñas de Gel</option>
-                    <option value="EXTENSIONES">Extensiones</option>
-                    <option value="PEDICURA">Pedicura</option>
-                    <option value="REPARACION">Reparación</option>
-                    <option value="TRATAMIENTO_SPA">Tratamiento SPA</option>
-                  </select>
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Descripción
-                  </label>
-                  <textarea
-                    placeholder="Descripción breve del producto"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={4}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  />
-                </div>
+              <label className="block text-sm font-medium mb-1">Nombre *</label>
+              <input required className={inputClass} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Descripción</label>
+              <textarea rows={2} className={inputClass} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Precio *</label>
+                <input required type="number" min="0" step="0.01" className={inputClass} value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Duración (min) *</label>
+                <input required type="number" min="5" step="5" className={inputClass} value={formData.durationMinutes} onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })} />
               </div>
             </div>
-
             <div>
-              <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">
-                Precio y disponibilidad
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Precio <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    required
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Moneda
-                  </label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  >
-                    <option value="CUP">CUP</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Ciclo de Facturación <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={formData.billingCycle}
-                    onChange={(e) => setFormData({ ...formData, billingCycle: e.target.value as Product['billingCycle'] })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  >
-                    <option value="ONE_TIME">Una Sola Vez</option>
-                    <option value="MONTHLY">Mensual</option>
-                    <option value="QUARTERLY">Trimestral</option>
-                    <option value="SEMI_ANNUAL">Semestral</option>
-                    <option value="YEARLY">Anual</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Categoría <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    {categories.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name} ({category.type.replace('_', ' ').toLowerCase()})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Stock <span className="text-muted-foreground">(opcional)</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Ilimitado si está vacío"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Duración (minutos) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="5"
-                    step="5"
-                    required
-                    value={formData.durationMinutes}
-                    onChange={(e) => setFormData({ ...formData, durationMinutes: e.target.value })}
-                    className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">Determina la hora de fin de las citas de este servicio.</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <input
-                  id="isPublic"
-                  type="checkbox"
-                  checked={formData.isPublic}
-                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-border rounded"
-                />
-                <label htmlFor="isPublic" className="text-sm font-medium text-foreground">
-                  Público (visible en portal de clientes)
-                </label>
-              </div>
+              <label className="block text-sm font-medium mb-1">Categoría *</label>
+              <select required className={inputClass} value={formData.categoryId} onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}>
+                <option value="">Selecciona una categoría</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
             </div>
-
-            <div className="flex justify-end gap-3 pt-6 border-t border-border">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setEditingProduct(null);
-                  resetForm();
-                }}
-                className="px-6 py-2 text-foreground bg-muted rounded-lg hover:bg-muted transition font-medium"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={createProduct.isPending || updateProduct.isPending}
-                className="px-8 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {(createProduct.isPending || updateProduct.isPending) ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Guardando...
-                  </>
-                ) : (
-                  <>{editingProduct ? 'Actualizar' : 'Crear'} Producto</>
-                )}
-              </button>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={formData.isPublic} onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })} />
+              Visible para reservar
+            </label>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={closeModal} className="px-4 py-2 border border-border rounded-md">Cancelar</button>
+              <button type="submit" className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700">Guardar</button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
-      
+
       <ConfirmModal
         isOpen={itemToDelete !== null}
-        title="Eliminar Producto"
-        message="¿Estás seguro de que quieres eliminar este producto? Esta acción no se puede deshacer."
         onConfirm={confirmDelete}
-        onCancel={cancelDelete}
+        onCancel={() => setItemToDelete(null)}
+        title="Eliminar servicio"
+        message="¿Seguro que quieres eliminar este servicio?"
       />
     </div>
   );
