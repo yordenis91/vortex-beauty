@@ -11,7 +11,6 @@ import invoiceRoutes from './routes/invoices';
 import productRoutes from './routes/products';
 import categoryRoutes from './routes/categories';
 import subscriptionRoutes from './routes/subscriptions';
-import ticketRoutes from './routes/tickets';
 import knowledgeBaseRoutes from './routes/knowledgeBase';
 import appointmentRoutes from './routes/appointments';
 import notificationRoutes from './routes/notifications';
@@ -92,7 +91,8 @@ app.use('/api/invoices', invoiceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/tickets', ticketRoutes);
+// /api/tickets desmontada: routes/tickets.ts no filtra por tenant (fuga cross-tenant)
+// y ninguna pantalla la usa. Reactivar solo tras scopearla por tenantId.
 app.use('/api/knowledge-base', knowledgeBaseRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notifications', notificationRoutes);
