@@ -102,7 +102,7 @@ Para activarlo en producción, la migración `row_level_security` crea el rol `v
 CREATE ROLE vortex_api LOGIN PASSWORD '<una-clave-larga>' IN ROLE vortex_app;
 ```
 
-Las migraciones (`prisma migrate deploy`) siguen corriendo con el usuario administrador: usa una `DATABASE_URL` distinta para el paso de migración, o ejecútalo desde un job aparte.
+Las migraciones (`prisma migrate deploy`, que `start:prod` ejecuta al arrancar) corren con el usuario administrador: define `MIGRATE_DATABASE_URL` con sus credenciales y deja `DATABASE_URL` con `vortex_api`. Si falta, se usa `DATABASE_URL`. Para que pg-boss cree su schema sin `QUEUE_DATABASE_URL`, da `GRANT CREATE ON DATABASE <base> TO vortex_api;`.
 
 ## Acceso por salón
 

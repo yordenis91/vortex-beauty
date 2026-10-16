@@ -10,6 +10,8 @@ export default defineConfig({
     seed: "tsx src/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Las migraciones necesitan el usuario administrador (crean tablas, roles y
+    // extensiones); la app corre con un rol sin esos privilegios para que RLS aplique.
+    url: process.env["MIGRATE_DATABASE_URL"] || process.env["DATABASE_URL"],
   },
 });
