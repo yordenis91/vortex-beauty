@@ -15,7 +15,7 @@ const galleryItemSchema = z.object({
 // GET /api/gallery - Active items for the salón del usuario autenticado
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const galleryItems = await prisma.galleryItem.findMany({
       where: { isActive: true, tenantId },
       include: { product: true },
@@ -32,7 +32,7 @@ router.get('/', authenticateToken, async (req, res) => {
 // GET /api/gallery/admin - All items for admins
 router.get('/admin', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const galleryItems = await prisma.galleryItem.findMany({
       where: { tenantId },
       include: { product: true },
@@ -50,7 +50,7 @@ router.get('/admin', authenticateToken, requireAdmin, async (req, res) => {
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validatedData = galleryItemSchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const product = await prisma.product.findFirst({ where: { id: validatedData.productId, tenantId } });
     if (!product) {
@@ -83,7 +83,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const validatedData = galleryItemSchema.partial().parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existingItem = await prisma.galleryItem.findFirst({ where: { id, tenantId } });
     if (!existingItem) {
@@ -122,7 +122,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const existingItem = await prisma.galleryItem.findFirst({ where: { id, tenantId } });
     if (!existingItem) {
       return res.status(404).json({ error: 'Gallery item not found' });

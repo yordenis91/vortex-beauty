@@ -1,17 +1,35 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import { basePrisma } from '../prismaClient';
+import { config } from '../config';
+import { runWithTenant } from '../lib/tenantContext';
 
-interface AuthRequest extends Request {
-  userId?: string;
-  user?: {
-    userId: string;
-    role: 'ADMIN' | 'CLIENT';
-    clientId?: string;
-    tenantId: string;
-  };
+type TenantStatus = 'ACTIVE' | 'TRIAL' | 'SUSPENDED';
+
+// Estado del salón en memoria unos segundos: evita una consulta por petición
+// y aun así hace que una suspensión surta efecto casi de inmediato.
+const STATUS_TTL_MS = 15_000;
+const statusCache = new Map<string, { status: TenantStatus | null; expires: number }>();
+
+export function invalidateTenantStatus(tenantId?: string) {
+  if (tenantId) statusCache.delete(tenantId);
+  else statusCache.clear();
 }
 
-export const authenticateToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+async function getTenantStatus(tenantId: string): Promise<TenantStatus | null> {
+  const cached = statusCache.get(tenantId);
+  if (cached && cached.expires > Date.now()) return cached.status;
+  const tenant = await basePrisma.tenant.findUnique({ where: { id: tenantId }, select: { status: true } });
+  const status = tenant?.status ?? null;
+  statusCache.set(tenantId, { status, expires: Date.now() + STATUS_TTL_MS });
+  return status;
+}
+
+/**
+ * Verifica el JWT del salón, comprueba que el salón siga activo y ejecuta el
+ * resto de la petición dentro del contexto de tenant (ver lib/tenantContext).
+ */
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -19,32 +37,44 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET!, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+  let decoded: any;
+  try {
+    decoded = jwt.verify(token, config.jwtSecret);
+  } catch {
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
 
-    const decodedUser = decoded as any;
-    if (!decodedUser.tenantId) {
-      // Tokens emitidos antes del soporte multitenant no llevan tenantId.
-      return res.status(401).json({ error: 'Token sin salón asociado. Vuelve a iniciar sesión.' });
+  if (!decoded.tenantId) {
+    return res.status(401).json({ error: 'Token sin salón asociado. Vuelve a iniciar sesión.' });
+  }
+
+  try {
+    const status = await getTenantStatus(decoded.tenantId);
+    if (!status) {
+      return res.status(401).json({ error: 'El salón de esta sesión ya no existe.' });
     }
-    req.userId = decodedUser.userId;
-    req.user = {
-      userId: decodedUser.userId,
-      role: decodedUser.role || 'CLIENT',
-      clientId: decodedUser.clientId,
-      tenantId: decodedUser.tenantId,
-    };
-    next();
-  });
+    if (status === 'SUSPENDED') {
+      return res.status(403).json({ error: 'Este salón está suspendido. Contacta a soporte.' });
+    }
+  } catch (error) {
+    return next(error);
+  }
+
+  req.userId = decoded.userId;
+  req.user = {
+    userId: decoded.userId,
+    role: decoded.role || 'CLIENT',
+    clientId: decoded.clientId,
+    tenantId: decoded.tenantId,
+  };
+  runWithTenant(decoded.tenantId, () => next());
 };
 
 /**
  * Middleware para verificar que el usuario es ADMIN
  * Debe ser utilizado DESPUÉS de authenticateToken
  */
-export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
   }

@@ -16,7 +16,7 @@ const scheduleOverrideSchema = z.object({
 // GET /api/overrides - List all schedule overrides
 router.get('/', async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const overrides = await prisma.scheduleOverride.findMany({
       where: { tenantId },
       orderBy: { date: 'asc' },
@@ -33,7 +33,7 @@ router.get('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.pick({ date: true }).parse({ date });
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const override = await prisma.scheduleOverride.findUnique({
       where: { tenantId_date: { tenantId, date: parsed.date } },
@@ -57,7 +57,7 @@ router.get('/:date', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const parsed = scheduleOverrideSchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existing = await prisma.scheduleOverride.findUnique({
       where: { tenantId_date: { tenantId, date: parsed.date } },
@@ -89,7 +89,7 @@ router.put('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.parse({ date, ...req.body });
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const updated = await prisma.scheduleOverride.upsert({
       where: { tenantId_date: { tenantId, date: parsed.date } },
@@ -112,7 +112,7 @@ router.delete('/:date', async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.pick({ date: true }).parse({ date });
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existing = await prisma.scheduleOverride.findUnique({
       where: { tenantId_date: { tenantId, date: parsed.date } },

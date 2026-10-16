@@ -23,7 +23,7 @@ const updateCategorySchema = createCategorySchema.partial();
 // GET /api/categories - Get all categories
 router.get('/', async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     const where = { tenantId };
 
     const categories = await prisma.category.findMany({
@@ -49,7 +49,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const category = await prisma.category.findFirst({
       where: { id, tenantId },
@@ -77,7 +77,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const validatedData = createCategorySchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const existingCategory = await prisma.category.findFirst({
       where: {
@@ -119,7 +119,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const validatedData = updateCategorySchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     // Verify category exists
     const existingCategory = await prisma.category.findFirst({
@@ -174,7 +174,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     // Verify category exists
     const category = await prisma.category.findFirst({

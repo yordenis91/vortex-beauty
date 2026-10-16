@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
+import { runInTransaction } from '../lib/db';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
@@ -36,7 +37,7 @@ const updateClientSchema = clientSchema.partial();
 router.get('/', async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
-      where: { tenantId: (req as any).user.tenantId },
+      where: { tenantId: req.user!.tenantId },
           });
     res.json(clients);
   } catch (error) {
@@ -48,7 +49,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const client = await prisma.client.findFirst({
-      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
+      where: { id: req.params.id as string, tenantId: req.user!.tenantId },
           });
 
     if (!client) {
@@ -72,12 +73,12 @@ router.post('/', async (req, res) => {
       ...clientData
     } = parsed;
 
-    const tenantId = (req as any).user.tenantId;
-    const result = await prisma.$transaction(async (tx) => {
+    const tenantId = req.user!.tenantId;
+    const result = await runInTransaction(async (tx) => {
       const newClient = await tx.client.create({
         data: {
           ...clientData,
-          userId: (req as any).userId,
+          userId: req.userId!,
           tenantId,
         },
       });
@@ -123,7 +124,7 @@ router.put('/:id', async (req, res) => {
     const data = updateClientSchema.parse(req.body);
 
     const client = await prisma.client.updateMany({
-      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
+      where: { id: req.params.id as string, tenantId: req.user!.tenantId },
       data: {
         ...data,
       },
@@ -154,7 +155,7 @@ router.delete('/:id', async (req, res) => {
   try {
     // Verify client exists and belongs to user
     const existingClient = await prisma.client.findFirst({
-      where: { id: req.params.id as string, tenantId: (req as any).user.tenantId },
+      where: { id: req.params.id as string, tenantId: req.user!.tenantId },
     });
 
     if (!existingClient) {

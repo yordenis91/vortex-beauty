@@ -4,7 +4,10 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import prisma from '../prismaClient';
+import { config } from '../config';
+import { runInTransaction } from '../lib/db';
 import { authenticatePlatformAdmin, requireSuperAdmin, PlatformAuthRequest } from '../middleware/platformAuth';
+import { invalidateTenantStatus } from '../middleware/auth';
 import { logAudit } from '../services/auditLogService';
 import { TenantStatus } from '@prisma/client';
 
@@ -104,17 +107,13 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
       return res.status(400).json({ error: 'No se pudo generar un identificador válido a partir del nombre' });
     }
 
-    const [existingTenant, existingUser, plan] = await Promise.all([
+    const [existingTenant, plan] = await Promise.all([
       prisma.tenant.findUnique({ where: { slug } }),
-      prisma.user.findUnique({ where: { email: data.adminEmail } }),
       prisma.plan.findUnique({ where: { id: data.planId } }),
     ]);
 
     if (existingTenant) {
       return res.status(409).json({ error: `Ya existe un salón con el identificador "${slug}"` });
-    }
-    if (existingUser) {
-      return res.status(409).json({ error: 'Ya existe un usuario con ese correo electrónico' });
     }
     if (!plan) {
       return res.status(400).json({ error: 'Plan no encontrado' });
@@ -132,7 +131,7 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
     }
     const trialEndsAt = plan.trialDays > 0 ? new Date(now.getTime() + plan.trialDays * 24 * 60 * 60 * 1000) : null;
 
-    const { tenant, adminUser } = await prisma.$transaction(async (tx) => {
+    const { tenant, adminUser } = await runInTransaction(async (tx) => {
       const tenant = await tx.tenant.create({ data: { name: data.name, slug } });
 
       const adminUser = await tx.user.create({
@@ -178,6 +177,7 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
       admin: { id: adminUser.id, email: adminUser.email, name: adminUser.name },
       tempPassword,
       registerUrl: `/${tenant.slug}/register`,
+      loginUrl: `/${tenant.slug}/login`,
     });
   } catch (error: any) {
     if (error?.name === 'ZodError') {
@@ -267,6 +267,7 @@ router.patch('/:id/status', requireSuperAdmin, async (req: PlatformAuthRequest, 
     }
 
     const tenant = await prisma.tenant.update({ where: { id }, data: { status } });
+    invalidateTenantStatus(id);
 
     await logAudit({
       actorType: 'PLATFORM_ADMIN',
@@ -310,6 +311,7 @@ router.delete('/:id', requireSuperAdmin, async (req: PlatformAuthRequest, res) =
     }
 
     await prisma.tenant.delete({ where: { id } });
+    invalidateTenantStatus(id);
 
     await logAudit({
       actorType: 'PLATFORM_ADMIN',
@@ -355,7 +357,7 @@ router.post('/:id/impersonate', requireSuperAdmin, async (req: PlatformAuthReque
         tenantId: adminUser.tenantId,
         impersonatedBy: req.platformAdmin!.id,
       },
-      process.env.JWT_SECRET!,
+      config.jwtSecret,
       { expiresIn: '1h' }
     );
 

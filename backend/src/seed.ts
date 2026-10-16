@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Role, } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import prisma from './prismaClient';
+import { runAsAdmin } from './lib/tenantContext';
 
 async function seed() {
   try {
@@ -23,7 +24,7 @@ async function seed() {
     // Crear usuario administrador
     const adminPassword = await bcrypt.hash('admin123', 10);
     const admin = await prisma.user.upsert({
-      where: { email: 'admin@vortexbeauty.com' },
+      where: { tenantId_email: { tenantId: tenant.id, email: 'admin@vortexbeauty.com' } },
       update: {},
       create: {
         email: 'admin@vortexbeauty.com',
@@ -63,7 +64,7 @@ async function seed() {
 
     for (const clientData of clients) {
       const client = await prisma.user.upsert({
-        where: { email: clientData.email },
+        where: { tenantId_email: { tenantId: tenant.id, email: clientData.email } },
         update: {},
         create: { ...clientData, tenantId: tenant.id },
       });
@@ -223,6 +224,7 @@ async function seed() {
 
     console.log('🎉 Database seeded successfully!');
     console.log('\n📋 Credenciales de acceso:');
+    console.log('Salón: salon-principal (login en /salon-principal/login)');
     console.log('Admin: admin@vortexbeauty.com / admin123');
     console.log('Clientes: cliente1@example.com, cliente2@example.com, cliente3@example.com / cliente123');
     console.log('Super Admin: superadmin@vortexbeauty.com / super123');
@@ -235,4 +237,4 @@ async function seed() {
   }
 }
 
-seed();
+runAsAdmin(seed);

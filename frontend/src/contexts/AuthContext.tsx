@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   role: UserRole | null;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, tenantSlug: string) => Promise<void>;
   register: (email: string, password: string, name: string, tenantSlug?: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
@@ -24,6 +24,8 @@ export const useAuth = () => {
   }
   return context;
 };
+
+import { saveTenantSlug } from '../lib/tenantSlug';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -62,11 +64,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, tenantSlug: string) => {
     try {
-      const response = await api.post<AuthResponse>('/auth/login', { email, password });
+      const response = await api.post<AuthResponse>('/auth/login', { email, password, tenantSlug });
       const { user, token } = response.data;
       localStorage.setItem('token', token);
+      saveTenantSlug(tenantSlug);
       setUser(user);
     } catch {
       throw new Error('Invalid credentials');
@@ -77,6 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const response = await api.post<AuthResponse>('/auth/register', { email, password, name, tenantSlug });
     const { user, token } = response.data;
     localStorage.setItem('token', token);
+    if (tenantSlug) saveTenantSlug(tenantSlug);
     setUser(user);
   };
 

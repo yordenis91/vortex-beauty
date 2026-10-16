@@ -1,6 +1,7 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth';
 import prisma from '../prismaClient';
+import { runInTransaction } from '../lib/db';
 import notificationService from '../services/notificationService';
 import {
   AvailabilityError,
@@ -84,7 +85,7 @@ router.put('/my-profile', authenticateToken, async (req: AuthRequest, res) => {
 
     const { name, email, phone, address, imageUrl } = req.body;
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await runInTransaction(async (tx) => {
       // Actualizar User si name, email o imageUrl
       let updatedUser = null;
       if (name !== undefined || email !== undefined || imageUrl !== undefined) {

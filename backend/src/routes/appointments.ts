@@ -37,7 +37,7 @@ const updateAppointmentSchema = createAppointmentSchema.partial();
 router.get('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const appointments = await prisma.appointment.findMany({
-      where: { tenantId: (req as any).user.tenantId },
+      where: { tenantId: req.user!.tenantId },
       include: {
         client: true,
         product: true,
@@ -56,7 +56,7 @@ router.get('/', authenticateToken, requireAdmin, async (req, res) => {
 // GET /api/appointments/fully-booked-dates - Get dates that are fully booked
 router.get('/fully-booked-dates', authenticateToken, async (req, res) => {
   try {
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
     // Obtener todas las citas SCHEDULED y COMPLETED
     const appointments = await prisma.appointment.findMany({
       where: {
@@ -108,7 +108,7 @@ router.get('/fully-booked-dates', authenticateToken, async (req, res) => {
 router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     const appointment = await prisma.appointment.findFirst({
       where: { id, tenantId },
@@ -134,7 +134,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.post('/', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const validatedData = createAppointmentSchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     // Verify client exists
     const client = await prisma.client.findFirst({
@@ -227,7 +227,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
     const validatedData = updateAppointmentSchema.parse(req.body);
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     // Verify appointment exists
     const existingAppointment = await prisma.appointment.findFirst({
@@ -367,7 +367,7 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
 router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params as { id: string };
-    const tenantId = (req as any).user.tenantId;
+    const tenantId = req.user!.tenantId;
 
     // Verify appointment exists
     const appointment = await prisma.appointment.findFirst({
