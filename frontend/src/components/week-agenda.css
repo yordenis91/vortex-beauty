@@ -1,0 +1,20 @@
+/* Ajustes de react-big-calendar al tema (claro/oscuro) de la app */
+.week-agenda .rbc-calendar { color: var(--foreground, inherit); font-size: 0.85rem; }
+.week-agenda .rbc-toolbar button { color: inherit; border-color: var(--border); background: transparent; }
+.week-agenda .rbc-toolbar button:hover,
+.week-agenda .rbc-toolbar button.rbc-active { background: rgba(59, 130, 246, 0.15); box-shadow: none; }
+.week-agenda .rbc-header,
+.week-agenda .rbc-time-header-content,
+.week-agenda .rbc-time-content,
+.week-agenda .rbc-timeslot-group,
+.week-agenda .rbc-day-slot .rbc-time-slot,
+.week-agenda .rbc-time-view,
+.week-agenda .rbc-time-header,
+.week-agenda .rbc-time-header.rbc-overflowing { border-color: var(--border); }
+.week-agenda .rbc-today { background: rgba(59, 130, 246, 0.08); }
+.week-agenda .rbc-off-range-bg { background: transparent; }
+.week-agenda .rbc-current-time-indicator { background-color: #ef4444; }
+.week-agenda .rbc-event { font-size: 0.75rem; padding: 2px 4px; border-radius: 6px; }
+.week-agenda .rbc-event:focus { outline: 2px solid #1d4ed8; }
+.week-agenda .rbc-addons-dnd-dragged-event { opacity: 0.4; }
+.week-agenda .rbc-time-slot { min-height: 18px; }

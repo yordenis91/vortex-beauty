@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAppointments, useClients, useServices, useProfessionals, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useFullyBookedDates, useAdminSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
+import { useAppointments, useClients, useServices, useProfessionals, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useBookingSettings, useClosedDates, useFullyBookedDates, useAdminSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
 import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle, UserCog } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -10,6 +10,7 @@ import { api } from '../lib/api';
 import type { Appointment, AppointmentStatus } from '../types';
 import { canManage } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import WeekAgenda from '../components/WeekAgenda';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
@@ -93,6 +94,11 @@ const useBusinessHours = () => {
   });
 };
 
+const timeToMinutes = (time: string) => {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+};
+
 const STATUS_STYLES: Record<AppointmentStatus, { label: string; border: string; badge: string }> = {
   PENDING: { label: 'Pendiente', border: '#f59e0b', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
   SCHEDULED: { label: 'Agendada', border: '#3b82f6', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -128,6 +134,9 @@ const Appointments: React.FC = () => {
 
   const { role } = useAuth();
   const isManager = canManage(role);
+  // Vista: el día con su lista y huecos, o la semana con arrastre para reprogramar
+  const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [calendarView, setCalendarView] = useState<'week' | 'day'>('week');
   // Selección para ver huecos libres y filtro de la agenda por profesional
   const [slotServiceId, setSlotServiceId] = useState('');
   const [slotProfessionalId, setSlotProfessionalId] = useState('any');
@@ -148,6 +157,7 @@ const Appointments: React.FC = () => {
   const { data: services = [], isLoading: servicesLoading } = useServices();
   const { data: professionalList = [] } = useProfessionals(true);
   const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
+  const { data: bookingSettings } = useBookingSettings();
   const { data: closedDates = [], isLoading: closedDatesLoading } = useClosedDates();
   const { data: fullyBookedDates = [], isLoading: fullyBookedLoading } = useFullyBookedDates();
 
@@ -396,6 +406,10 @@ const Appointments: React.FC = () => {
       toast.error('Por favor completa todos los campos requeridos');
       return;
     }
+    if (!modalStartTimes.includes(formData.startTime)) {
+      toast.error('Esa hora ya no está disponible. Elige otra.');
+      return;
+    }
 
     const appointmentDate = parseDateString(formData.date);
     if (!editingAppointment && !validateDayForBooking(appointmentDate)) {
@@ -434,6 +448,31 @@ const Appointments: React.FC = () => {
     deleteMutation.mutate(id);
   };
 
+  // Jornada visible en la semana: de la primera apertura al último cierre (con holgura)
+  const weekHours = useMemo(() => {
+    const open = businessHours.filter((bh) => bh.isOpen);
+    if (!open.length) return { from: '08:00', to: '20:00' };
+    const earliest = Math.min(...open.map((bh) => timeToMinutes(bh.startTime)));
+    const latest = Math.max(...open.map((bh) => timeToMinutes(bh.endTime)));
+    const pad = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
+    return { from: pad(Math.max(0, earliest - 60)), to: pad(Math.min(24 * 60 - 1, latest + 60)) };
+  }, [businessHours]);
+
+  const weekEvents = useMemo(
+    () => appointments.filter((apt) => !agendaProfessionalId || apt.professionalId === agendaProfessionalId),
+    [appointments, agendaProfessionalId]
+  );
+
+  // Arrastrar una cita: mismo servicio y profesional, nuevo día/hora. El servidor valida
+  // disponibilidad; si no cabe, la cita vuelve a su sitio y se muestra el motivo.
+  const handleMoveAppointment = (appointment: Appointment, dateStr: string, startTime: string) => {
+    if (appointment.date.split('T')[0] === dateStr && appointment.startTime === startTime) return;
+    updateMutation.mutate({
+      id: appointment.id,
+      appointmentData: { date: `${dateStr}T00:00:00.000Z`, startTime },
+    });
+  };
+
   const isLoading = appointmentsLoading || clientsLoading || servicesLoading || businessHoursLoading || closedDatesLoading || fullyBookedLoading;
 
   return (
@@ -448,7 +487,20 @@ const Appointments: React.FC = () => {
             Gestiona todas las citas del salón de belleza — selecciona un día en el calendario para ver la agenda y editar citas.
           </p>
         </div>
-        <div className="mt-4 flex md:mt-0 md:ml-4">
+        <div className="mt-4 flex md:mt-0 md:ml-4 gap-3">
+          <div role="group" aria-label="Vista de la agenda" className="inline-flex rounded-md border border-border overflow-hidden">
+            {(['day', 'week'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                aria-pressed={viewMode === mode}
+                className={`px-4 py-2 text-sm font-medium ${viewMode === mode ? 'bg-blue-600 text-white' : 'bg-card text-foreground hover:bg-muted'}`}
+              >
+                {mode === 'day' ? 'Día' : 'Semana'}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => {
               if (!validateDayForBooking(currentDate)) return;
@@ -468,6 +520,46 @@ const Appointments: React.FC = () => {
       {isLoading ? (
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : viewMode === 'week' ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Arrastra una cita para cambiarla de día u hora. Haz clic en un hueco vacío para crear una nueva.
+            </p>
+            {professionalList.length > 1 && isManager && (
+              <select
+                aria-label="Filtrar por profesional"
+                value={agendaProfessionalId}
+                onChange={(e) => setAgendaProfessionalId(e.target.value)}
+                className="px-3 py-1 border border-border rounded-full bg-card text-sm"
+              >
+                <option value="">Todos los profesionales</option>
+                {professionalList.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <WeekAgenda
+            appointments={weekEvents}
+            date={currentDate}
+            view={calendarView}
+            hours={weekHours}
+            stepMinutes={bookingSettings?.slotIntervalMin ?? 30}
+            onNavigate={(d) => {
+              setCurrentDate(d);
+              setVisibleMonth(d);
+            }}
+            onViewChange={setCalendarView}
+            onSelectAppointment={(apt) => openModal(apt)}
+            onCreateAt={(dateStr, startTime) =>
+              openModal(undefined, { date: dateStr, startTime, serviceId: '', professionalId: agendaProfessionalId })
+            }
+            onMove={handleMoveAppointment}
+          />
         </div>
       ) : (
         <div className="flex flex-col xl:flex-row gap-8">
@@ -838,7 +930,7 @@ const Appointments: React.FC = () => {
                     <select
                       id="service"
                       value={formData.serviceId}
-                      onChange={(e) => setFormData({ ...formData, serviceId: e.target.value, startTime: '' })}
+                      onChange={(e) => setFormData({ ...formData, serviceId: e.target.value })}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       required
                     >
@@ -859,7 +951,7 @@ const Appointments: React.FC = () => {
                   <select
                     id="professional"
                     value={formData.professionalId}
-                    onChange={(e) => setFormData({ ...formData, professionalId: e.target.value, startTime: '' })}
+                    onChange={(e) => setFormData({ ...formData, professionalId: e.target.value })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   >
                     <option value="">Cualquiera disponible</option>
@@ -880,7 +972,7 @@ const Appointments: React.FC = () => {
                       id="date"
                       type="date"
                       value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value, startTime: '' })}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       required
                     />
@@ -891,7 +983,7 @@ const Appointments: React.FC = () => {
                     </label>
                     <select
                       id="startTime"
-                      value={formData.startTime}
+                      value={modalStartTimes.includes(formData.startTime) ? formData.startTime : ''}
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                       disabled={!formData.serviceId}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-muted"
