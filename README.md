@@ -40,5 +40,6 @@ RUN_DB_TESTS=1 DATABASE_URL=postgresql://user:pass@localhost:5432/vortex_test np
 ## Documentación
 
 - `docs/ARQUITECTURA.md`: multi-tenant (RLS), modelo de dominio, disponibilidad y roles
+- `docs/SEGURIDAD.md`: checklist de seguridad multi-tenant con lo hecho y lo pendiente
 - `docs/DEPLOYMENT.md`: despliegue en Easypanel
 - `docs/legacy/`: notas de implementación del sistema original (pueden estar desactualizadas)

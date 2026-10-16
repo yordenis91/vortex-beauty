@@ -1,8 +1,10 @@
 import express from 'express';
+import { zodResponse } from '../lib/validation';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
+import { imageSchema } from '../lib/images';
 import { runInTransaction } from '../lib/db';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { requirePermission } from '../middleware/can';
@@ -24,12 +26,12 @@ const clientSchema = z.object({
   state: z.string().optional(),
   zipCode: z.string().optional(),
   country: z.string().optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: imageSchema.optional(),
 });
 
 const createClientSchema = clientSchema.extend({
   username: z.string().min(1).optional(),
-  password: z.string().min(6).optional(),
+  password: z.string().min(8).max(128).optional(),
   sendWelcomeEmail: z.boolean().optional(),
 });
 
@@ -38,9 +40,17 @@ const updateClientSchema = clientSchema.partial();
 // GET /api/clients - List all clients
 router.get('/', requirePermission('customers:read'), async (req, res) => {
   try {
+    const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 80) : '';
     const clients = await prisma.client.findMany({
-      where: { tenantId: req.user!.tenantId },
-          });
+      where: {
+        tenantId: req.user!.tenantId,
+        ...(search
+          ? { OR: [{ name: { contains: search, mode: 'insensitive' as const } }, { email: { contains: search, mode: 'insensitive' as const } }, { phone: { contains: search } }] }
+          : {}),
+      },
+      orderBy: { name: 'asc' },
+      take: 2000,
+    });
     res.json(clients);
   } catch (error) {
     res.status(500).json({ error: 'Internal server error' });
@@ -112,7 +122,7 @@ router.post('/', requireAdmin, async (req, res) => {
   } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
     // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     
     console.error(error);
@@ -144,7 +154,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
   } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
     // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     
     console.error(error);
@@ -172,7 +182,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
   } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
     // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
 
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2003') {

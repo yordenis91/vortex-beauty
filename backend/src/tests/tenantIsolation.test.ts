@@ -82,7 +82,7 @@ describeIfDb('aislamiento multi-tenant', () => {
   describe('RLS en la base de datos', () => {
     it('toda tabla con tenantId de negocio tiene RLS activa y forzada', async () => {
       // Tablas de plataforma: tienen tenantId pero las gestiona el portal de plataforma.
-      const platformTables = ['AuditLog', 'PlatformInvoice', 'TenantSubscription'];
+      const platformTables = ['AuditLog', 'PlatformInvoice', 'TenantSubscription', 'RefreshToken'];
       const { rows } = await adminPool.query(
         `SELECT c.table_name, cl.relrowsecurity, cl.relforcerowsecurity
            FROM information_schema.columns c
@@ -148,7 +148,7 @@ describeIfDb('aislamiento multi-tenant', () => {
     const authA = () => ({ Authorization: `Bearer ${tokenA}` });
 
     it('el listado de citas solo contiene las del salón del token', async () => {
-      const res = await request(app).get('/api/appointments').set(authA());
+      const res = await request(app).get('/api/appointments').query({ from: '2030-01-01', to: '2030-12-31' }).set(authA());
       expect(res.status).toBe(200);
       expect(res.body.map((a: any) => a.id)).toEqual([ids.a.appointment.id]);
     });

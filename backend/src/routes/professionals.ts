@@ -9,6 +9,7 @@ import { hasPermission, requirePermission } from '../middleware/can';
 import { validateBody } from '../middleware/validate';
 import { timeToMinutes } from '../lib/time';
 import { assertPlanAllows, PlanLimitError } from '../services/planLimits';
+import { revokeAllSessions } from '../services/sessions';
 
 const router = Router();
 
@@ -36,7 +37,7 @@ const professionalBody = z.object({
   // Servicios que realiza. Si se omite al crear, realiza todos los servicios activos.
   serviceIds: z.array(z.string().uuid()).optional(),
   // Cuenta de acceso (rol STAFF) para que el profesional vea su propia agenda.
-  account: z.object({ email: z.string().email(), password: z.string().min(6) }).optional(),
+  account: z.object({ email: z.string().email(), password: z.string().min(8).max(128) }).optional(),
 });
 
 const createProfessionalSchema = professionalBody;
@@ -186,6 +187,10 @@ router.put('/:id', requirePermission('catalog:manage'), validateBody(updateProfe
         where: { id },
         data: { ...data, ...(email !== undefined && { email: email || null }), ...(userId && { userId }) },
       });
+      // Desactivar al profesional corta también el acceso de su cuenta.
+      if (data.isActive !== undefined && existing.userId) {
+        await tx.user.update({ where: { id: existing.userId }, data: { isActive: data.isActive } });
+      }
       if (schedule) await replaceSchedule(tx, tenantId, id, schedule);
       if (serviceIds) {
         await tx.professionalService.deleteMany({ where: { professionalId: id } });
@@ -194,6 +199,7 @@ router.put('/:id', requirePermission('catalog:manage'), validateBody(updateProfe
       return tx.professional.findUniqueOrThrow({ where: { id }, include: professionalInclude });
     });
 
+    if (data.isActive === false && existing.userId) await revokeAllSessions(existing.userId);
     res.json(present(professional));
   } catch (error: any) {
     if (error?.message === 'INVALID_SERVICES') return res.status(400).json({ error: 'Servicio no válido' });

@@ -1,4 +1,5 @@
 import express from 'express';
+import { zodResponse } from '../lib/validation';
 import { z } from 'zod';
 import prisma from '../prismaClient';
 import { authenticatePlatformAdmin, requireSuperAdmin, PlatformAuthRequest } from '../middleware/platformAuth';
@@ -60,7 +61,7 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
     res.status(201).json(plan);
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     if (error?.code === 'P2002') {
       return res.status(409).json({ error: 'Ya existe un plan con ese slug' });
@@ -92,7 +93,7 @@ router.put('/:id', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
     res.json(plan);
   } catch (error: any) {
     if (error?.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      return res.status(400).json(zodResponse(error));
     }
     if (error?.code === 'P2025') {
       return res.status(404).json({ error: 'Plan no encontrado' });

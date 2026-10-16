@@ -24,6 +24,8 @@ const Notifications: React.FC = () => {
         return <MessageSquare className="h-5 w-5 text-green-600" />;
       case 'EMAIL':
         return <Mail className="h-5 w-5 text-blue-600" />;
+      case 'TELEGRAM':
+        return <MessageSquare className="h-5 w-5 text-sky-600" />;
       case 'SYSTEM':
         return <Bell className="h-5 w-5 text-purple-600" />;
       default:
@@ -145,7 +147,7 @@ const Notifications: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {getTypeIcon(notification.type)}
                         <span className="text-sm font-medium text-foreground">
-                          {notification.type === 'WHATSAPP' ? 'WhatsApp' : notification.type === 'EMAIL' ? 'Email' : 'Sistema'}
+                          {notification.type === 'WHATSAPP' ? 'WhatsApp' : notification.type === 'EMAIL' ? 'Email' : notification.type === 'TELEGRAM' ? 'Telegram' : 'Sistema'}
                         </span>
                       </div>
                     </td>

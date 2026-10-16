@@ -291,13 +291,15 @@ export const useUpdateClientProfile = (options?: MutationOptions) => {
 // Ticket Messages
 // Ticket Updates
 // Appointments
-export const useAppointments = () => {
+// Sin rango, el servidor devuelve la ventana útil (30 días atrás, 180 adelante).
+export const useAppointments = (range?: { from?: string; to?: string }) => {
   return useQuery({
-    queryKey: ['appointments'],
+    queryKey: ['appointments', range?.from ?? null, range?.to ?? null],
     queryFn: async () => {
-      const response = await api.get<Appointment[]>('/appointments');
+      const response = await api.get<Appointment[]>('/appointments', { params: range });
       return response.data;
     },
+    placeholderData: (previous) => previous,
   });
 };
 

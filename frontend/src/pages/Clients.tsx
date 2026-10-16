@@ -1,3 +1,4 @@
+import { compressImage } from '../lib/image';
 import React, { useState } from 'react';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
 import { Users, Plus, Edit, Trash2, Search, Mail, Camera, Eye, EyeOff } from 'lucide-react';
@@ -106,12 +107,9 @@ const Clients: React.FC = () => {
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64 = e.target?.result as string;
-        setFormData({ ...formData, imageUrl: base64 });
-      };
-      reader.readAsDataURL(file);
+      compressImage(file)
+        .then((base64) => setFormData((prev) => ({ ...prev, imageUrl: base64 })))
+        .catch(() => toast.error('No se pudo procesar la imagen'));
     }
   };
 

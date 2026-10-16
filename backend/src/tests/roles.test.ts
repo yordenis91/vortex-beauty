@@ -9,6 +9,8 @@ import { dbTestsEnabled, setupAppDb } from './dbHarness';
  */
 const describeIfDb = dbTestsEnabled ? describe : describe.skip;
 
+const WINDOW = { from: '2030-01-01', to: '2030-12-31' };
+
 describeIfDb('roles, permisos y límites del plan', () => {
   let adminPool: Pool;
   let prisma: typeof import('../prismaClient').default;
@@ -115,9 +117,9 @@ describeIfDb('roles, permisos y límites del plan', () => {
     expect(forced.status).toBe(201);
     expect(forced.body.professionalId).toBe(proA);
 
-    const own = await request(app).get('/api/appointments').set(as('staff'));
+    const own = await request(app).get('/api/appointments').query(WINDOW).set(as('staff'));
     expect(own.body.map((a: any) => a.professionalId)).toEqual([proA]);
-    const all = await request(app).get('/api/appointments').set(as('owner'));
+    const all = await request(app).get('/api/appointments').query(WINDOW).set(as('owner'));
     expect(all.body).toHaveLength(2);
 
     // La cita de otro profesional no existe para el STAFF

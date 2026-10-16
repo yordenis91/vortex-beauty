@@ -125,3 +125,15 @@ Variables del API para los avisos:
 | `TRUST_PROXY` | Saltos de proxy delante de la API (por defecto 1: Traefik) para que los límites por IP vean la IP real |
 
 La cola usa `pg-boss` sobre la propia Postgres: no hace falta Redis. Los recordatorios (por defecto 24 h y 2 h antes) y las confirmaciones los procesa el worker, que corre dentro de la API salvo que se desactive. Los avisos al dueño pueden ir también a Telegram (token del bot y chat en Ajustes).
+
+## Sesiones, logs y monitoreo
+
+| Variable | Para qué |
+|---|---|
+| `COOKIE_SAMESITE` | `lax` por defecto (frontend y API en el mismo dominio registrable, p. ej. `app.x.com` y `api.x.com`). Si están en dominios distintos usa `none` (exige HTTPS) |
+| `REFRESH_TTL_DAYS` | Duración máxima de una sesión (30 por defecto); el access token dura 15 minutos |
+| `LOG_LEVEL` | `info` por defecto; los logs salen en JSON, uno por línea |
+| `SENTRY_DSN` | Envía errores no controlados a Sentry (opcional) |
+| `PRISMA_LOG_QUERIES=1` | Registra las consultas SQL (solo para depurar) |
+
+`GET /api/health` responde 200 si la base de datos contesta y 503 si no: úsalo como health check de Easypanel.

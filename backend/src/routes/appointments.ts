@@ -18,6 +18,9 @@ const router = Router();
 // STAFF solo la suya (ver appointmentScope).
 router.use(authenticateToken, requirePermission('appointments:own'));
 
+// Tope de filas por respuesta de listado
+const MAX_LIST_ROWS = 3000;
+
 const dateOnly = (value: string) => value.split('T')[0];
 const timeRegex = /^\d{2}:\d{2}$/;
 
@@ -52,6 +55,12 @@ router.get('/', async (req, res) => {
     const range: { gte?: Date; lt?: Date } = {};
     if (query.from && isValidDateString(query.from)) range.gte = localDayRange(timezone, query.from).start;
     if (query.to && isValidDateString(query.to)) range.lt = localDayRange(timezone, addDaysToDateString(query.to, 1)).start;
+    // Sin rango, solo la ventana útil de la agenda (30 días atrás, 180 adelante): la lista nunca crece sin límite.
+    // Las pantallas que necesitan historial piden su rango con from/to.
+    if (!range.gte && !range.lt) {
+      range.gte = new Date(Date.now() - 30 * 86_400_000);
+      range.lt = new Date(Date.now() + 180 * 86_400_000);
+    }
 
     const appointments = await prisma.appointment.findMany({
       where: {
@@ -62,6 +71,7 @@ router.get('/', async (req, res) => {
       },
       include: appointmentInclude,
       orderBy: { startsAt: 'asc' },
+      take: MAX_LIST_ROWS,
     });
 
     res.json(appointments.map((a) => toAppointmentDto(a, timezone)));

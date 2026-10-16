@@ -107,6 +107,8 @@ model User {
   password String // Hash de la contraseña (e.g., bcrypt)
   name     String
   role     Role    @default(CLIENT) // ADMIN o CLIENT
+  // Una cuenta desactivada no puede iniciar sesión ni renovar su sesión.
+  isActive Boolean @default(true)
 
   // Salón al que pertenece este usuario (admin o clienta).
   tenantId String
@@ -123,6 +125,7 @@ model User {
   // Relaciones existentes
   clients  Client[]  @relation("AdminofClient") // Relación inversa: admin de varios clientes
   professional Professional?
+  refreshTokens RefreshToken[]
   services       Service[]
 
   createdAt DateTime @default(now())
@@ -629,6 +632,27 @@ enum NotificationStatus {
   PENDING
   SENT
   FAILED
+}
+
+// Sesiones renovables. El access token dura 15 minutos; este token opaco (que
+// viaja en una cookie httpOnly) se rota en cada renovación. Solo se guarda su
+// hash. Es una tabla de sesión, sin RLS: se consulta antes de saber el salón.
+model RefreshToken {
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId   String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String? // hash del token que lo sustituyó (rotación)
+  userAgent  String?
+  ip         String?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // ================= Modelos de plataforma (Super Admin) =================

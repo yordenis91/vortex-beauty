@@ -1,4 +1,9 @@
+import { randomUUID } from 'node:crypto';
+import pinoHttp from 'pino-http';
 import { config } from './config';
+import { logger } from './lib/logger';
+import { captureError } from './lib/monitoring';
+import { basePrisma } from './prismaClient';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -41,22 +46,43 @@ const DEV_ORIGINS = [
   'http://localhost:3002',
 ];
 
+// Registro de peticiones en JSON con requestId (se devuelve en X-Request-Id) y tenantId.
+app.use(
+  pinoHttp({
+    logger,
+    genReqId: (req, res) => {
+      const incoming = req.headers['x-request-id'];
+      const id = typeof incoming === 'string' && /^[\w-]{8,64}$/.test(incoming) ? incoming : randomUUID();
+      res.setHeader('X-Request-Id', id);
+      return id;
+    },
+    // Las comprobaciones de salud no ensucian el registro
+    autoLogging: { ignore: (req) => req.url === '/health' || req.url === '/api/health' },
+    customProps: (req) => ({ tenantId: (req as express.Request).user?.tenantId }),
+    customLogLevel: (_req, res, error) => (error || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
+    serializers: {
+      req: (req) => ({ id: req.id, method: req.method, url: req.url?.split('?')[0] }),
+      res: (res) => ({ statusCode: res.statusCode }),
+    },
+  })
+);
+
 // 1. Configuramos CORS explícitamente para tu frontend
 app.use(cors({
   origin: [...DEV_ORIGINS, ...config.corsOrigins],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Cabeceras de seguridad HTTP básicas (CSP desactivada: esta API no sirve HTML).
 app.use(helmet({ contentSecurityPolicy: false }));
 
 // 2. Parseo de body
-// 10mb cubre imágenes de perfil/galería en base64; bajará más cuando se
-// migren a almacenamiento de objetos con subida directa por URL firmada.
-app.use(express.json({ limit: '10mb', strict: true }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+// 3 MB: una imagen de hasta 1,5 MB en base64 (ver lib/images.ts) más el resto del
+// cuerpo. Bajará a pocos KB cuando las imágenes pasen a almacenamiento de objetos.
+app.use(express.json({ limit: '3mb', strict: true }));
+app.use(express.urlencoded({ limit: '100kb', extended: true }));
 
 // Límite de intentos de login/registro: mitiga fuerza bruta contra cuentas.
 const authLimiter = rateLimit({
@@ -113,19 +139,29 @@ app.use('/api/public/booking', publicBookingRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/webhooks/mercadopago', mercadoPagoWebhookRoutes);
 
-// Health check
-const healthResponse = { status: 'OK', timestamp: new Date().toISOString() };
-app.get('/api/health', (req, res) => {
-  res.json(healthResponse);
-});
-app.get('/health', (req, res) => {
-  res.json(healthResponse);
-});
+// Health check: comprueba también la base de datos
+const health: express.RequestHandler = async (_req, res) => {
+  try {
+    await basePrisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'OK', timestamp: new Date().toISOString(), queue: config.queueMode });
+  } catch (error) {
+    logger.error({ err: error }, 'health check: la base de datos no responde');
+    res.status(503).json({ status: 'DOWN', timestamp: new Date().toISOString() });
+  }
+};
+app.get('/api/health', health);
+app.get('/health', health);
 
 // Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+app.use((err: any, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  // Cuerpo demasiado grande o JSON roto: error del cliente, no del servidor
+  if (err?.type === 'entity.too.large') return res.status(413).json({ error: 'La petición es demasiado grande' });
+  if (err?.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido' });
+
+  const requestId = (req as express.Request & { id?: string }).id;
+  req.log?.error({ err }, 'error no controlado');
+  captureError(err, { requestId, tenantId: req.user?.tenantId, path: req.path });
+  res.status(500).json({ error: 'Error interno del servidor', requestId });
 });
 
 export default app;

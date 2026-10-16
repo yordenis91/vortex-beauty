@@ -1,3 +1,4 @@
+import { compressImage } from '../lib/image';
 import React, { useState } from 'react';
 import type { GalleryItem, Service } from '../types';
 import { useServices, useAdminGalleryItems, useCreateGalleryItem, useUpdateGalleryItem, useDeleteGalleryItem, getErrorMessage } from '../hooks/useQueries';
@@ -33,12 +34,9 @@ const AdminGallery: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      setForm((prev) => ({ ...prev, imageUrl: result, file }));
-    };
-    reader.readAsDataURL(file);
+    compressImage(file)
+      .then((result) => setForm((prev) => ({ ...prev, imageUrl: result, file })))
+      .catch(() => toast.error('No se pudo procesar la imagen'));
   };
 
   const handleCreate = async (e: React.FormEvent) => {

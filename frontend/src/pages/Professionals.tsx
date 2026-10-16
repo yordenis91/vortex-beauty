@@ -369,7 +369,7 @@ const Professionals: React.FC = () => {
                 <p className="text-xs text-muted-foreground">Con una cuenta, el profesional inicia sesión y ve solo su propia agenda.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input type="email" placeholder="Correo de acceso" className={inputClass} value={formData.accountEmail} onChange={(e) => setFormData({ ...formData, accountEmail: e.target.value })} />
-                  <input type="password" placeholder="Contraseña (mín. 6)" minLength={6} className={inputClass} value={formData.accountPassword} onChange={(e) => setFormData({ ...formData, accountPassword: e.target.value })} />
+                  <input type="password" placeholder="Contraseña (mín. 8)" minLength={8} className={inputClass} value={formData.accountPassword} onChange={(e) => setFormData({ ...formData, accountPassword: e.target.value })} />
                 </div>
               </div>
             )}
