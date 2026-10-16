@@ -9,6 +9,7 @@ dist
 src/**/*.js
 src/**/*.js.map
 src/**/*.d.ts
+!src/types/*.d.ts
 src/**/*.d.ts.map
 prisma.config.js.map
 prisma.config.d.ts
