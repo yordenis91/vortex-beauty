@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
       include: {
         _count: {
           select: {
-            products: true,
+            services: true,
           },
         },
       },
@@ -56,7 +56,7 @@ router.get('/:id', async (req, res) => {
       include: {
         _count: {
           select: {
-            products: true,
+            services: true,
           },
         },
       },
@@ -97,7 +97,7 @@ router.post('/', async (req, res) => {
       include: {
         _count: {
           select: {
-            products: true,
+            services: true,
           },
         },
       },
@@ -153,7 +153,7 @@ router.put('/:id', async (req, res) => {
       include: {
         _count: {
           select: {
-            products: true,
+            services: true,
           },
         },
       },
@@ -182,7 +182,7 @@ router.delete('/:id', async (req, res) => {
       include: {
         _count: {
           select: {
-            products: true,
+            services: true,
           },
         },
       },
@@ -193,13 +193,13 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Check if category has associated items
-    const totalItems = category._count.products;
+    const totalItems = category._count.services;
 
     if (totalItems > 0) {
       return res.status(400).json({
         error: 'Cannot delete category with associated items. Move or delete all items first.',
         details: {
-          products: category._count.products,
+          services: category._count.services,
         },
       });
     }

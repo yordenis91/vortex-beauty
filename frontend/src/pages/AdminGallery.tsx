@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import type { GalleryItem, Product } from '../types';
-import { useProducts, useAdminGalleryItems, useCreateGalleryItem, useUpdateGalleryItem, useDeleteGalleryItem, getErrorMessage } from '../hooks/useQueries';
+import type { GalleryItem, Service } from '../types';
+import { useServices, useAdminGalleryItems, useCreateGalleryItem, useUpdateGalleryItem, useDeleteGalleryItem, getErrorMessage } from '../hooks/useQueries';
 import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
 
 const AdminGallery: React.FC = () => {
-  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: services = [], isLoading: servicesLoading } = useServices();
   const { data: galleryItems = [], isLoading: galleryLoading } = useAdminGalleryItems();
 
   const createMutation = useCreateGalleryItem();
@@ -14,19 +14,19 @@ const AdminGallery: React.FC = () => {
 
   const [form, setForm] = useState<{
     title: string;
-    productId: string;
+    serviceId: string;
     imageUrl: string;
     isActive: boolean;
     file?: File;
   }>({
     title: '',
-    productId: '',
+    serviceId: '',
     imageUrl: '',
     isActive: true,
   });
 
   const resetForm = () => {
-    setForm({ title: '', productId: '', imageUrl: '', isActive: true });
+    setForm({ title: '', serviceId: '', imageUrl: '', isActive: true });
   };
 
   const onFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,7 +43,7 @@ const AdminGallery: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.imageUrl || !form.productId) {
+    if (!form.title || !form.imageUrl || !form.serviceId) {
       toast.error('Completa todos los campos');
       return;
     }
@@ -52,7 +52,7 @@ const AdminGallery: React.FC = () => {
       {
         title: form.title,
         imageUrl: form.imageUrl,
-        productId: form.productId,
+        serviceId: form.serviceId,
         isActive: form.isActive,
       },
       {
@@ -95,7 +95,7 @@ const AdminGallery: React.FC = () => {
     });
   };
 
-  if (productsLoading || galleryLoading) {
+  if (servicesLoading || galleryLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
@@ -131,14 +131,14 @@ const AdminGallery: React.FC = () => {
             <label className="block text-sm font-medium text-foreground mb-2">Servicio <span className="text-red-500">*</span></label>
             <select
               className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              value={form.productId}
-              onChange={(e) => setForm((prev) => ({ ...prev, productId: e.target.value }))}
+              value={form.serviceId}
+              onChange={(e) => setForm((prev) => ({ ...prev, serviceId: e.target.value }))}
               required
             >
               <option value="">Selecciona un servicio</option>
-              {products.map((product: Product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} - {product.price} {product.currency}
+              {services.map((service: Service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name} - {service.price} {service.currency}
                 </option>
               ))}
             </select>
@@ -194,8 +194,8 @@ const AdminGallery: React.FC = () => {
               <img src={item.imageUrl} alt={item.title} className="w-full md:w-40 h-28 object-cover rounded-xl" />
               <div className="flex-1">
                 <h4 className="font-semibold text-lg">{item.title}</h4>
-                <p className="text-sm text-muted-foreground">Servicio: {item.product?.name || '—'}</p>
-                <p className="text-sm text-muted-foreground">Precio: {item.product?.price || '—'} {item.product?.currency || ''}</p>
+                <p className="text-sm text-muted-foreground">Servicio: {item.service?.name || '—'}</p>
+                <p className="text-sm text-muted-foreground">Precio: {item.service?.price || '—'} {item.service?.currency || ''}</p>
                 <p className="text-sm text-muted-foreground">Estado: {item.isActive ? 'Activo' : 'Inactivo'}</p>
                 <div className="mt-3 flex gap-2">
                   <button

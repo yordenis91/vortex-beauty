@@ -1,166 +1,156 @@
-    import { Router } from 'express';
-    import { z } from 'zod';
-    import prisma from '../prismaClient';
-    import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { Router } from 'express';
+import { z } from 'zod';
+import prisma from '../prismaClient';
+import { authenticateToken } from '../middleware/auth';
+import { requirePermission } from '../middleware/can';
+import { validateBody } from '../middleware/validate';
+import { invalidateTenantTimezone } from '../lib/tenantInfo';
+import { isValidTimezone, timeToMinutes } from '../lib/time';
+import { Vertical } from '@prisma/client';
 
-    const router = Router();
+const router = Router();
 
-    // Log all available models on startup
-    console.log('[SETTINGS] BusinessHour model exists:', 'businessHour' in prisma);
+router.use(authenticateToken);
 
-    // Test route - no authentication required
-    router.get('/health', async (req, res) => {
-    try {
-        console.log('[SETTINGS] Health check called');
-        const count = await prisma.businessHour.count();
-        console.log('[SETTINGS] BusinessHour count:', count);
-        res.json({ status: 'OK', businessHourCount: count });
-    } catch (error: any) {
-        console.error('[SETTINGS] Health check error:', error?.message);
-        res.status(500).json({ error: error?.message });
+const timeRegex = /^\d{2}:\d{2}$/;
+
+const businessHourSchema = z
+  .object({
+    dayOfWeek: z.number().int().min(0).max(6),
+    startTime: z.string().regex(timeRegex, 'Start time must be in format HH:mm'),
+    endTime: z.string().regex(timeRegex, 'End time must be in format HH:mm'),
+    // Horas de inicio explícitas. Si hay alguna, solo se ofrecen esas horas.
+    timeSlots: z.array(z.string().regex(timeRegex, 'Time slots must be in format HH:mm')).default([]),
+    isOpen: z.boolean().default(true),
+    maxAppointments: z.number().int().min(0).default(0),
+  })
+  .refine((h) => !h.isOpen || timeToMinutes(h.startTime) < timeToMinutes(h.endTime), 'La hora de cierre debe ser posterior a la de apertura');
+
+const DEFAULT_HOURS = [0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
+  dayOfWeek,
+  startTime: '09:00',
+  endTime: '18:00',
+  timeSlots: [] as string[],
+  isOpen: dayOfWeek !== 0,
+  maxAppointments: 0,
+}));
+
+// GET /api/settings/business-hours — horario comercial (crea el de fábrica si el salón no tiene)
+router.get('/business-hours', async (req, res) => {
+  try {
+    const { tenantId } = req.user!;
+    const count = await prisma.businessHour.count({ where: { tenantId } });
+    if (count === 0) {
+      await prisma.businessHour.createMany({ data: DEFAULT_HOURS.map((h) => ({ ...h, tenantId })), skipDuplicates: true });
     }
+    res.json(await prisma.businessHour.findMany({ where: { tenantId }, orderBy: { dayOfWeek: 'asc' } }));
+  } catch (error) {
+    console.error('Error fetching business hours:', error);
+    res.status(500).json({ error: 'Failed to fetch business hours' });
+  }
+});
+
+// GET /api/settings/business-hours/:dayOfWeek
+router.get('/business-hours/:dayOfWeek', async (req, res) => {
+  try {
+    const day = parseInt(req.params.dayOfWeek as string);
+    if (isNaN(day) || day < 0 || day > 6) return res.status(400).json({ error: 'Invalid day of week (0-6)' });
+
+    const businessHour = await prisma.businessHour.findUnique({
+      where: { tenantId_dayOfWeek: { tenantId: req.user!.tenantId, dayOfWeek: day } },
     });
+    if (!businessHour) return res.status(404).json({ error: 'Business hours not found for this day' });
+    res.json(businessHour);
+  } catch (error) {
+    console.error('Error fetching business hour:', error);
+    res.status(500).json({ error: 'Failed to fetch business hour' });
+  }
+});
 
-    // Validation schemas
-    const updateBusinessHourSchema = z.object({
-      dayOfWeek: z.number().min(0).max(6),
-      startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be in format HH:mm'),
-      endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be in format HH:mm'),
-      timeSlots: z.array(z.string().regex(/^\d{2}:\d{2}$/, 'Time slots must be in format HH:mm')).default([]),
-      isOpen: z.boolean().default(true),
-      maxAppointments: z.number().min(0).default(0),
+// PUT /api/settings/business-hours/:dayOfWeek
+router.put('/business-hours/:dayOfWeek', requirePermission('settings:manage'), validateBody(businessHourSchema), async (req, res) => {
+  try {
+    const day = parseInt(req.params.dayOfWeek as string);
+    const data = req.body as z.infer<typeof businessHourSchema>;
+    if (isNaN(day) || day < 0 || day > 6) return res.status(400).json({ error: 'Invalid day of week (0-6)' });
+    if (data.dayOfWeek !== day) return res.status(400).json({ error: 'Day of week in URL does not match request body' });
+
+    const { tenantId } = req.user!;
+    const businessHour = await prisma.businessHour.upsert({
+      where: { tenantId_dayOfWeek: { tenantId, dayOfWeek: day } },
+      update: data,
+      create: { ...data, tenantId },
     });
+    res.json(businessHour);
+  } catch (error) {
+    console.error('Error updating business hour:', error);
+    res.status(500).json({ error: 'Failed to update business hour' });
+  }
+});
 
-    // Helper: Initialize default business hours if they don't exist
-    const initializeDefaultBusinessHours = async (tenantId: string): Promise<void> => {
-      try {
-        console.log('Checking if business hours need initialization...');
+// ---- Ajustes de reserva y vocabulario ----
 
-        const existingCount = await prisma.businessHour.count({ where: { tenantId } });
+const bookingSettingsSchema = z.object({
+  timezone: z.string().refine(isValidTimezone, 'Zona horaria inválida').optional(),
+  vertical: z.nativeEnum(Vertical).optional(),
+  slotIntervalMin: z.number().int().min(5).max(240).optional(),
+  minNoticeHours: z.number().int().min(0).max(24 * 14).optional(),
+  maxAdvanceDays: z.number().int().min(1).max(730).optional(),
+  cancelWindowHrs: z.number().int().min(0).max(24 * 14).optional(),
+  bookingEnabled: z.boolean().optional(),
+  labels: z.record(z.string(), z.string().max(40)).optional(),
+});
 
-        if (existingCount === 0) {
-          console.log('No business hours found, creating defaults...');
+async function loadBookingSettings(tenantId: string) {
+  const [settings, tenant] = await Promise.all([
+    prisma.tenantSettings.findUnique({ where: { tenantId } }),
+    prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { name: true, slug: true, timezone: true, currency: true } }),
+  ]);
+  return {
+    name: tenant.name,
+    slug: tenant.slug,
+    currency: tenant.currency,
+    timezone: tenant.timezone,
+    vertical: settings?.vertical ?? 'GENERIC',
+    slotIntervalMin: settings?.slotIntervalMin ?? 30,
+    minNoticeHours: settings?.minNoticeHours ?? 2,
+    maxAdvanceDays: settings?.maxAdvanceDays ?? 60,
+    cancelWindowHrs: settings?.cancelWindowHrs ?? 12,
+    bookingEnabled: settings?.bookingEnabled ?? true,
+    labels: (settings?.labels as Record<string, string> | undefined) ?? {},
+  };
+}
 
-          const defaultHours = [
-            { dayOfWeek: 0, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0 }, // Domingo (cerrado)
-            { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Lunes
-            { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Martes
-            { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Miércoles
-            { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Jueves
-            { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: true, maxAppointments: 0 },  // Viernes
-            { dayOfWeek: 6, startTime: '09:00', endTime: '18:00', timeSlots: [], isOpen: false, maxAppointments: 0 }, // Sábado (cerrado)
-          ];
+// GET /api/settings/booking
+router.get('/booking', async (req, res) => {
+  try {
+    res.json(await loadBookingSettings(req.user!.tenantId));
+  } catch (error) {
+    console.error('Error fetching booking settings:', error);
+    res.status(500).json({ error: 'Failed to fetch booking settings' });
+  }
+});
 
-          await prisma.businessHour.createMany({
-            data: defaultHours.map((h) => ({ ...h, tenantId })),
-          });
+// PUT /api/settings/booking
+router.put('/booking', requirePermission('settings:manage'), validateBody(bookingSettingsSchema), async (req, res) => {
+  try {
+    const { tenantId } = req.user!;
+    const { timezone, ...settings } = req.body as z.infer<typeof bookingSettingsSchema>;
 
-          console.log('Default business hours created successfully');
-        } else {
-          console.log(`Business hours already exist (${existingCount} records), skipping initialization`);
-        }
-      } catch (error) {
-        console.error('Error initializing business hours:', error);
-        throw error;
-      }
-    };
-
-    // GET /api/settings/business-hours - Get all business hours
-    router.get('/business-hours', authenticateToken, async (req, res) => {
-    try {
-        console.log('GET /api/settings/business-hours called');
-        const tenantId = req.user!.tenantId;
-
-        // Initialize default hours if they don't exist
-        await initializeDefaultBusinessHours(tenantId);
-
-        const businessHours = await prisma.businessHour.findMany({
-        where: { tenantId },
-        orderBy: { dayOfWeek: 'asc' },
-        });
-
-        console.log('Business hours retrieved:', businessHours);
-        res.json(businessHours);
-    } catch (error: any) {
-        console.error('Error fetching business hours:', error);
-        console.error('Error message:', error?.message);
-        console.error('Error code:', error?.code);
-        res.status(500).json({
-        error: 'Failed to fetch business hours',
-        details: error?.message || 'Unknown error'
-        });
+    await prisma.tenantSettings.upsert({
+      where: { tenantId },
+      update: settings,
+      create: { tenantId, ...settings },
+    });
+    if (timezone) {
+      await prisma.tenant.update({ where: { id: tenantId }, data: { timezone } });
+      invalidateTenantTimezone(tenantId);
     }
-    });
+    res.json(await loadBookingSettings(tenantId));
+  } catch (error) {
+    console.error('Error updating booking settings:', error);
+    res.status(500).json({ error: 'Failed to update booking settings' });
+  }
+});
 
-    // GET /api/settings/business-hours/:dayOfWeek - Get business hours for a specific day
-    router.get('/business-hours/:dayOfWeek', authenticateToken, async (req, res) => {
-    try {
-        const { dayOfWeek } = req.params;
-        const day = parseInt(dayOfWeek as string);
-        const tenantId = req.user!.tenantId;
-
-        if (isNaN(day) || day < 0 || day > 6) {
-        return res.status(400).json({ error: 'Invalid day of week (0-6)' });
-        }
-
-        const businessHour = await prisma.businessHour.findUnique({
-        where: { tenantId_dayOfWeek: { tenantId, dayOfWeek: day } },
-        });
-
-        if (!businessHour) {
-        return res.status(404).json({ error: 'Business hour not found for this day' });
-        }
-
-        res.json(businessHour);
-    } catch (error) {
-        console.error('Error fetching business hour:', error);
-        res.status(500).json({ error: 'Failed to fetch business hour' });
-    }
-    });
-
-    // PUT /api/settings/business-hours/:dayOfWeek - Update business hours for a specific day
-    router.put('/business-hours/:dayOfWeek', authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const { dayOfWeek } = req.params;
-        const day = parseInt(dayOfWeek as string);
-        const tenantId = req.user!.tenantId;
-
-        if (isNaN(day) || day < 0 || day > 6) {
-        return res.status(400).json({ error: 'Invalid day of week (0-6)' });
-        }
-
-        const validatedData = updateBusinessHourSchema.parse(req.body);
-
-        // Verify the day matches (security check)
-        if (validatedData.dayOfWeek !== day) {
-        return res.status(400).json({ error: 'Day of week in URL does not match request body' });
-        }
-
-        // Ensure the record exists (or create it)
-        let businessHour = await prisma.businessHour.findUnique({
-        where: { tenantId_dayOfWeek: { tenantId, dayOfWeek: day } },
-        });
-
-        if (!businessHour) {
-        businessHour = await prisma.businessHour.create({
-            data: { ...validatedData, tenantId },
-        });
-        } else {
-        businessHour = await prisma.businessHour.update({
-            where: { tenantId_dayOfWeek: { tenantId, dayOfWeek: day } },
-            data: validatedData,
-        });
-        }
-
-        res.json(businessHour);
-    } catch (error: any) {
-        if (error?.name === 'ZodError') {
-        return res.status(400).json({ error: 'Validation error', details: error.issues });
-        }
-
-        console.error('Error updating business hour:', error);
-        res.status(500).json({ error: 'Failed to update business hour' });
-    }
-    });
-
-    export default router;
+export default router;

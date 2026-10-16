@@ -5,29 +5,8 @@ import { useClientAppointments } from '../../hooks/useQueries';
 import { Calendar, Clock, CheckCircle, AlertCircle, Image, Sparkles, User } from 'lucide-react';
 import { format, parseISO, isFuture } from 'date-fns';
 import { es } from 'date-fns/locale/es';
+import type { Appointment } from '../../types';
 
-interface Appointment {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
-  notes?: string;
-  clientId: string;
-  productId: string;
-  createdAt: string;
-  updatedAt: string;
-  client?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  product?: {
-    id: string;
-    name: string;
-    price: number;
-  };
-}
 
 const ClientDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -104,7 +83,7 @@ const ClientDashboard: React.FC = () => {
                 Tu próxima cita
               </p>
               <h2 className="text-3xl font-bold mt-2">
-                {nextAppointment.product?.name || 'Servicio'}
+                {nextAppointment.service?.name || 'Servicio'}
               </h2>
               <div className="flex items-center mt-4 text-lg">
                 <Calendar className="h-5 w-5 mr-2" />
@@ -112,9 +91,9 @@ const ClientDashboard: React.FC = () => {
                   {formatDate(nextAppointment.date, nextAppointment.startTime)}
                 </span>
               </div>
-              {nextAppointment.product?.price && (
+              {nextAppointment.service?.price && (
                 <p className="mt-2 text-sm opacity-90">
-                  💰 ${Number(nextAppointment.product.price).toFixed(2)}
+                  💰 ${Number(nextAppointment.service.price).toFixed(2)}
                 </p>
               )}
               {nextAppointment.notes && (
@@ -172,7 +151,7 @@ const ClientDashboard: React.FC = () => {
                   <div>
                     <CheckCircle className="h-5 w-5 text-green-600 mb-2" />
                     <h4 className="font-semibold text-foreground text-lg">
-                      {appointment.product?.name || 'Servicio'}
+                      {appointment.service?.name || 'Servicio'}
                     </h4>
                   </div>
                 </div>
@@ -188,10 +167,10 @@ const ClientDashboard: React.FC = () => {
                     {appointment.startTime} - {appointment.endTime}
                   </div>
 
-                  {appointment.product?.price && (
+                  {appointment.service?.price && (
                     <div className="pt-2 border-t border-border mt-4">
                       <p className="text-sm font-medium text-foreground">
-                        💰 ${Number(appointment.product.price).toFixed(2)}
+                        💰 ${Number(appointment.service.price).toFixed(2)}
                       </p>
                     </div>
                   )}

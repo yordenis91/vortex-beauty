@@ -12,6 +12,7 @@ const emptyForm = {
   billingCycle: 'MONTHLY' as 'MONTHLY' | 'YEARLY',
   adminName: '',
   adminEmail: '',
+  vertical: 'GENERIC' as 'GENERIC' | 'NAILS' | 'BARBER' | 'SPA' | 'TATTOO' | 'HAIR' | 'FITNESS',
 };
 
 function slugify(input: string): string {
@@ -95,7 +96,8 @@ const NewTenantDialog: React.FC<NewTenantDialogProps> = ({ open, onOpenChange })
               <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-md p-3">
                 Esta contraseña temporal solo se muestra <strong>una vez</strong>. Cópiala y compártela con el salón por un canal seguro.
               </p>
-              <CopyField label="URL de registro para sus clientas" value={`${window.location.origin}${result.registerUrl}`} />
+              <CopyField label="URL de acceso del salón" value={`${window.location.origin}${result.loginUrl}`} />
+              <CopyField label="URL de registro para sus clientes" value={`${window.location.origin}${result.registerUrl}`} />
               <CopyField label="Email del administrador" value={result.admin.email} />
               <CopyField label="Contraseña temporal" value={result.tempPassword} />
               <div className="flex justify-end pt-2 border-t border-border">
@@ -142,6 +144,24 @@ const NewTenantDialog: React.FC<NewTenantDialogProps> = ({ open, onOpenChange })
                     className="w-full px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Tipo de negocio</label>
+                <select
+                  value={form.vertical}
+                  onChange={(e) => setForm((f) => ({ ...f, vertical: e.target.value as typeof emptyForm.vertical }))}
+                  className="w-full px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="GENERIC">Otro negocio con citas</option>
+                  <option value="NAILS">Manicura y uñas</option>
+                  <option value="BARBER">Barbería</option>
+                  <option value="HAIR">Peluquería</option>
+                  <option value="SPA">Spa y masajes</option>
+                  <option value="TATTOO">Tatuajes</option>
+                  <option value="FITNESS">Entrenamiento personal</option>
+                </select>
+                <p className="mt-1 text-xs text-muted-foreground">Precarga servicios, horario y vocabulario de ejemplo.</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useClientAppointments, useClientProducts, useCreateClientAppointment, useAvailableSlots, useClosedDates, useCancelAppointment, useFullyBookedDates } from '../../hooks/useQueries';
-import type { ClosedDate } from '../../types';
+import { useClientAppointments, useClientServices, useCreateClientAppointment, useAvailableSlots, useClientProfessionals, useBookingSettings, useClosedDates, useCancelAppointment, useFullyBookedDates } from '../../hooks/useQueries';
+import type { Appointment, ClosedDate } from '../../types';
 import { Calendar as CalendarIcon, Clock, CheckCircle, Trash2, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
@@ -45,34 +44,12 @@ interface BusinessHour {
   updatedAt: string;
 }
 
-interface Appointment {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
-  notes?: string;
-  clientId: string;
-  productId: string;
-  createdAt: string;
-  updatedAt: string;
-  client?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  product?: {
-    id: string;
-    name: string;
-    price: number;
-  };
-}
 
 interface FormData {
-  productId: string;
+  serviceId: string;
+  professionalId: string; // 'any' = cualquiera disponible
   date: Date | undefined;
   startTime: string;
-  endTime: string;
 }
 
 // Hook para obtener horarios comerciales
@@ -87,12 +64,11 @@ const useBusinessHours = () => {
 };
 
 const ClientAppointments: React.FC = () => {
-  const { user } = useAuth();
   const [formData, setFormData] = useState<FormData>({
-    productId: '',
+    serviceId: '',
+    professionalId: 'any',
     date: undefined,
     startTime: '',
-    endTime: '',
   });
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -101,11 +77,16 @@ const ClientAppointments: React.FC = () => {
 
   // Hooks
   const { data: appointments = [], isLoading: appointmentsLoading } = useClientAppointments();
-  const { data: products = [] } = useClientProducts();
+  const { data: services = [] } = useClientServices();
   const { data: availableSlots = [], isLoading: slotsLoading } = useAvailableSlots(
     formData.date ? format(formData.date, 'yyyy-MM-dd') : '',
-    formData.productId || undefined
+    formData.serviceId || undefined,
+    formData.professionalId
   );
+  const { data: professionals = [] } = useClientProfessionals(formData.serviceId || undefined);
+  const { data: bookingSettings } = useBookingSettings();
+  const labelOf = (key: string, fallback: string) =>
+    (bookingSettings?.labels?.[key] ? bookingSettings.labels[key].charAt(0).toUpperCase() + bookingSettings.labels[key].slice(1) : fallback);
   const { data: businessHours = [] } = useBusinessHours();
   const { data: closedDates = [] } = useClosedDates();
   const { data: fullyBookedDates = [] } = useFullyBookedDates();
@@ -167,7 +148,7 @@ const ClientAppointments: React.FC = () => {
     const today = startOfDay(new Date());
     return clientAppointments
       .filter((apt) => {
-        if (apt.status !== 'SCHEDULED') return false;
+        if (apt.status !== 'SCHEDULED' && apt.status !== 'PENDING') return false;
         // Extraemos solo la fecha (YYYY-MM-DD) para evitar conflictos
         const justDate = apt.date.includes('T') ? apt.date.split('T')[0] : apt.date;
         const appointmentDate = startOfDay(parseISO(justDate));
@@ -200,7 +181,7 @@ const ClientAppointments: React.FC = () => {
     }
   };
 
-  // Función para validar si se puede cancelar una cita (debe tener más de 24 horas)
+  // Función para validar si se puede cancelar una cita (según la política del salón)
   const canCancelAppointment = (appointmentDate: string, startTime: string): boolean => {
     const justDate = appointmentDate.includes('T') ? appointmentDate.split('T')[0] : appointmentDate;
     const appointmentDateTime = parseISO(`${justDate}T${startTime}`);
@@ -208,29 +189,11 @@ const ClientAppointments: React.FC = () => {
     const now = new Date();
     const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    return hoursUntilAppointment > 24;
-  };
-
-  // Solo para mostrarla en el formulario — la hora de fin real la calcula el
-  // servidor a partir de la duración del servicio (Product.durationMinutes).
-  const computeEndTime = (startTime: string, durationMinutes: number): string => {
-    const [hours, minutes] = startTime.split(':').map(Number);
-    const total = hours * 60 + minutes + durationMinutes;
-    const wrapped = ((total % 1440) + 1440) % 1440;
-    const hh = Math.floor(wrapped / 60).toString().padStart(2, '0');
-    const mm = (wrapped % 60).toString().padStart(2, '0');
-    return `${hh}:${mm}`;
+    return hoursUntilAppointment >= (bookingSettings?.cancelWindowHrs ?? 12);
   };
 
   const handleSelectSlot = (slotTime: string) => {
-    const selectedProduct = products.find((p) => p.id === formData.productId);
-    const duration = selectedProduct?.durationMinutes ?? 60;
-
-    setFormData({
-      ...formData,
-      startTime: slotTime,
-      endTime: computeEndTime(slotTime, duration),
-    });
+    setFormData({ ...formData, startTime: slotTime });
   };
 
   const handleCancelAppointmentClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -241,7 +204,7 @@ const ClientAppointments: React.FC = () => {
     if (!appointment) return;
 
     if (!canCancelAppointment(appointment.date, appointment.startTime)) {
-      toast.error('Las citas deben ser canceladas con al menos 24 horas de anticipación');
+      toast.error(`Las citas deben cancelarse con al menos ${bookingSettings?.cancelWindowHrs ?? 12} horas de anticipación`);
       return;
     }
 
@@ -257,34 +220,26 @@ const ClientAppointments: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.productId || !formData.date || !formData.startTime) {
+    if (!formData.serviceId || !formData.date || !formData.startTime) {
       toast.error('Por favor completa todos los campos');
       return;
     }
 
-    const appointmentData = {
-      clientId: user?.id || '',
-      productId: formData.productId,
-      date: new Date(formData.date).toISOString(),
+    createMutation.mutate({
+      serviceId: formData.serviceId,
+      professionalId: formData.professionalId,
+      date: format(formData.date, 'yyyy-MM-dd'),
       startTime: formData.startTime,
-      endTime: formData.endTime,
       notes: '',
-    };
-
-    if (!appointmentData.clientId) {
-      toast.error('Error: No se pudo obtener tu ID de usuario');
-      return;
-    }
-
-    createMutation.mutate(appointmentData);
+    });
   };
 
   const resetForm = () => {
     setFormData({
-      productId: '',
+      serviceId: '',
+      professionalId: 'any',
       date: undefined,
       startTime: '',
-      endTime: '',
     });
   };
 
@@ -294,7 +249,6 @@ const ClientAppointments: React.FC = () => {
         ...formData,
         date,
         startTime: '',
-        endTime: '',
       });
     } else if (date && isDayBlocked(date)) {
       toast.error('Este día no está disponible');
@@ -358,31 +312,48 @@ const ClientAppointments: React.FC = () => {
                       Servicio <span className="text-red-500">*</span>
                     </label>
                     <Select
-                      value={formData.productId}
-                      onValueChange={(value) => {
-                        const selected = products.find((p) => p.id === value);
-                        setFormData({
-                          ...formData,
-                          productId: value,
-                          endTime:
-                            formData.startTime && selected
-                              ? computeEndTime(formData.startTime, selected.durationMinutes)
-                              : formData.endTime,
-                        });
-                      }}
+                      value={formData.serviceId}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, serviceId: value, professionalId: 'any', startTime: '' })
+                      }
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecciona un servicio" />
                       </SelectTrigger>
                       <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name} - ${Number(product.price).toFixed(2)} ({product.durationMinutes} min)
+                        {services.map((service) => (
+                          <SelectItem key={service.id} value={service.id}>
+                            {service.name} - ${Number(service.price).toFixed(2)} ({service.durationMinutes} min)
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Profesional */}
+                  {formData.serviceId && professionals.length > 1 && (
+                    <div>
+                      <label className="text-sm font-semibold text-foreground mb-3 block">
+                        {labelOf('professional', 'Profesional')}
+                      </label>
+                      <Select
+                        value={formData.professionalId}
+                        onValueChange={(value) => setFormData({ ...formData, professionalId: value, startTime: '' })}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">Cualquiera disponible</SelectItem>
+                          {professionals.map((pro) => (
+                            <SelectItem key={pro.id} value={pro.id}>
+                              {pro.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {/* Horarios disponibles */}
                   <div>
@@ -392,6 +363,8 @@ const ClientAppointments: React.FC = () => {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         <span className="ml-3 text-muted-foreground">Cargando horarios...</span>
                       </div>
+                    ) : !formData.serviceId ? (
+                      <p className="text-sm text-muted-foreground py-4">Elige primero un servicio para ver los horarios.</p>
                     ) : availableSlots.length > 0 ? (
                       <div className="grid grid-cols-3 gap-3">
                         {availableSlots.map((slot) => (
@@ -430,7 +403,7 @@ const ClientAppointments: React.FC = () => {
                     </Button>
                     <Button
                       type="submit"
-                      disabled={createMutation.isPending || !formData.productId || !formData.startTime}
+                      disabled={createMutation.isPending || !formData.serviceId || !formData.startTime}
                       className="flex-1 bg-blue-600 hover:bg-blue-700"
                     >
                       {createMutation.isPending ? (
@@ -491,7 +464,7 @@ const ClientAppointments: React.FC = () => {
                         {/* Información de la cita */}
                         <div className="flex-1">
                           <h3 className="font-semibold text-foreground text-lg">
-                            {appointment.product?.name || 'Servicio'}
+                            {appointment.serviceName || 'Servicio'}
                           </h3>
                           <div className="flex items-center mt-1 text-muted-foreground">
                             <Clock className="w-3 h-3 mr-1" />
@@ -525,7 +498,7 @@ const ClientAppointments: React.FC = () => {
                   <div className="p-4 flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold text-foreground line-through decoration-red-300">
-                        {appointment.product?.name || 'Servicio'}
+                        {appointment.serviceName || 'Servicio'}
                       </h3>
                       <p className="text-sm text-muted-foreground flex items-center mt-1">
                         <Clock className="w-3 h-3 mr-1" />
@@ -558,7 +531,7 @@ const ClientAppointments: React.FC = () => {
               <div className="border-b border-border pb-4">
                 <p className="text-sm font-medium text-muted-foreground">Servicio</p>
                 <p className="text-lg font-semibold text-foreground mt-1">
-                  {selectedEventModal.product?.name || 'Servicio'}
+                  {selectedEventModal.serviceName || 'Servicio'}
                 </p>
               </div>
 
@@ -572,11 +545,11 @@ const ClientAppointments: React.FC = () => {
               </div>
 
               {/* Precio */}
-              {selectedEventModal.product?.price && (
+              {selectedEventModal.priceAmount && (
                 <div className="border-b border-border pb-4">
                   <p className="text-sm font-medium text-muted-foreground">Precio</p>
                   <p className="text-lg font-semibold text-blue-600 mt-1">
-                    ${Number(selectedEventModal.product.price).toFixed(2)}
+                    ${Number(selectedEventModal.priceAmount).toFixed(2)}
                   </p>
                 </div>
               )}
@@ -585,6 +558,8 @@ const ClientAppointments: React.FC = () => {
               <div className="pb-2">
                 <p className="text-sm font-medium text-muted-foreground">Estado</p>
                 <Badge className="mt-1">
+                  {selectedEventModal.status === 'PENDING' && 'Pendiente de confirmar'}
+                  {selectedEventModal.status === 'NO_SHOW' && 'No asististe'}
                   {selectedEventModal.status === 'SCHEDULED' && 'Agendada'}
                   {selectedEventModal.status === 'COMPLETED' && 'Completada'}
                   {selectedEventModal.status === 'CANCELLED' && 'Cancelada'}
@@ -601,7 +576,7 @@ const ClientAppointments: React.FC = () => {
                 >
                   Cerrar
                 </Button>
-                {selectedEventModal.status === 'SCHEDULED' && (
+                {(selectedEventModal.status === 'SCHEDULED' || selectedEventModal.status === 'PENDING') && (
                   <Button
                     type="button"
                     variant="destructive"
@@ -643,7 +618,7 @@ const ClientAppointments: React.FC = () => {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-muted-foreground">Cita a Cancelar:</p>
                   <p className="text-base font-semibold text-foreground">
-                    {appointment.product?.name}
+                    {appointment.serviceName}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {formatDate(appointment.date, appointment.startTime)}

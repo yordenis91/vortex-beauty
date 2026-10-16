@@ -6,7 +6,7 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 const router = Router();
 
 // Todas las rutas de excepciones de horario son exclusivas de ADMIN.
-router.use(authenticateToken, requireAdmin);
+router.use(authenticateToken);
 
 const scheduleOverrideSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha inválido YYYY-MM-DD'),
@@ -54,7 +54,7 @@ router.get('/:date', async (req, res) => {
 });
 
 // POST /api/overrides - Create a schedule override
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const parsed = scheduleOverrideSchema.parse(req.body);
     const tenantId = req.user!.tenantId;
@@ -85,7 +85,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/overrides/:date - Update or create schedule override for date
-router.put('/:date', async (req, res) => {
+router.put('/:date', requireAdmin, async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.parse({ date, ...req.body });
@@ -108,7 +108,7 @@ router.put('/:date', async (req, res) => {
 });
 
 // DELETE /api/overrides/:date - Remove schedule override for date
-router.delete('/:date', async (req, res) => {
+router.delete('/:date', requireAdmin, async (req, res) => {
   try {
     const { date } = req.params;
     const parsed = scheduleOverrideSchema.pick({ date: true }).parse({ date });

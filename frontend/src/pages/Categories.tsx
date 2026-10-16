@@ -14,14 +14,12 @@ import {
 
 const Categories: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'PRODUCT' as Category['type'],
     color: '#3B82F6',
     icon: 'folder',
     order: 0,
@@ -42,15 +40,13 @@ const Categories: React.FC = () => {
   const filteredCategories = categories.filter(category => {
     const matchesSearch = category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          category.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !typeFilter || category.type === typeFilter;
-    return matchesSearch && matchesType;
+    return matchesSearch;
   });
 
   const resetForm = () => {
     setFormData({
       name: '',
       description: '',
-      type: 'PRODUCT',
       color: '#3B82F6',
       icon: 'folder',
       order: 0,
@@ -107,7 +103,6 @@ const Categories: React.FC = () => {
     setFormData({
       name: category.name,
       description: category.description || '',
-      type: category.type,
       color: category.color || '#3B82F6',
       icon: category.icon || 'folder',
       order: category.order,
@@ -131,7 +126,7 @@ const Categories: React.FC = () => {
             Categorías
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Organice sus productos, servicios, y articulos de la base de conocimiento en categorías para una mejor gestión y navegación.
+            Organice sus servicios, servicios, y articulos de la base de conocimiento en categorías para una mejor gestión y navegación.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -161,16 +156,6 @@ const Categories: React.FC = () => {
                 className="block w-full pl-10 pr-3 py-2 border border-border rounded-md leading-5 bg-card placeholder:text-muted-foreground focus:outline-none focus:placeholder:text-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="block w-full border border-border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="">All Types</option>
-              <option value="PRODUCT">Products</option>
-              <option value="TICKET">Tickets</option>
-              <option value="KNOWLEDGE_BASE">Knowledge Base</option>
-            </select>
           </div>
         </div>
       </div>
@@ -205,9 +190,6 @@ const Categories: React.FC = () => {
                     <h3 className="text-lg font-medium text-foreground">
                       {category.name}
                     </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Type: {category.type.replace('_', ' ')}
-                    </p>
                     {category.description && (
                       <p className="mt-2 text-sm text-muted-foreground">
                         {category.description}
@@ -231,27 +213,9 @@ const Categories: React.FC = () => {
                 </div>
 
                 {category._count && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {category._count.products}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Products</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {category._count.tickets}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Tickets</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-foreground">
-                          {category._count.articles}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Articles</p>
-                      </div>
-                    </div>
+                  <div className="mt-4 pt-4 border-t border-border text-center">
+                    <p className="text-sm font-medium text-foreground">{category._count.services}</p>
+                    <p className="text-xs text-muted-foreground">Servicios</p>
                   </div>
                 )}
               </div>
@@ -300,21 +264,6 @@ const Categories: React.FC = () => {
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Tipo <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as Category['type'] })}
-                      className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    >
-                      <option value="PRODUCT">Products</option>
-                      <option value="TICKET">Tickets</option>
-                      <option value="KNOWLEDGE_BASE">Knowledge Base</option>
-                    </select>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-foreground mb-2">

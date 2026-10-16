@@ -3,6 +3,8 @@ import { Role, } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import prisma from './prismaClient';
 import { runAsAdmin } from './lib/tenantContext';
+import { runInTransaction } from './lib/db';
+import { applyVerticalTemplate } from './services/verticalTemplates';
 
 async function seed() {
   try {
@@ -21,133 +23,79 @@ async function seed() {
     });
     console.log('✅ Tenant created:', tenant.name);
 
-    // Crear usuario administrador
-    const adminPassword = await bcrypt.hash('admin123', 10);
-    const admin = await prisma.user.upsert({
+    // Dueño del salón
+    const owner = await prisma.user.upsert({
       where: { tenantId_email: { tenantId: tenant.id, email: 'admin@vortexbeauty.com' } },
       update: {},
       create: {
         email: 'admin@vortexbeauty.com',
         username: 'admin',
-        password: adminPassword,
+        password: await bcrypt.hash('admin123', 10),
         name: 'Administrador',
-        role: Role.ADMIN,
+        role: Role.OWNER,
         tenantId: tenant.id,
       },
     });
-    console.log('✅ Admin user created:', admin.email);
+    console.log('✅ Owner created:', owner.email);
 
-    // Crear usuarios clientes
-    const clients = [
-      {
-        email: 'cliente1@example.com',
-        username: 'cliente1',
-        password: await bcrypt.hash('cliente123', 10),
-        name: 'María García',
-        role: Role.CLIENT,
-      },
-      {
-        email: 'cliente2@example.com',
-        username: 'cliente2',
-        password: await bcrypt.hash('cliente123', 10),
-        name: 'Ana López',
-        role: Role.CLIENT,
-      },
-      {
-        email: 'cliente3@example.com',
-        username: 'cliente3',
-        password: await bcrypt.hash('cliente123', 10),
-        name: 'Carmen Rodríguez',
-        role: Role.CLIENT,
-      },
-    ];
+    // Configuración de fábrica del vertical (ajustes, horario, servicios, profesional)
+    await runInTransaction((tx) =>
+      applyVerticalTemplate(tx, { tenantId: tenant.id, adminUserId: owner.id, vertical: 'NAILS' })
+    );
 
-    for (const clientData of clients) {
-      const client = await prisma.user.upsert({
-        where: { tenantId_email: { tenantId: tenant.id, email: clientData.email } },
+    // Segunda profesional con su propia cuenta (rol STAFF) y horario reducido
+    const lucia = await prisma.professional.findFirst({ where: { tenantId: tenant.id, name: 'Lucía' } });
+    if (!lucia) {
+      const staffUser = await prisma.user.upsert({
+        where: { tenantId_email: { tenantId: tenant.id, email: 'lucia@vortexbeauty.com' } },
         update: {},
-        create: { ...clientData, tenantId: tenant.id },
+        create: {
+          email: 'lucia@vortexbeauty.com',
+          username: 'lucia',
+          password: await bcrypt.hash('staff123', 10),
+          name: 'Lucía',
+          role: Role.STAFF,
+          tenantId: tenant.id,
+        },
       });
-      console.log('✅ Client user created:', client.email);
+      const professional = await prisma.professional.create({
+        data: { tenantId: tenant.id, name: 'Lucía', userId: staffUser.id, color: '#ec4899' },
+      });
+      await prisma.professionalSchedule.createMany({
+        data: [1, 2, 3, 4, 5].map((dayOfWeek) => ({
+          tenantId: tenant.id,
+          professionalId: professional.id,
+          dayOfWeek,
+          startTime: '10:00',
+          endTime: '16:00',
+        })),
+      });
+      const services = await prisma.service.findMany({ where: { tenantId: tenant.id }, select: { id: true } });
+      await prisma.professionalService.createMany({
+        data: services.map((service) => ({ tenantId: tenant.id, professionalId: professional.id, serviceId: service.id })),
+      });
+      console.log('✅ Staff professional created: Lucía');
     }
 
-    // Asegurar categoría y productos de ejemplo
-    const defaultCategory = await prisma.category.upsert({
-      where: { tenantId_name: { tenantId: tenant.id, name: 'Servicios' } },
-      update: {},
-      create: {
-        name: 'Servicios',
-        description: 'Categoría de servicios de belleza',
-        color: '#6366f1',
-        icon: 'Star',
-        order: 1,
-        tenantId: tenant.id,
-      },
-    });
-
-    const products = [
-      {
-        name: 'Manicura Básica',
-        description: 'Servicio de manicura básica con esmaltado',
-        price: 25.0,
-      },
-      {
-        name: 'Manicura Francesa',
-        description: 'Manicura con diseño francés elegante',
-        price: 35.0,
-      },
-      {
-        name: 'Pedicura Completa',
-        description: 'Servicio completo de pedicura con masaje',
-        price: 40.0,
-      },
-      {
-        name: 'Tratamiento Facial',
-        description: 'Tratamiento facial rejuvenecedor',
-        price: 60.0,
-      },
+    // Clientas de ejemplo (cuenta + ficha de cliente)
+    const clients = [
+      { email: 'cliente1@example.com', username: 'cliente1', name: 'María García' },
+      { email: 'cliente2@example.com', username: 'cliente2', name: 'Ana López' },
+      { email: 'cliente3@example.com', username: 'cliente3', name: 'Carmen Rodríguez' },
     ];
-
-    for (const productData of products) {
-      const existingProduct = await prisma.product.findFirst({ where: { name: productData.name, tenantId: tenant.id } });
-      if (!existingProduct) {
-
-        const product = await prisma.product.create({
-          data: {
-            name: productData.name,
-            description: productData.description,
-            price: productData.price,
-            categoryId: defaultCategory.id,
-            userId: admin.id,
-            tenantId: tenant.id,
-          },
-        });
-        console.log('✅ Product created:', product.name);
-      } else {
-        console.log('⚪ Product exists:', existingProduct.name);
-      }
-    }
-
-    // Crear horarios de negocio por defecto
-    const businessHours = [
-      { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', isOpen: true }, // Lunes
-      { dayOfWeek: 2, startTime: '09:00', endTime: '18:00', isOpen: true }, // Martes
-      { dayOfWeek: 3, startTime: '09:00', endTime: '18:00', isOpen: true }, // Miércoles
-      { dayOfWeek: 4, startTime: '09:00', endTime: '18:00', isOpen: true }, // Jueves
-      { dayOfWeek: 5, startTime: '09:00', endTime: '18:00', isOpen: true }, // Viernes
-      { dayOfWeek: 6, startTime: '09:00', endTime: '16:00', isOpen: true }, // Sábado
-      { dayOfWeek: 0, startTime: '00:00', endTime: '00:00', isOpen: false }, // Domingo
-    ];
-
-    for (const hours of businessHours) {
-      const existing = await prisma.businessHour.findFirst({
-        where: { dayOfWeek: hours.dayOfWeek, tenantId: tenant.id }
+    const clientPassword = await bcrypt.hash('cliente123', 10);
+    for (const c of clients) {
+      const client = await prisma.client.upsert({
+        where: { tenantId_email: { tenantId: tenant.id, email: c.email } },
+        update: {},
+        create: { name: c.name, email: c.email, userId: owner.id, tenantId: tenant.id },
       });
-
-      if (!existing) {
-        await prisma.businessHour.create({ data: { ...hours, tenantId: tenant.id } });
-        console.log(`✅ Business hours created for day ${hours.dayOfWeek}`);
-      }
+      await prisma.user.upsert({
+        where: { tenantId_email: { tenantId: tenant.id, email: c.email } },
+        update: { clientId: client.id },
+        create: { ...c, password: clientPassword, role: Role.CLIENT, clientId: client.id, tenantId: tenant.id },
+      });
+      console.log('✅ Client created:', c.email);
     }
 
     // ===== Datos de plataforma (Super Admin) =====
@@ -225,7 +173,8 @@ async function seed() {
     console.log('🎉 Database seeded successfully!');
     console.log('\n📋 Credenciales de acceso:');
     console.log('Salón: salon-principal (login en /salon-principal/login)');
-    console.log('Admin: admin@vortexbeauty.com / admin123');
+    console.log('Dueño: admin@vortexbeauty.com / admin123');
+    console.log('Profesional (STAFF): lucia@vortexbeauty.com / staff123');
     console.log('Clientes: cliente1@example.com, cliente2@example.com, cliente3@example.com / cliente123');
     console.log('Super Admin: superadmin@vortexbeauty.com / super123');
 

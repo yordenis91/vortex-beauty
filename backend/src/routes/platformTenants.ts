@@ -8,8 +8,9 @@ import { config } from '../config';
 import { runInTransaction } from '../lib/db';
 import { authenticatePlatformAdmin, requireSuperAdmin, PlatformAuthRequest } from '../middleware/platformAuth';
 import { invalidateTenantStatus } from '../middleware/auth';
+import { applyVerticalTemplate } from '../services/verticalTemplates';
 import { logAudit } from '../services/auditLogService';
-import { TenantStatus } from '@prisma/client';
+import { TenantStatus, Vertical } from '@prisma/client';
 
 function slugify(input: string): string {
   return input
@@ -51,7 +52,7 @@ router.get('/', async (req, res) => {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } },
-        { users: { some: { email: { contains: search, mode: 'insensitive' }, role: 'ADMIN' } } },
+        { users: { some: { email: { contains: search, mode: 'insensitive' }, role: { in: ['OWNER', 'ADMIN'] } } } },
       ];
     }
 
@@ -60,8 +61,8 @@ router.get('/', async (req, res) => {
         where,
         include: {
           platformSubscription: { include: { plan: true } },
-          users: { where: { role: 'ADMIN' }, take: 1, select: { id: true, email: true, name: true } },
-          _count: { select: { clients: true, staff: true } },
+          users: { where: { role: { in: ['OWNER', 'ADMIN'] } }, take: 1, select: { id: true, email: true, name: true } },
+          _count: { select: { clients: true, professionals: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
@@ -88,6 +89,7 @@ const createTenantSchema = z.object({
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/, 'El slug solo puede tener minúsculas, números y guiones').optional(),
   planId: z.string(),
   billingCycle: z.enum(['MONTHLY', 'YEARLY']).default('MONTHLY'),
+  vertical: z.nativeEnum(Vertical).default('GENERIC'),
   adminName: z.string().min(2),
   adminEmail: z.string().email(),
 });
@@ -139,10 +141,12 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
           email: data.adminEmail,
           name: data.adminName,
           password: hashedPassword,
-          role: 'ADMIN',
+          role: 'OWNER',
           tenantId: tenant.id,
         },
       });
+
+      await applyVerticalTemplate(tx, { tenantId: tenant.id, adminUserId: adminUser.id, vertical: data.vertical });
 
       await tx.tenantSubscription.create({
         data: {
@@ -197,7 +201,7 @@ router.get('/:id', async (req, res) => {
       where: { id },
       include: {
         platformSubscription: { include: { plan: true } },
-        users: { where: { role: 'ADMIN' }, select: { id: true, email: true, name: true, createdAt: true } },
+        users: { where: { role: { in: ['OWNER', 'ADMIN'] } }, select: { id: true, email: true, name: true, createdAt: true } },
       },
     });
 
@@ -209,7 +213,7 @@ router.get('/:id', async (req, res) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [staffCount, clientCount, userCount, appointmentsThisMonth, lastAppointment] = await Promise.all([
-      prisma.staff.count({ where: { tenantId: id } }),
+      prisma.professional.count({ where: { tenantId: id } }),
       prisma.client.count({ where: { tenantId: id } }),
       prisma.user.count({ where: { tenantId: id } }),
       prisma.appointment.count({ where: { tenantId: id, createdAt: { gte: startOfMonth } } }),
@@ -341,7 +345,8 @@ router.post('/:id/impersonate', requireSuperAdmin, async (req: PlatformAuthReque
     const { id } = req.params as { id: string };
 
     const adminUser = await prisma.user.findFirst({
-      where: { tenantId: id, role: 'ADMIN' },
+      where: { tenantId: id, role: { in: ['OWNER', 'ADMIN'] } },
+      orderBy: { createdAt: 'asc' },
       select: { id: true, email: true, role: true, clientId: true, tenantId: true },
     });
 

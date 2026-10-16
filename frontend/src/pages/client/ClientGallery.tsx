@@ -10,7 +10,8 @@ const ClientGallery: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState('');
 
-  const { data: availableSlots = [], isLoading: slotsLoading, refetch: refetchSlots } = useAvailableSlots(selectedDate);
+  const selectedServiceId = selectedItem?.serviceId;
+  const { data: availableSlots = [], isLoading: slotsLoading, refetch: refetchSlots } = useAvailableSlots(selectedDate, selectedItem?.serviceId);
 
   const appointmentMutation = useCreateClientAppointment({
     onSuccess: () => {
@@ -22,13 +23,13 @@ const ClientGallery: React.FC = () => {
   });
 
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && selectedServiceId) {
       refetchSlots();
       // Al cambiar de fecha, el horario elegido para la fecha anterior ya no aplica.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSlot('');
     }
-  }, [selectedDate, refetchSlots]);
+  }, [selectedDate, selectedServiceId, refetchSlots]);
 
   const closeModal = () => {
     setSelectedItem(null);
@@ -47,15 +48,10 @@ const ClientGallery: React.FC = () => {
       return;
     }
 
-    const [hour, minute] = selectedSlot.split(':').map(Number);
-    const endHour = hour + 1;
-    const endTime = `${String(endHour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-
     appointmentMutation.mutate({
-      productId: selectedItem.productId,
+      serviceId: selectedItem.serviceId,
       date: selectedDate,
       startTime: selectedSlot,
-      endTime,
       notes: `Reservado desde inspiración: ${selectedItem.title}`,
     });
   };
@@ -114,7 +110,7 @@ const ClientGallery: React.FC = () => {
                   {item.title}
                 </h3>
                 <span className="font-bold text-pink-600 whitespace-nowrap">
-                  {item.product?.price ?? '—'} {item.product?.currency ?? ''}
+                  {item.service?.price ?? '—'} {item.service?.currency ?? ''}
                 </span>
               </div>
               
@@ -175,7 +171,7 @@ const ClientGallery: React.FC = () => {
                   <img src={selectedItem.imageUrl} alt={selectedItem.title} className="w-full h-60 object-cover" />
                   <div className="p-4">
                     <p className="text-lg font-semibold text-foreground">{selectedItem.title}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{selectedItem.product?.price ?? '—'} {selectedItem.product?.currency ?? ''}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{selectedItem.service?.price ?? '—'} {selectedItem.service?.currency ?? ''}</p>
                   </div>
                 </div>
               </div>
