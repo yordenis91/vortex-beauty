@@ -35,8 +35,8 @@ function render(subject: string, lines: string[], ctx: MessageContext, footer?: 
   const manage = ctx.manageUrl
     ? [
         ctx.cancelWindowHrs > 0
-          ? `Puedes cambiarla o cancelarla hasta ${ctx.cancelWindowHrs} horas antes:`
-          : 'Puedes cambiarla o cancelarla desde este enlace:',
+          ? `Puedes cambiar o cancelar hasta ${ctx.cancelWindowHrs} horas antes:`
+          : 'Puedes cambiar o cancelar desde este enlace:',
         ctx.manageUrl,
       ]
     : [];
@@ -53,26 +53,26 @@ ${footer ? `<p>${escapeHtml(footer)}</p>` : ''}
 const cap = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
 export const confirmedMessage = (ctx: MessageContext) =>
-  render(`Tu ${ctx.appointmentWord} en ${ctx.salonName} está confirmada`, [`Hola ${ctx.customerName},`, `Tu ${ctx.appointmentWord} quedó confirmada.`], ctx);
+  render(`Confirmación de tu ${ctx.appointmentWord} en ${ctx.salonName}`, [`Hola ${ctx.customerName},`, `Confirmamos tu ${ctx.appointmentWord}.`], ctx);
 
 export const reminderMessage = (ctx: MessageContext, hoursBefore: number) =>
   render(
-    `Recordatorio: ${ctx.appointmentWord} ${hoursBefore >= 24 ? 'mañana' : 'en unas horas'} en ${ctx.salonName}`,
+    `Recordatorio de tu ${ctx.appointmentWord} ${hoursBefore >= 24 ? 'mañana' : 'en unas horas'} en ${ctx.salonName}`,
     [`Hola ${ctx.customerName},`, `Te recordamos tu ${ctx.appointmentWord}:`],
     ctx
   );
 
 export const cancelledMessage = (ctx: MessageContext, by: 'CUSTOMER' | 'STAFF' | 'SYSTEM') =>
   render(
-    `${cap(ctx.appointmentWord)} cancelada en ${ctx.salonName}`,
-    [`Hola ${ctx.customerName},`, by === 'CUSTOMER' ? `Tu ${ctx.appointmentWord} fue cancelada.` : `El salón canceló tu ${ctx.appointmentWord}. Disculpa las molestias.`],
+    `Cancelación de tu ${ctx.appointmentWord} en ${ctx.salonName}`,
+    [`Hola ${ctx.customerName},`, by === 'CUSTOMER' ? `Cancelamos tu ${ctx.appointmentWord}, como pediste.` : `El salón canceló tu ${ctx.appointmentWord}. Disculpa las molestias.`],
     { ...ctx, manageUrl: null }
   );
 
 /** Aviso corto para el dueño (correo y Telegram). */
 export function ownerAlert(kind: 'created' | 'cancelled', ctx: MessageContext, source: string): string {
   const when = formatLocalDateTime(ctx.timezone, ctx.startsAt);
-  const head = kind === 'created' ? `Nueva ${ctx.appointmentWord}` : `${cap(ctx.appointmentWord)} cancelada`;
+  const head = `${cap(ctx.appointmentWord)}: ${kind === 'created' ? 'nueva reserva' : 'cancelación'}`;
   return [
     `${head} · ${ctx.salonName}`,
     `${ctx.customerName} — ${ctx.serviceName}`,
