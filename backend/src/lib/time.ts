@@ -64,3 +64,8 @@ export function isValidDateString(dateStr: string): boolean {
 export function addDaysToDateString(dateStr: string, days: number): string {
   return DateTime.fromISO(dateStr, { zone: 'utc' }).plus({ days }).toFormat('yyyy-MM-dd');
 }
+
+/** Fecha y hora local legibles en español: "lunes 7 de enero, 10:00". */
+export function formatLocalDateTime(timezone: string, instant: Date): string {
+  return DateTime.fromJSDate(instant, { zone: timezone }).setLocale('es').toFormat("cccc d 'de' LLLL, HH:mm");
+}

@@ -23,8 +23,12 @@ import platformDashboardRoutes from './routes/platformDashboard';
 import publicTenantsRoutes from './routes/publicTenants';
 import billingRoutes from './routes/billing';
 import mercadoPagoWebhookRoutes from './routes/mercadoPagoWebhook';
+import publicBookingRoutes from './routes/publicBooking';
 
 const app = express();
+
+// Detrás de Traefik/Easypanel: sin esto req.ip (y los límites por IP) verían siempre la IP del proxy.
+app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) : 1);
 
 // Orígenes de desarrollo local, siempre permitidos.
 const DEV_ORIGINS = [
@@ -102,6 +106,8 @@ app.use('/api/platform/dashboard', platformDashboardRoutes);
 
 // Info pública por salón (sin auth): usada por la página de registro /:tenantSlug/register
 app.use('/api/public/tenants', publicTenantsRoutes);
+// Reserva pública sin cuenta
+app.use('/api/public/booking', publicBookingRoutes);
 
 // Facturación del propio salón a la plataforma (Mercado Pago)
 app.use('/api/billing', billingRoutes);

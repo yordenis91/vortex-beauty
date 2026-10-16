@@ -28,7 +28,7 @@ npm ci --legacy-peer-deps
 npm run dev                 # http://localhost:5173
 ```
 
-Variables obligatorias del backend: `DATABASE_URL`, `JWT_SECRET`. Recomendadas en producción: `PLATFORM_JWT_SECRET` (distinta de `JWT_SECRET`) y `CORS_ORIGINS`.
+Variables obligatorias del backend: `DATABASE_URL`, `JWT_SECRET`. Para correos de confirmación y recordatorios ver `docs/DEPLOYMENT.md` (SMTP). Recomendadas en producción: `PLATFORM_JWT_SECRET` (distinta de `JWT_SECRET`) y `CORS_ORIGINS`.
 
 ## Tests
 

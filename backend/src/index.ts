@@ -1,6 +1,7 @@
 import { config } from './config';
 import app from './app';
 import { basePrisma } from './prismaClient';
+import { startWorker } from './worker';
 
 // RLS no se aplica a superusuarios ni a roles con BYPASSRLS: si la app se
 // conecta con uno, el aislamiento entre salones depende solo del código.
@@ -19,4 +20,7 @@ async function warnIfRlsBypassed() {
 app.listen(config.port, () => {
   console.log(`🚀 Server running on port ${config.port}`);
   void warnIfRlsBypassed();
+  if (config.workerEmbedded) {
+    startWorker().catch((error) => console.error('[worker] no pudo arrancar (los avisos no se enviarán):', error));
+  }
 });

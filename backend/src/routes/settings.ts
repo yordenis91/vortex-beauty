@@ -98,6 +98,12 @@ const bookingSettingsSchema = z.object({
   maxAdvanceDays: z.number().int().min(1).max(730).optional(),
   cancelWindowHrs: z.number().int().min(0).max(24 * 14).optional(),
   bookingEnabled: z.boolean().optional(),
+  maxActivePerCustomer: z.number().int().min(1).max(50).optional(),
+  reminderHours: z.array(z.number().int().min(1).max(24 * 14)).max(5).optional(),
+  ownerAlerts: z.boolean().optional(),
+  // Telegram: el token solo se escribe (nunca se devuelve); '' lo borra.
+  telegramBotToken: z.string().max(200).optional(),
+  telegramChatId: z.string().max(60).optional(),
   labels: z.record(z.string(), z.string().max(40)).optional(),
 });
 
@@ -117,6 +123,11 @@ async function loadBookingSettings(tenantId: string) {
     maxAdvanceDays: settings?.maxAdvanceDays ?? 60,
     cancelWindowHrs: settings?.cancelWindowHrs ?? 12,
     bookingEnabled: settings?.bookingEnabled ?? true,
+    maxActivePerCustomer: settings?.maxActivePerCustomer ?? 3,
+    reminderHours: settings?.reminderHours ?? [24, 2],
+    ownerAlerts: settings?.ownerAlerts ?? true,
+    telegramConfigured: !!(settings?.telegramBotToken && settings?.telegramChatId),
+    telegramChatId: settings?.telegramChatId ?? '',
     labels: (settings?.labels as Record<string, string> | undefined) ?? {},
   };
 }
@@ -135,7 +146,13 @@ router.get('/booking', async (req, res) => {
 router.put('/booking', requirePermission('settings:manage'), validateBody(bookingSettingsSchema), async (req, res) => {
   try {
     const { tenantId } = req.user!;
-    const { timezone, ...settings } = req.body as z.infer<typeof bookingSettingsSchema>;
+    const { timezone, telegramBotToken, telegramChatId, reminderHours, ...rest } = req.body as z.infer<typeof bookingSettingsSchema>;
+    const settings = {
+      ...rest,
+      ...(reminderHours && { reminderHours: [...new Set(reminderHours)].sort((a, b) => b - a) }),
+      ...(telegramBotToken !== undefined && { telegramBotToken: telegramBotToken || null }),
+      ...(telegramChatId !== undefined && { telegramChatId: telegramChatId || null }),
+    };
 
     await prisma.tenantSettings.upsert({
       where: { tenantId },

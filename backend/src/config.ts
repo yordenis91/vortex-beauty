@@ -18,12 +18,23 @@ if (isProduction && !process.env.PLATFORM_JWT_SECRET) {
   console.warn('[config] PLATFORM_JWT_SECRET no está definida: se reutiliza JWT_SECRET. Define una distinta en producción.');
 }
 
+const databaseUrl = required('DATABASE_URL');
+
 export const config = {
   isProduction,
   port: Number(process.env.PORT) || 3001,
-  databaseUrl: required('DATABASE_URL'),
+  databaseUrl,
   jwtSecret,
   platformJwtSecret,
+  // URL pública del frontend, para los enlaces de los correos ("gestionar mi cita").
+  appPublicUrl: (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/$/, ''),
+  // Cola de trabajos (pg-boss): puede usar otra conexión con permiso para crear su schema.
+  queueDatabaseUrl: process.env.QUEUE_DATABASE_URL || databaseUrl,
+  // 'memory' guarda los trabajos en memoria (tests); 'off' no encola nada.
+  queueMode: (process.env.QUEUE_MODE || 'pgboss') as 'pgboss' | 'memory' | 'off',
+  // Ejecuta el worker dentro del proceso de la API. Pon false si lo despliegas aparte.
+  workerEmbedded: process.env.WORKER_EMBEDDED !== 'false',
+  turnstileSecret: process.env.TURNSTILE_SECRET || '',
   // Orígenes permitidos por CORS, separados por comas (CORS_ORIGINS). Si no se
   // define, cae en los dominios de la demo actual en Easypanel.
   corsOrigins: process.env.CORS_ORIGINS

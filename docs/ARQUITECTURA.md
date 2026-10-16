@@ -90,7 +90,7 @@ Garantías de la base de datos sobre `Appointment`:
 
 ## Disponibilidad
 
-`services/availability/engine.ts` calcula los huecos; `booking.ts` crea, reprograma y cancela recalculando dentro de una transacción SERIALIZABLE. Capas que se aplican, en orden: día cerrado, excepción de fecha, horario comercial, tope diario, antelación mínima y máxima (solo clientes), horario del profesional, ausencias, citas existentes con sus buffers, recurso libre.
+`services/availability/engine.ts` calcula los huecos; `booking.ts` crea, reprograma y cancela recalculando dentro de una transacción, con un candado de aviso por salón y día; las restricciones `EXCLUDE` son la garantía final. Capas que se aplican, en orden: día cerrado, excepción de fecha, horario comercial, tope diario, antelación mínima y máxima (solo clientes), horario del profesional, ausencias, citas existentes con sus buffers, recurso libre.
 
 La hora local de cada salón se guarda como instante absoluto usando `Tenant.timezone` (`lib/time.ts`).
 

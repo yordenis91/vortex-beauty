@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useBookingSettings, useUpdateBookingSettings } from '../hooks/useQueries';
 import type { BookingSettings } from '../types';
@@ -30,18 +30,11 @@ const TIMEZONES = [
 
 const inputClass = 'w-full px-3 py-2 border border-border rounded-lg bg-card focus:ring-2 focus:ring-blue-500 outline-none';
 
-const BookingSettingsCard: React.FC = () => {
-  const { data, isLoading } = useBookingSettings();
-  const [form, setForm] = useState<BookingSettings | null>(null);
+const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }) => {
+  const [form, setForm] = useState<BookingSettings>(initial);
+  const [telegramToken, setTelegramToken] = useState('');
+  const [reminderText, setReminderText] = useState(initial.reminderHours.join(', '));
   const update = useUpdateBookingSettings({ onSuccess: () => toast.success('Ajustes de reserva guardados') });
-
-  useEffect(() => {
-    // Se copia el valor del servidor a un borrador editable cuando llega.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (data) setForm(data);
-  }, [data]);
-
-  if (isLoading || !form) return null;
 
   const set = <K extends keyof BookingSettings>(key: K, value: BookingSettings[K]) => setForm({ ...form, [key]: value });
 
@@ -60,8 +53,23 @@ const BookingSettingsCard: React.FC = () => {
       maxAdvanceDays: form.maxAdvanceDays,
       cancelWindowHrs: form.cancelWindowHrs,
       bookingEnabled: form.bookingEnabled,
+      maxActivePerCustomer: form.maxActivePerCustomer,
+      reminderHours: reminderText
+        .split(/[,\s]+/)
+        .map((v) => parseInt(v))
+        .filter((v) => Number.isFinite(v) && v > 0),
+      ownerAlerts: form.ownerAlerts,
+      telegramChatId: form.telegramChatId,
+      ...(telegramToken ? { telegramBotToken: telegramToken } : {}),
       labels: form.labels,
     });
+    setTelegramToken('');
+  };
+
+  const bookingLink = `${window.location.origin}/${form.slug}/reservar`;
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(bookingLink);
+    toast.success('Enlace copiado');
   };
 
   const num = (value: string) => Math.max(0, parseInt(value) || 0);
@@ -115,6 +123,54 @@ const BookingSettingsCard: React.FC = () => {
           Aceptar reservas en línea
         </label>
 
+        <div className="rounded-lg bg-muted p-3 space-y-2">
+          <div className="text-sm font-medium">Enlace para tus clientes</div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input readOnly value={bookingLink} className={`${inputClass} flex-1`} onFocus={(e) => e.currentTarget.select()} />
+            <button type="button" onClick={() => void copyLink()} className="px-4 py-2 rounded-md border border-border bg-card hover:bg-muted">
+              Copiar
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">Compártelo en tu Instagram, WhatsApp o Google Maps: tus clientes reservan solos, sin cuenta.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Reservas activas por cliente (máx.)</label>
+            <input type="number" min={1} max={50} className={inputClass} value={form.maxActivePerCustomer} onChange={(e) => set('maxActivePerCustomer', Math.max(1, num(e.target.value)))} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Recordatorios (horas antes, separadas por coma)</label>
+            <input className={inputClass} value={reminderText} onChange={(e) => setReminderText(e.target.value)} placeholder="24, 2" />
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-lg border border-border p-3">
+          <h4 className="text-sm font-semibold">Avisos al dueño</h4>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.ownerAlerts} onChange={(e) => set('ownerAlerts', e.target.checked)} />
+            Avisarme por correo cuando haya una reserva nueva o una cancelación
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Token del bot de Telegram (opcional)</label>
+              <input
+                type="password"
+                autoComplete="off"
+                className={inputClass}
+                value={telegramToken}
+                onChange={(e) => setTelegramToken(e.target.value)}
+                placeholder={form.telegramConfigured ? 'Guardado — escribe uno nuevo para cambiarlo' : '123456:ABC...'}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">ID del chat de Telegram</label>
+              <input className={inputClass} value={form.telegramChatId} onChange={(e) => set('telegramChatId', e.target.value)} placeholder="Tu chat o grupo" />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Crea un bot con @BotFather, escríbele una vez y pon aquí su token y tu ID de chat para recibir cada reserva en Telegram.</p>
+        </div>
+
         <div>
           <h4 className="text-sm font-semibold mb-2">Vocabulario</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -139,6 +195,12 @@ const BookingSettingsCard: React.FC = () => {
       </div>
     </form>
   );
+};
+
+// El borrador se inicializa una vez con lo que hay en el servidor.
+const BookingSettingsCard: React.FC = () => {
+  const { data } = useBookingSettings();
+  return data ? <BookingSettingsForm initial={data} /> : null;
 };
 
 export default BookingSettingsCard;
