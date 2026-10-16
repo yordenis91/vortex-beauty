@@ -137,7 +137,7 @@ model User {
 model Client {
   id    String  @id @default(uuid())
   name  String
-  email String
+  email String? // opcional: un cliente de reserva pública puede identificarse solo por teléfono
   code  String?
 
   // Salón al que pertenece esta clienta.
@@ -147,6 +147,8 @@ model Client {
 
   displayName    String?
   phone          String?
+  // Teléfono normalizado (solo dígitos) para reconocer al mismo cliente entre reservas.
+  phoneKey       String?
   address        String?    @db.Text
   city           String?
   state          String?
@@ -176,6 +178,7 @@ model Client {
   updatedAt DateTime @updatedAt
 
   @@unique([tenantId, email])
+  @@unique([tenantId, phoneKey])
   @@index([userId])
   @@index([tenantId])
 }
@@ -409,6 +412,13 @@ model TenantSettings {
   maxAdvanceDays  Int      @default(60) // hasta cuántos días adelante se puede reservar
   cancelWindowHrs Int      @default(12) // el cliente puede cancelar hasta X horas antes (0 = siempre)
   bookingEnabled  Boolean  @default(true) // activa la reserva pública
+  maxActivePerCustomer Int @default(3) // citas futuras activas por cliente en la reserva pública
+
+  // Avisos
+  reminderHours  Int[]    @default([24, 2]) // horas antes de la cita en que se recuerda al cliente
+  ownerAlerts    Boolean  @default(true) // avisar al dueño de reservas y cancelaciones
+  telegramBotToken String? // bot propio del salón para avisos al dueño (nunca se devuelve por la API)
+  telegramChatId   String?
 
   // Vocabulario de la interfaz: { "customer": "clienta", "appointment": "cita", ... }
   labels Json @default("{}")
@@ -442,6 +452,8 @@ model Appointment {
   bufferAfterMin  Int     @default(0)
 
   source      BookingSource @default(ADMIN)
+  // Secreto del enlace "gestionar mi cita" (cancelar / reprogramar sin cuenta).
+  cancelToken String?       @unique
   cancelledBy CancelledBy?
   cancelledAt DateTime?
 
@@ -480,6 +492,8 @@ model Notification {
   status    NotificationStatus @default(PENDING)
   isRead    Boolean            @default(false) // Para la campanita del cliente
   errorLog  String?            @db.Text // Log de errores si falla el envío
+  // Evita enviar dos veces el mismo aviso (p. ej. si un trabajo se reintenta).
+  dedupeKey String?
 
   // Salón que envió esta notificación.
   tenantId String
@@ -493,6 +507,7 @@ model Notification {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([tenantId, dedupeKey])
   @@index([clientId])
   @@index([status])
   @@index([isRead])
@@ -606,6 +621,7 @@ enum Vertical {
 enum NotificationType {
   WHATSAPP
   EMAIL
+  TELEGRAM
   SYSTEM
 }
 

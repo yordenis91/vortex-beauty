@@ -277,6 +277,11 @@ export interface BookingSettings {
   maxAdvanceDays: number;
   cancelWindowHrs: number;
   bookingEnabled: boolean;
+  maxActivePerCustomer: number;
+  reminderHours: number[];
+  ownerAlerts: boolean;
+  telegramConfigured: boolean;
+  telegramChatId: string;
   labels: Record<string, string>;
 }
 

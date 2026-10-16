@@ -32,6 +32,8 @@ import Billing from './pages/Billing';
 import AdminGallery from './pages/AdminGallery';
 import Professional from './pages/Professionals';
 import Resources from './pages/Resources';
+import Booking from './pages/public/Booking';
+import ManageBooking from './pages/public/ManageBooking';
 import { isPanelRole, canManage } from './types';
 
 /**
@@ -151,6 +153,9 @@ function App() {
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/:tenantSlug/login" element={<Login />} />
+            {/* Reserva pública, sin cuenta */}
+            <Route path="/:tenantSlug/reservar" element={<Booking />} />
+            <Route path="/:tenantSlug/mi-cita/:token" element={<ManageBooking />} />
             <Route path="/:tenantSlug/register" element={<Register />} />
             <Route path="/design-system" element={<DesignSystem />} />
 

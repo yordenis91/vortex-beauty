@@ -414,6 +414,12 @@ const Appointments: React.FC = () => {
     }
   };
 
+  // Cambio rápido de estado desde la tarjeta de la agenda
+  const quickStatus = (appointment: Appointment, status: AppointmentStatus) => {
+    if (status === 'CANCELLED' && !window.confirm('¿Cancelar esta cita? Se avisará al cliente.')) return;
+    updateMutation.mutate({ id: appointment.id, appointmentData: { status } });
+  };
+
   // Funciones de Acciones
   const handleDeleteAppointment = (id: string) => {
     deleteMutation.mutate(id);
@@ -708,7 +714,39 @@ const Appointments: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      <div className="mt-4 pt-4 border-t border-border flex justify-end">
+                      <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap gap-2">
+                          {appointment.status === 'PENDING' && (
+                            <button
+                              onClick={() => quickStatus(appointment, 'SCHEDULED')}
+                              className="px-3 py-1 rounded-full text-xs font-medium border border-blue-200 text-blue-700 hover:bg-blue-50"
+                            >
+                              Confirmar
+                            </button>
+                          )}
+                          {(appointment.status === 'SCHEDULED' || appointment.status === 'PENDING') && (
+                            <>
+                              <button
+                                onClick={() => quickStatus(appointment, 'COMPLETED')}
+                                className="px-3 py-1 rounded-full text-xs font-medium border border-green-200 text-green-700 hover:bg-green-50"
+                              >
+                                Completar
+                              </button>
+                              <button
+                                onClick={() => quickStatus(appointment, 'NO_SHOW')}
+                                className="px-3 py-1 rounded-full text-xs font-medium border border-border text-muted-foreground hover:bg-muted"
+                              >
+                                No asistió
+                              </button>
+                              <button
+                                onClick={() => quickStatus(appointment, 'CANCELLED')}
+                                className="px-3 py-1 rounded-full text-xs font-medium border border-red-200 text-red-700 hover:bg-red-50"
+                              >
+                                Cancelar
+                              </button>
+                            </>
+                          )}
+                        </div>
                         <button
                           onClick={() => openModal(appointment)}
                           className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"

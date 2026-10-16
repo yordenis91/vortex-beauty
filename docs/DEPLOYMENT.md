@@ -107,3 +107,21 @@ Las migraciones (`prisma migrate deploy`) siguen corriendo con el usuario admini
 ## Acceso por salón
 
 El login y el registro son siempre por salón: `/:slug/login` y `/:slug/register`. El mismo email puede existir en salones distintos.
+
+## Reserva pública, correos y recordatorios
+
+Cada salón tiene una página pública de reserva sin cuenta en `https://<tu-dominio>/<slug>/reservar`. El cliente recibe un enlace secreto (`/<slug>/mi-cita/<token>`) para cambiar o cancelar.
+
+Variables del API para los avisos:
+
+| Variable | Para qué |
+|---|---|
+| `APP_PUBLIC_URL` | URL pública del frontend; se usa en los enlaces de los correos (`https://app.ejemplo.com`) |
+| `SMTP_URL` o `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS` | Envío de correos con cualquier proveedor SMTP (Resend, Brevo, Gmail...). Sin esto, los avisos quedan registrados como `FAILED` |
+| `MAIL_FROM` | Remitente, p. ej. `Mi Salón <reservas@misalon.com>` |
+| `TURNSTILE_SECRET` y `TURNSTILE_SITE_KEY` | Verificación anti-bots de Cloudflare Turnstile en la reserva pública (opcional) |
+| `QUEUE_DATABASE_URL` | Conexión de la cola de trabajos con permiso para crear el schema `pgboss`. Por defecto usa `DATABASE_URL` |
+| `WORKER_EMBEDDED` | `false` si ejecutas el worker aparte (`node dist/src/worker.js`) |
+| `TRUST_PROXY` | Saltos de proxy delante de la API (por defecto 1: Traefik) para que los límites por IP vean la IP real |
+
+La cola usa `pg-boss` sobre la propia Postgres: no hace falta Redis. Los recordatorios (por defecto 24 h y 2 h antes) y las confirmaciones los procesa el worker, que corre dentro de la API salvo que se desactive. Los avisos al dueño pueden ir también a Telegram (token del bot y chat en Ajustes).
