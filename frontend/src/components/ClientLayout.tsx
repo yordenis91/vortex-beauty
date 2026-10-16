@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, Calendar, Sparkles, BarChart3, Home, User, ChevronDown } from 'lucide-react';
+import { Menu, Calendar, Sparkles, Home, User, ChevronDown } from 'lucide-react';
 import NotificationSidebar from './NotificationSidebar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,6 @@ const ClientLayout: React.FC = () => {
     { name: 'Mi Resumen', href: '/portal/dashboard', icon: Home },
     { name: 'Mis Citas', href: '/portal/appointments', icon: Calendar },
     { name: 'Inspiración', href: '/portal/gallery', icon: Sparkles },
-    { name: 'Facturas/Pagos', href: '/portal/my-invoices', icon: BarChart3 },
     { name: 'Mi Perfil', href: '/portal/my-profile', icon: User },
   ];
 

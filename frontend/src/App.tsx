@@ -17,14 +17,10 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
-import Invoices from './pages/Invoices';
 import Products from './pages/Products';
 import Categories from './pages/Categories';
-import KnowledgeBase from './pages/KnowledgeBase';
 import Appointments from './pages/Appointments';
 import Notifications from './pages/Notifications';
-import MyInvoices from './pages/MyInvoices';
-import MySubscriptions from './pages/MySubscriptions';
 import MyProfile from './pages/MyProfile';
 import ClientDashboard from './pages/client/ClientDashboard';
 import DesignSystem from './pages/DesignSystem';
@@ -142,7 +138,6 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
             <Route path="/:tenantSlug/register" element={<Register />} />
             <Route path="/design-system" element={<DesignSystem />} />
 
@@ -178,12 +173,10 @@ function App() {
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="clients" element={<Clients />} />
-              <Route path="invoices" element={<Invoices />} />
               <Route path="appointments" element={<Appointments />} />
               <Route path="staff" element={<Staff />} />
               <Route path="products" element={<Products />} />
               <Route path="categories" element={<Categories />} />
-              <Route path="knowledge-base" element={<KnowledgeBase />} />
               <Route path="gallery" element={<AdminGallery />} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="profile" element={<MyProfile />} />
@@ -204,8 +197,6 @@ function App() {
               <Route path="dashboard" element={<ClientDashboard />} />
               <Route path="appointments" element={<ClientAppointments />} />
               <Route path="gallery" element={<ClientGallery />} />
-              <Route path="my-invoices" element={<MyInvoices />} />
-              <Route path="my-subscriptions" element={<MySubscriptions />} />
               <Route path="my-profile" element={<ClientProfile />} />
             </Route>
 

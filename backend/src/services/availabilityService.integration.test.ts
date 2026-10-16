@@ -60,16 +60,14 @@ describeIfDb('availabilityService (integración con Postgres)', () => {
     clientId = client.id;
 
     const category = await prisma.category.create({
-      data: { name: 'Manicura', type: 'PRODUCT', tenantId },
+      data: { name: 'Manicura', tenantId },
     });
     categoryId = category.id;
 
     const product = await prisma.product.create({
       data: {
         name: 'Manicura básica',
-        type: 'MANICURA_BASICA',
         price: 20,
-        billingCycle: 'ONE_TIME',
         categoryId,
         userId,
         tenantId,

@@ -3,12 +3,8 @@ import toast from 'react-hot-toast';
 import api from '../lib/api';
 import type {
   Client,
-  Project,
-  Invoice,
   Product,
   Category,
-  Ticket,
-  Subscription,
   Appointment,
   GalleryItem,
   ClosedDate,
@@ -18,16 +14,9 @@ import type {
   ClientProfileResponse,
   UpdateClientProfileRequest,
   CreateGalleryItemRequest,
-  KnowledgeBase,
-  TicketMessage,
   CreateClientRequest,
-  CreateInvoiceRequest,
   CreateProductRequest,
   CreateCategoryRequest,
-  CreateSubscriptionRequest,
-  CreateTicketRequest,
-  CreateTicketMessageRequest,
-  CreateKnowledgeBaseRequest,
   CreateAppointmentRequest,
   UpdateAppointmentRequest,
   CreateStaffRequest,
@@ -61,27 +50,7 @@ export const useClients = () => {
 };
 
 // Projects
-export const useProjects = () => {
-  return useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const response = await api.get<Project[]>('/projects');
-      return response.data;
-    },
-  });
-};
-
 // Invoices
-export const useInvoices = () => {
-  return useQuery({
-    queryKey: ['invoices'],
-    queryFn: async () => {
-      const response = await api.get<Invoice[]>('/invoices');
-      return response.data;
-    },
-  });
-};
-
 // Products
 export const useProducts = () => {
   return useQuery({
@@ -106,16 +75,6 @@ export const useCategories = (type?: string) => {
 };
 
 // Tickets
-export const useTickets = () => {
-  return useQuery({
-    queryKey: ['tickets'],
-    queryFn: async () => {
-      const response = await api.get<Ticket[]>('/tickets');
-      return response.data;
-    },
-  });
-};
-
 // Mutations
 export const useUpdateClient = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
@@ -168,118 +127,6 @@ export const useCreateClient = (options?: MutationOptions) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useUpdateProject = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async ({ id, projectData }: { id: string; projectData: Partial<Project> }) => {
-      const response = await api.put(`/projects/${id}`, projectData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useDeleteProject = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (id: string) => {
-      await api.delete(`/projects/${id}`);
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useCreateProject = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (projectData: Partial<Project>) => {
-      const response = await api.post('/projects', projectData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useCreateInvoice = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (invoiceData: CreateInvoiceRequest) => {
-      const response = await api.post('/invoices', invoiceData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useUpdateInvoice = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async ({ id, invoiceData }: { id: string; invoiceData: Partial<CreateInvoiceRequest> }) => {
-      const response = await api.put(`/invoices/${id}`, invoiceData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useDeleteInvoice = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (id: string) => {
-      await api.delete(`/invoices/${id}`);
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
@@ -397,134 +244,7 @@ export const useDeleteCategory = (options?: MutationOptions) => {
   });
 };
 
-export const useCreateTicket = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (ticketData: CreateTicketRequest) => {
-      const response = await api.post('/tickets', ticketData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useSubscriptions = () => {
-  return useQuery({
-    queryKey: ['subscriptions'],
-    queryFn: async () => {
-      const response = await api.get<Subscription[]>('/subscriptions');
-      return response.data;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
-export const useCreateSubscription = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (subscriptionData: CreateSubscriptionRequest) => {
-      const response = await api.post('/subscriptions', subscriptionData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useCancelSubscription = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (id: string) => {
-      const response = await api.put(`/subscriptions/${id}/cancel`, {});
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useDeleteSubscription = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (id: string) => {
-      await api.delete(`/subscriptions/${id}`);
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useRenewSubscription = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (id: string) => {
-      const response = await api.post(`/subscriptions/${id}/renew`, {});
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
 // Portal hooks - Client-specific data
-export const useMyInvoices = () => {
-  return useQuery({
-    queryKey: ['my-invoices'],
-    queryFn: async () => {
-      const response = await api.get<Invoice[]>('/portal/my-invoices');
-      return response.data;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
-export const useMySubscriptions = () => {
-  return useQuery({
-    queryKey: ['my-subscriptions'],
-    queryFn: async () => {
-      const response = await api.get<Subscription[]>('/portal/my-subscriptions');
-      return response.data;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-};
-
 export const useMyProfile = () => {
   return useQuery({
     queryKey: ['my-profile'],
@@ -568,125 +288,8 @@ export const useUpdateClientProfile = (options?: MutationOptions) => {
 };
 
 // Knowledge Base
-export const useKnowledgeBase = () => {
-  return useQuery({
-    queryKey: ['knowledge-base'],
-    queryFn: async () => {
-      const response = await api.get<KnowledgeBase[]>('/knowledge-base');
-      return response.data;
-    },
-  });
-};
-
-export const useCreateKnowledgeBase = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (articleData: CreateKnowledgeBaseRequest) => {
-      const response = await api.post('/knowledge-base', articleData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useUpdateKnowledgeBase = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async ({ id, articleData }: { id: string; articleData: Partial<CreateKnowledgeBaseRequest> }) => {
-      const response = await api.put(`/knowledge-base/${id}`, articleData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-export const useDeleteKnowledgeBase = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (id: string) => {
-      await api.delete(`/knowledge-base/${id}`);
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['knowledge-base'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
 // Ticket Messages
-export const useTicketMessages = (ticketId: string) => {
-  return useQuery({
-    queryKey: ['ticket-messages', ticketId],
-    queryFn: async () => {
-      const response = await api.get<TicketMessage[]>(`/tickets/${ticketId}/messages`);
-      return response.data;
-    },
-    enabled: !!ticketId,
-  });
-};
-
-export const useCreateTicketMessage = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async ({ ticketId, messageData }: { ticketId: string; messageData: CreateTicketMessageRequest }) => {
-      const response = await api.post(`/tickets/${ticketId}/messages`, messageData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      const { ticketId } = variables;
-      queryClient.invalidateQueries({ queryKey: ['ticket-messages', ticketId] });
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
 // Ticket Updates
-export const useUpdateTicket = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async ({ id, ticketData }: { id: string; ticketData: Partial<Ticket> }) => {
-      const response = await api.patch(`/tickets/${id}`, ticketData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['tickets'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
 // Appointments
 export const useAppointments = () => {
   return useQuery({

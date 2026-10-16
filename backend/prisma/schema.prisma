@@ -16,25 +16,6 @@ enum Role {
   CLIENT
 }
 
-enum InvoiceStatus {
-  PENDING
-  PAID
-  CANCELLED
-  OVERDUE // Añadido: útil para facturas vencidas
-}
-
-enum ProjectStatus {
-  PLANNING
-  ACTIVE
-  COMPLETED
-  ON_HOLD
-}
-
-enum ClientType {
-  CUSTOMER
-  SUPPLIER
-}
-
 enum TenantStatus {
   ACTIVE
   TRIAL
@@ -45,8 +26,7 @@ enum TenantStatus {
 // Todo lo de aquí abajo es a nivel de la plataforma SaaS, no de un salón
 // (tenant) concreto: quién administra la plataforma, qué le cobra a cada
 // salón y con qué plan. Se mantiene deliberadamente separado de los modelos
-// de negocio de cada salón (Subscription/Invoice son lo que EL SALÓN le
-// cobra a SUS clientas; esto es lo que EL SAAS le cobra AL SALÓN).
+// de negocio de cada salón: esto es lo que EL SAAS le cobra AL SALÓN.
 
 enum PlatformRole {
   SUPER_ADMIN
@@ -81,10 +61,7 @@ enum AuditActorType {
 // separación multitenant: toda tabla de datos de negocio lleva tenantId para
 // que los datos de un salón nunca sean visibles para otro.
 //
-// tenantId es obligatorio (NOT NULL) en todas las tablas de datos de negocio,
-// salvo Ticket: el sistema de tickets de soporte es funcionalidad heredada sin
-// ninguna ruta ni pantalla que lo use, así que se deja fuera del alcance del
-// aislamiento multitenant en vez de invertir en scoping de código muerto.
+// tenantId es obligatorio (NOT NULL) en todas las tablas de datos de negocio.
 model Tenant {
   id       String       @id @default(uuid())
   name     String // Nombre comercial del salón
@@ -95,7 +72,6 @@ model Tenant {
 
   users             User[]
   clients           Client[]
-  projects          Project[]
   products          Product[]
   categories        Category[]
   staff             Staff[]
@@ -103,16 +79,11 @@ model Tenant {
   businessHours     BusinessHour[]
   closedDates       ClosedDate[]
   scheduleOverrides ScheduleOverride[]
-  invoices          Invoice[]
-  subscriptions     Subscription[]
-  tickets           Ticket[]
-  knowledgeBase     KnowledgeBase[]
   notifications     Notification[]
   galleryItems      GalleryItem[]
 
   // Suscripción de este salón a un Plan de la plataforma (lo que el SaaS le
-  // cobra al salón), y sus facturas de plataforma. Distinto de Subscription/
-  // Invoice, que son la facturación del salón a SUS clientas.
+  // cobra al salón), y sus facturas de plataforma.
   platformSubscription TenantSubscription?
   platformInvoices     PlatformInvoice[]
 
@@ -141,17 +112,8 @@ model User {
   client   Client? @relation("UserAsClient", fields: [clientId], references: [id], onDelete: SetNull)
 
   // Relaciones existentes
-  projects Project[]
   clients  Client[]  @relation("AdminofClient") // Relación inversa: admin de varios clientes
-  invoices Invoice[]
-
-  // Nuevas relaciones para HostBilling
   products       Product[]
-  subscriptions  Subscription[]
-  tickets        Ticket[]        @relation("TicketAssignee")
-  ticketCreators Ticket[]        @relation("TicketCreator")
-  ticketMessages TicketMessage[]
-  knowledgeBase  KnowledgeBase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -172,20 +134,13 @@ model Client {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   displayName    String?
-  businessNumber String?
-  type           ClientType @default(CUSTOMER)
   phone          String?
-  company        String?
   address        String?    @db.Text
   city           String?
   state          String?
   zipCode        String?
   country        String?
-  secondaryEmail String?
   currency       String     @default("USD")
-  groupId        String?
-  ownerId        String?
-  taxId          String? // CIF/NIF/RUT para la facturación
 
   // Foto de perfil (Base64)
   imageUrl String? @db.Text
@@ -198,12 +153,6 @@ model Client {
   clientUsers User[] @relation("UserAsClient")
 
   // Relaciones existentes
-  projects Project[]
-  invoices Invoice[]
-
-  // Nuevas relaciones para HostBilling
-  subscriptions Subscription[]
-  tickets       Ticket[]
 
   // Relación con citas
   appointments Appointment[]
@@ -219,98 +168,11 @@ model Client {
   @@index([tenantId])
 }
 
-model Project {
-  id          String        @id @default(uuid())
-  name        String
-  description String?       @db.Text
-  status      ProjectStatus @default(ACTIVE)
-
-  // Salón al que pertenece este proyecto.
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Claves foráneas
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  // Relaciones
-  invoices Invoice[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([clientId])
-  @@index([tenantId])
-}
-
-model Invoice {
-  id            String        @id @default(uuid())
-  invoiceNumber String
-  issueDate     DateTime      @default(now())
-  dueDate       DateTime
-  status        InvoiceStatus @default(PENDING)
-
-  // Usamos Decimal para evitar errores de coma flotante en dinero
-  subtotal    Decimal @db.Decimal(10, 2)
-  taxRate     Decimal @default(0) @db.Decimal(5, 2) // Porcentaje de impuestos (ej. 21.00)
-  totalAmount Decimal @db.Decimal(10, 2)
-  notes       String? @db.Text
-
-  // Salón al que pertenece esta factura.
-  tenantId String
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Claves foráneas
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Restrict)
-
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-
-  // Relaciones
-  items      InvoiceItem[]
-  orderItems OrderItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([tenantId, invoiceNumber])
-  @@index([clientId])
-  @@index([invoiceNumber])
-  @@index([userId])
-  @@index([tenantId])
-}
-
-model InvoiceItem {
-  id          String  @id @default(uuid())
-  description String
-  quantity    Int     @default(1)
-  unitPrice   Decimal @db.Decimal(10, 2)
-  total       Decimal @db.Decimal(10, 2)
-
-  // Clave foránea
-  invoiceId String
-  // Si se borra la factura, se borran sus items (Cascade)
-  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-
-  @@index([invoiceId])
-}
-
-// ================= Nuevas entidades para HostBilling =================
-
 // Categorías para organizar productos y tickets
 model Category {
   id          String       @id @default(uuid())
   name        String
   description String?
-  type        CategoryType // PRODUCT, TICKET, KNOWLEDGE_BASE
   color       String? // Para UI (hex color)
   icon        String? // Nombre del icono
   order       Int          @default(0) // Para ordenar categorías
@@ -322,13 +184,11 @@ model Category {
 
   // Relaciones
   products Product[]
-  tickets  Ticket[]
-  articles KnowledgeBase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([tenantId, name, type])
+  @@unique([tenantId, name])
   @@index([tenantId])
 }
 
@@ -337,17 +197,14 @@ model Product {
   id          String      @id @default(uuid())
   name        String
   description String?     @db.Text
-  type        ProductType // MANICURA_BASICA, DISENO_ARTISTICO, UÑAS_ACRILICAS, UÑAS_GEL, PEDICURA, REPARACION, EXTENSIONES, TRATAMIENTO_SPA
 
   // Precios
   price        Decimal      @db.Decimal(10, 2)
   currency     String       @default("USD")
-  billingCycle BillingCycle // MONTHLY, YEARLY, ONE_TIME, QUARTERLY
 
   // Estado y configuración
   status          ProductStatus @default(ACTIVE)
   isPublic        Boolean       @default(true) // Visible en portal de cliente
-  stock           Int? // Para productos limitados (null = unlimited)
   durationMinutes Int           @default(60) // Duración del servicio; determina la hora de fin de la cita
 
   // Salón al que pertenece este producto/servicio.
@@ -364,8 +221,6 @@ model Product {
   user   User   @relation(fields: [userId], references: [id])
 
   // Relaciones
-  subscriptions Subscription[]
-  orderItems    OrderItem[]
   appointments  Appointment[]
   galleryItems  GalleryItem[]
 
@@ -374,7 +229,6 @@ model Product {
 
   @@index([categoryId])
   @@index([userId])
-  @@index([type])
   @@index([tenantId])
 }
 
@@ -396,176 +250,6 @@ model GalleryItem {
 
   @@index([productId])
   @@index([tenantId])
-}
-
-// Órdenes/Suscripciones
-model Subscription {
-  id                 String             @id @default(uuid())
-  subscriptionNumber String
-  status             SubscriptionStatus @default(ACTIVE)
-
-  // Fechas importantes
-  startDate   DateTime  @default(now())
-  endDate     DateTime?
-  nextBilling DateTime?
-  cancelledAt DateTime?
-
-  // Salón al que pertenece esta suscripción.
-  tenantId String
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Producto suscrito
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-
-  // Cliente suscriptor
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id])
-
-  // Usuario que gestiona
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  // Configuración de facturación
-  autoRenew Boolean @default(true)
-  notes     String? @db.Text
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([tenantId, subscriptionNumber])
-  @@index([clientId])
-  @@index([productId])
-  @@index([userId])
-  @@index([status])
-  @@index([tenantId])
-}
-
-// Items de órdenes (para compras únicas)
-model OrderItem {
-  id String @id @default(uuid())
-
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
-
-  quantity  Int     @default(1)
-  unitPrice Decimal @db.Decimal(10, 2)
-  total     Decimal @db.Decimal(10, 2)
-
-  // Relación con invoice (opcional, para compras que generan factura)
-  invoiceId String?
-  invoice   Invoice? @relation(fields: [invoiceId], references: [id])
-
-  createdAt DateTime @default(now())
-
-  @@index([productId])
-  @@index([invoiceId])
-}
-
-// Sistema de Tickets de Soporte
-model Ticket {
-  id           String       @id @default(uuid())
-  ticketNumber String       @unique
-  subject      String
-  description  String       @db.Text
-  status       TicketStatus @default(OPEN)
-  priority     Priority     @default(MEDIUM)
-
-  // Salón al que pertenece este ticket (opcional por ahora; se vuelve obligatoria cuando se filtren las rutas por tenant, en la siguiente fase).
-  tenantId String?
-
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Categorización
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id])
-
-  // Cliente que creó el ticket
-  clientId String?
-  client   Client? @relation(fields: [clientId], references: [id])
-
-  // Usuario asignado (agente de soporte)
-  assignedToId String?
-  assignedTo   User?   @relation("TicketAssignee", fields: [assignedToId], references: [id])
-
-  // Usuario que creó el ticket
-  userId String
-  user   User   @relation("TicketCreator", fields: [userId], references: [id])
-
-  // Relaciones
-  messages TicketMessage[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // NOTA (fase 2 pendiente): igual que invoiceNumber, se acotará por tenant
-  // junto con el filtrado de rutas.
-  @@index([clientId])
-  @@index([categoryId])
-  @@index([assignedToId])
-  @@index([status])
-  @@index([tenantId])
-}
-
-// Mensajes en tickets
-model TicketMessage {
-  id         String  @id @default(uuid())
-  message    String  @db.Text
-  isInternal Boolean @default(false) // Solo visible para agentes
-
-  // Usuario que envió el mensaje
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  // Ticket al que pertenece
-  ticketId String
-  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@index([ticketId])
-  @@index([userId])
-}
-
-// Knowledge Base (Base de Conocimiento)
-model KnowledgeBase {
-  id      String  @id @default(uuid())
-  title   String
-  content String  @db.Text
-  excerpt String? @db.Text // Resumen corto
-  slug    String // Para URLs amigables
-
-  // Salón al que pertenece este artículo.
-  tenantId String
-
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Categorización
-  categoryId String
-  category   Category @relation(fields: [categoryId], references: [id])
-
-  // Estado
-  status   KBStatus @default(PUBLISHED)
-  isPublic Boolean  @default(true) // Visible para clientes
-
-  // Usuario que creó el artículo
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  // Metadata
-  views      Int @default(0)
-  helpful    Int @default(0) // Votos positivos
-  notHelpful Int @default(0) // Votos negativos
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([tenantId, slug])
-  @@index([categoryId])
-  @@index([userId])
-  @@index([tenantId])
-  @@index([status])
 }
 
 // Profesionales del salón. El horario comercial (BusinessHour) sigue siendo
@@ -716,23 +400,6 @@ model ScheduleOverride {
 
 // ================= Enums adicionales =================
 
-enum CategoryType {
-  PRODUCT
-  TICKET
-  KNOWLEDGE_BASE
-}
-
-enum ProductType {
-  MANICURA_BASICA
-  DISENO_ARTISTICO
-  UÑAS_ACRILICAS
-  UÑAS_GEL
-  PEDICURA
-  REPARACION
-  EXTENSIONES
-  TRATAMIENTO_SPA
-}
-
 enum BillingCycle {
   ONE_TIME
   MONTHLY
@@ -745,35 +412,6 @@ enum ProductStatus {
   ACTIVE
   INACTIVE
   DISCONTINUED
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  PENDING
-  CANCELLED
-  EXPIRED
-  SUSPENDED
-}
-
-enum TicketStatus {
-  OPEN
-  IN_PROGRESS
-  WAITING_FOR_CLIENT
-  RESOLVED
-  CLOSED
-}
-
-enum Priority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
-
-enum KBStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
 }
 
 enum AppointmentStatus {
@@ -889,7 +527,7 @@ model TenantSubscription {
 }
 
 // Lo que el SaaS le factura al salón (no lo que el salón factura a sus
-// clientas — eso es el modelo Invoice).
+// clientas).
 model PlatformInvoice {
   id            String @id @default(uuid())
   invoiceNumber String @unique

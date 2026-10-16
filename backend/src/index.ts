@@ -1,4 +1,4 @@
-import "dotenv/config";
+import { config } from './config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -6,13 +6,8 @@ import rateLimit from 'express-rate-limit';
 import prisma from './prismaClient';
 import authRoutes from './routes/auth';
 import clientRoutes from './routes/clients';
-import projectRoutes from './routes/projects';
-import invoiceRoutes from './routes/invoices';
 import productRoutes from './routes/products';
 import categoryRoutes from './routes/categories';
-import subscriptionRoutes from './routes/subscriptions';
-import ticketRoutes from './routes/tickets';
-import knowledgeBaseRoutes from './routes/knowledgeBase';
 import appointmentRoutes from './routes/appointments';
 import notificationRoutes from './routes/notifications';
 import portalRoutes from './routes/portal';
@@ -30,7 +25,7 @@ import billingRoutes from './routes/billing';
 import mercadoPagoWebhookRoutes from './routes/mercadoPagoWebhook';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = config.port;
 
 // Orígenes de desarrollo local, siempre permitidos.
 const DEV_ORIGINS = [
@@ -43,21 +38,9 @@ const DEV_ORIGINS = [
   'http://localhost:3002',
 ];
 
-// Orígenes de producción/staging: configurables por entorno (CORS_ORIGINS,
-// separados por comas). Si no se define, cae en los dominios de despliegue
-// actuales para no romper el entorno en producción.
-const DEFAULT_PROD_ORIGINS = [
-  'https://deploy-vortex-frontend.wgteoi.easypanel.host',
-  'https://deploy-vortex-backend.wgteoi.easypanel.host',
-];
-
-const EXTRA_ORIGINS = process.env.CORS_ORIGINS
-  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
-  : DEFAULT_PROD_ORIGINS;
-
 // 1. Configuramos CORS explícitamente para tu frontend
 app.use(cors({
-  origin: [...DEV_ORIGINS, ...EXTRA_ORIGINS],
+  origin: [...DEV_ORIGINS, ...config.corsOrigins],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -87,13 +70,8 @@ app.use('/api/platform/auth/login', authLimiter);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/invoices', invoiceRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use('/api/subscriptions', subscriptionRoutes);
-app.use('/api/tickets', ticketRoutes);
-app.use('/api/knowledge-base', knowledgeBaseRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notifications', notificationRoutes);
 

@@ -1,247 +1,83 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useClients, useInvoices } from '../hooks/useQueries';
-import {
-  Users,
-  FileText,
-  DollarSign,
-  Calendar,
-  Package,
-  BookOpen,
-  ArrowRight
-} from 'lucide-react';
+import { Calendar, CheckCircle2, Clock, Users, ArrowRight } from 'lucide-react';
+import { useAppointments, useClients } from '../hooks/useQueries';
+
+const todayStr = () => new Date().toISOString().split('T')[0];
 
 const Dashboard: React.FC = () => {
   const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const { data: invoices = [], isLoading: invoicesLoading } = useInvoices();
+  const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
 
-  // Calculate stats
-  const totalRevenue = invoices
-    .filter(inv => inv.status === 'PAID')
-    .reduce((sum, inv) => sum + Number(inv.totalAmount), 0);
+  const today = todayStr();
+  const scheduled = appointments.filter((a) => a.status === 'SCHEDULED');
+  const todayCount = scheduled.filter((a) => a.date.split('T')[0] === today).length;
+  const upcoming = scheduled.filter((a) => a.date.split('T')[0] >= today).slice(0, 8);
+  const completed = appointments.filter((a) => a.status === 'COMPLETED').length;
 
-  const stats = {
-    clients: clients.length,
-    invoices: invoices.length,
-    totalRevenue,
-  };
-
-  const recentInvoices = invoices.slice(0, 5);
-
-  const loading = clientsLoading || invoicesLoading;
+  const loading = clientsLoading || appointmentsLoading;
 
   const statCards = [
-    {
-      name: 'Clientes Totales',
-      value: stats.clients,
-      icon: Users,
-      color: 'bg-blue-500',
-    },
-    {
-      name: 'Facturas',
-      value: stats.invoices,
-      icon: FileText,
-      color: 'bg-purple-500',
-    },
-    {
-      name: 'Ingreso',
-      value: `$${stats.totalRevenue.toLocaleString()}`,
-      icon: DollarSign,
-      color: 'bg-yellow-500',
-    },
+    { name: 'Citas de hoy', value: todayCount, icon: Clock, color: 'bg-purple-500' },
+    { name: 'Citas programadas', value: scheduled.length, icon: Calendar, color: 'bg-blue-500' },
+    { name: 'Citas completadas', value: completed, icon: CheckCircle2, color: 'bg-green-500' },
+    { name: 'Clientes', value: clients.length, icon: Users, color: 'bg-yellow-500' },
   ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PAID':
-        return 'bg-green-100 text-green-800';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'OVERDUE':
-        return 'bg-red-100 text-red-800';
-      case 'CANCELLED':
-        return 'bg-muted text-foreground';
-      default:
-        return 'bg-muted text-foreground';
-    }
-  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="md:flex md:items-center md:justify-between">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
-            Panel de Control
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Resumen de tu sistema de gestión empresarial
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Panel de control</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Resumen de tu agenda.</p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div key={stat.name} className="bg-card overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className={`p-3 rounded-md ${stat.color}`}>
-                      <Icon className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-muted-foreground truncate">
-                        {stat.name}
-                      </dt>
-                      <dd className="text-lg font-medium text-foreground">
-                        {stat.value}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((card) => (
+          <div key={card.name} className="bg-card shadow rounded-lg p-5 flex items-center gap-4">
+            <div className={`${card.color} rounded-md p-3`}>
+              <card.icon className="h-6 w-6 text-white" />
             </div>
-          );
-        })}
-      </div>
-
-      {/* Quick Access */}
-      <div className="bg-card shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6 border-b border-border">
-          <h3 className="text-lg leading-6 font-medium text-foreground">
-            Gestión Rápida
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Acceso directo a las funciones principales de tu plataforma SaaS
-          </p>
-        </div>
-        <div className="px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Link
-              to="/admin/products"
-              className="relative block w-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <Package className="h-8 w-8 mb-2 opacity-90" />
-                  <h3 className="text-lg font-semibold">Productos</h3>
-                  <p className="text-blue-100 text-sm mt-1">
-                    Gestiona tus productos y servicios SaaS
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
-              </div>
-            </Link>
-
-            <Link
-              to="/admin/knowledge-base"
-              className="relative block w-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white hover:from-purple-600 hover:to-purple-700 transition-all duration-200 group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <BookOpen className="h-8 w-8 mb-2 opacity-90" />
-                  <h3 className="text-lg font-semibold">Base de Conocimientos</h3>
-                  <p className="text-purple-100 text-sm mt-1">
-                    Gestiona artículos de ayuda y soporte
-                  </p>
-                </div>
-                <ArrowRight className="h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-200" />
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Invoices */}
-      <div className="bg-card shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6 border-b border-border">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg leading-6 font-medium text-foreground">
-              Facturas Recientes
-            </h3>
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Calendar className="flex-shrink-0 mr-1.5 h-5 w-5 text-muted-foreground" />
-              Últimas 5 facturas
+            <div>
+              <p className="text-sm text-muted-foreground">{card.name}</p>
+              <p className="text-2xl font-semibold text-foreground">{card.value}</p>
             </div>
           </div>
+        ))}
+      </div>
+
+      <div className="bg-card shadow overflow-hidden sm:rounded-md">
+        <div className="px-4 py-5 sm:px-6 border-b border-border flex items-center justify-between">
+          <h3 className="text-lg leading-6 font-medium text-foreground">Próximas citas</h3>
+          <Link to="/admin/appointments" className="text-sm text-primary inline-flex items-center gap-1">
+            Ver agenda <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
         <ul className="divide-y divide-border">
-          {recentInvoices.length === 0 ? (
-            <li className="px-4 py-8 text-center text-muted-foreground">
-              <FileText className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-2 text-sm font-medium text-foreground">No hay facturas</h3>
-              <p className="mt-1 text-sm text-muted-foreground">Comienza creando una nueva factura.</p>
-            </li>
+          {upcoming.length === 0 ? (
+            <li className="px-4 py-8 text-center text-muted-foreground">No hay citas próximas.</li>
           ) : (
-            recentInvoices.map((invoice) => (
-              <li key={invoice.id} className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center min-w-0 flex-1 pr-4">
-                      <div className="flex-shrink-0">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                      <div className="ml-4 min-w-0 flex-1">
-                        <div className="text-sm font-medium text-foreground truncate">
-                          {invoice.invoiceNumber}
-                        </div>
-                        <div className="text-sm text-muted-foreground truncate">
-                          {invoice.client?.name} • {new Date(invoice.issueDate).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="text-sm font-medium text-foreground">
-                      ${Number(invoice.totalAmount).toLocaleString()}
-                    </div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                      {invoice.status}
-                    </span>
-                  </div>
+            upcoming.map((apt) => (
+              <li key={apt.id} className="px-4 py-4 sm:px-6 flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{apt.client?.name}</p>
+                  <p className="text-sm text-muted-foreground truncate">{apt.product?.name}</p>
+                </div>
+                <div className="text-sm text-foreground text-right">
+                  <p>{new Date(apt.date).toLocaleDateString('es', { timeZone: 'UTC' })}</p>
+                  <p className="text-muted-foreground">{apt.startTime}</p>
                 </div>
               </li>
             ))
           )}
         </ul>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-card shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-5 sm:px-6 border-b border-border">
-          <h3 className="text-lg leading-6 font-medium text-foreground">
-            Acciones Rápidas
-          </h3>
-        </div>
-        <div className="px-4 py-5 sm:p-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Link
-              to="/admin/clients"
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <Users className="mr-2 h-5 w-5" />
-              Agregar Cliente
-            </Link>
-            <Link
-              to="/admin/invoices"
-              className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              <FileText className="mr-2 h-5 w-5" />
-              Crear Factura
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );
