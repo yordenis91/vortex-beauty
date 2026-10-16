@@ -6,7 +6,7 @@ Sistema de reservas de citas multi-tenant para negocios de servicios (manicura, 
 
 - **Backend:** Node 22, Express 5, TypeScript, Prisma 7 + PostgreSQL, JWT, Zod
 - **Frontend:** React 19, Vite, Tailwind 4, shadcn/Radix, TanStack Query
-- **Multi-tenant:** una base de datos, columna `tenantId` en cada tabla de negocio (ver `docs/`)
+- **Multi-tenant:** una base de datos, columna `tenantId` en cada tabla de negocio con Row-Level Security (ver `docs/ARQUITECTURA.md`)
 
 ## Desarrollo
 
@@ -39,5 +39,6 @@ RUN_DB_TESTS=1 DATABASE_URL=postgresql://user:pass@localhost:5432/vortex_test np
 
 ## Documentación
 
+- `docs/ARQUITECTURA.md`: multi-tenant (RLS), modelo de dominio, disponibilidad y roles
 - `docs/DEPLOYMENT.md`: despliegue en Easypanel
 - `docs/legacy/`: notas de implementación del sistema original (pueden estar desactualizadas)

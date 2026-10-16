@@ -66,7 +66,7 @@ router.post('/register', async (req, res) => {
 
       return runInTransaction(async (tx) => {
         // Client.userId es obligatorio en el schema: el admin de ESE salón.
-        const adminUser = await tx.user.findFirst({ where: { role: 'ADMIN', tenantId: tenant.id } });
+        const adminUser = await tx.user.findFirst({ where: { role: { in: ['OWNER', 'ADMIN'] }, tenantId: tenant.id }, orderBy: { createdAt: 'asc' } });
         if (!adminUser) {
           throw new Error('El salón no tiene un administrador');
         }

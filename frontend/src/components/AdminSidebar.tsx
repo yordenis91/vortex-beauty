@@ -22,12 +22,18 @@ import {
   Bell,
   Settings as SettingsIcon,
   CreditCard,
+  DoorOpen,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLabels } from '@/hooks/useLabels';
+import { canManage } from '@/types';
 
 interface NavLink {
   name: string;
   href: string;
   icon: LucideIcon;
+  /** Quién la ve: todos los del panel, solo quienes administran, o solo el dueño. */
+  access?: 'manager' | 'owner';
 }
 
 interface NavSection {
@@ -37,27 +43,35 @@ interface NavSection {
 
 type NavItem = NavLink | NavSection;
 
-const navigation: NavItem[] = [
+const buildNavigation = (label: (key: string, capitalize?: boolean) => string): NavItem[] => [
   { name: 'Panel de Control', href: '/admin/dashboard', icon: LayoutDashboard },
   { section: 'Negocio', highlight: true },
-  { name: 'Clientes', href: '/admin/clients', icon: Users },
-  { section: 'Servicios y Programación', highlight: true },
-  { name: 'Citas', href: '/admin/appointments', icon: Calendar },
-  { name: 'Profesionales', href: '/admin/staff', icon: UserCog },
-  { name: 'Productos', href: '/admin/products', icon: Package },
-  { name: 'Categorías', href: '/admin/categories', icon: Folder },
-  { section: 'Recursos', highlight: true },
-  { name: 'Galería', href: '/admin/gallery', icon: Sparkles },
+  { name: label('customers', true), href: '/admin/clients', icon: Users, access: 'manager' },
+  { section: 'Agenda y catálogo', highlight: true },
+  { name: label('appointments', true), href: '/admin/appointments', icon: Calendar },
+  { name: label('professionals', true), href: '/admin/professionals', icon: UserCog, access: 'manager' },
+  { name: label('services', true), href: '/admin/services', icon: Package, access: 'manager' },
+  { name: 'Categorías', href: '/admin/categories', icon: Folder, access: 'manager' },
+  { name: 'Recursos', href: '/admin/resources', icon: DoorOpen, access: 'manager' },
+  { name: 'Galería', href: '/admin/gallery', icon: Sparkles, access: 'manager' },
   { section: 'Operaciones', highlight: true },
   { name: 'Notificaciones', href: '/admin/notifications', icon: Bell },
-  { name: 'Facturación', href: '/admin/billing', icon: CreditCard },
-  { name: 'Configuraciones', href: '/admin/settings', icon: SettingsIcon },
+  { name: 'Facturación', href: '/admin/billing', icon: CreditCard, access: 'owner' },
+  { name: 'Configuraciones', href: '/admin/settings', icon: SettingsIcon, access: 'manager' },
 ];
 
 const AdminSidebar: React.FC = () => {
   const location = useLocation();
+  const { role } = useAuth();
+  const { label, salonName } = useLabels();
 
   const groups = React.useMemo(() => {
+    const navigation = buildNavigation(label).filter(
+      (item) =>
+        'section' in item ||
+        !item.access ||
+        (item.access === 'manager' ? canManage(role) : role === 'OWNER')
+    );
     const result: Array<{ label?: string; highlight?: boolean; items: NavLink[] }> = [
       { items: [] },
     ];
@@ -70,8 +84,8 @@ const AdminSidebar: React.FC = () => {
       }
     });
 
-    return result.filter((group) => group.items.length > 0 || group.label);
-  }, []);
+    return result.filter((group) => group.items.length > 0);
+  }, [role, label]);
 
   return (
     <Sidebar className="bg-white border-r border-gray-200" collapsible="icon">
@@ -80,7 +94,7 @@ const AdminSidebar: React.FC = () => {
           VB
         </div>
         <span className="text-base font-semibold text-black group-data-[collapsible=icon]:hidden">
-          VortexNails
+          {salonName ?? 'Vortex'}
         </span>
       </div>
 

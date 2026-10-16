@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { api } from '../lib/api';
 import { useClosedDates, useCreateClosedDate, useDeleteClosedDate, getErrorMessage } from '../hooks/useQueries';
 import { Trash2 } from 'lucide-react';
+import BookingSettingsCard from '../components/BookingSettingsCard';
 
 interface BusinessHour {
   id: string;
@@ -250,9 +251,11 @@ const Settings: React.FC = () => {
           Configuración
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Gestiona los horarios comerciales del salón de belleza.
+          Horarios, reservas y vocabulario de tu negocio.
         </p>
       </div>
+
+      <BookingSettingsCard />
 
       {/* Business Hours Card */}
       <div className="bg-card rounded-lg shadow overflow-hidden">

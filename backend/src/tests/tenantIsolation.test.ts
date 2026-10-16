@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
+import { dbTestsEnabled, setupAppDb } from './dbHarness';
 
 /**
  * Pruebas de aislamiento entre salones contra Postgres real.
@@ -12,13 +13,9 @@ import request from 'supertest';
  *
  *   RUN_DB_TESTS=1 DATABASE_URL=postgresql://user:pass@localhost:5432/vortex_test npm test
  */
-const describeIfDb = process.env.RUN_DB_TESTS === '1' ? describe : describe.skip;
-
-const APP_ROLE = 'vortex_app';
-const APP_PASSWORD = 'vortex_app_test';
+const describeIfDb = dbTestsEnabled ? describe : describe.skip;
 
 describeIfDb('aislamiento multi-tenant', () => {
-  const adminUrl = process.env.DATABASE_URL!;
   let adminPool: Pool;
   let app: import('express').Express;
   let prisma: typeof import('../prismaClient').default;
@@ -32,17 +29,7 @@ describeIfDb('aislamiento multi-tenant', () => {
   }
 
   beforeAll(async () => {
-    process.env.JWT_SECRET = 'test-secret';
-    adminPool = new Pool({ connectionString: adminUrl });
-    await adminPool.query(`ALTER ROLE ${APP_ROLE} WITH LOGIN PASSWORD '${APP_PASSWORD}'`);
-
-    const appUrl = new URL(adminUrl);
-    appUrl.username = APP_ROLE;
-    appUrl.password = APP_PASSWORD;
-    process.env.DATABASE_URL = appUrl.toString();
-
-    prisma = (await import('../prismaClient')).default;
-    ctx = await import('../lib/tenantContext');
+    ({ adminPool, prisma, ctx } = await setupAppDb());
     app = (await import('../app')).default;
 
     const suffix = Date.now().toString(36);
@@ -53,26 +40,32 @@ describeIfDb('aislamiento multi-tenant', () => {
         const tenant = await prisma.tenant.create({ data: { name: `Salón ${key}`, slug: `iso-${key}-${suffix}` } });
         // Mismo email en ambos salones: debe estar permitido.
         const admin = await prisma.user.create({
-          data: { email: 'admin@mismo.com', password: hash, name: `Admin ${key}`, role: 'ADMIN', tenantId: tenant.id },
+          data: { email: 'admin@mismo.com', password: hash, name: `Admin ${key}`, role: 'OWNER', tenantId: tenant.id },
         });
         const client = await prisma.client.create({
           data: { name: `Cliente ${key}`, email: `cliente-${key}@x.com`, userId: admin.id, tenantId: tenant.id },
         });
         const category = await prisma.category.create({ data: { name: 'Servicios', tenantId: tenant.id } });
-        const product = await prisma.product.create({
+        const product = await prisma.service.create({
           data: { name: `Servicio ${key}`, price: 10, categoryId: category.id, userId: admin.id, tenantId: tenant.id },
         });
+        const professional = await prisma.professional.create({ data: { name: `Pro ${key}`, tenantId: tenant.id } });
         const appointment = await prisma.appointment.create({
           data: {
-            date: new Date('2030-01-07T00:00:00.000Z'),
-            startTime: '10:00',
-            endTime: '11:00',
+            startsAt: new Date('2030-01-07T10:00:00.000Z'),
+            endsAt: new Date('2030-01-07T11:00:00.000Z'),
+            blockStartsAt: new Date('2030-01-07T10:00:00.000Z'),
+            blockEndsAt: new Date('2030-01-07T11:00:00.000Z'),
+            serviceName: product.name,
+            priceAmount: 10,
+            durationMin: 60,
             clientId: client.id,
-            productId: product.id,
+            serviceId: product.id,
+            professionalId: professional.id,
             tenantId: tenant.id,
           },
         });
-        ids[key] = { tenant, admin, client, product, appointment, slug: tenant.slug };
+        ids[key] = { tenant, admin, client, product, professional, appointment, slug: tenant.slug };
       }
     });
   });
@@ -167,9 +160,9 @@ describeIfDb('aislamiento multi-tenant', () => {
       ['GET', () => `/api/clients/${ids.b.client.id}`],
       ['PUT', () => `/api/clients/${ids.b.client.id}`],
       ['DELETE', () => `/api/clients/${ids.b.client.id}`],
-      ['GET', () => `/api/products/${ids.b.product.id}`],
-      ['PUT', () => `/api/products/${ids.b.product.id}`],
-      ['DELETE', () => `/api/products/${ids.b.product.id}`],
+      ['GET', () => `/api/services/${ids.b.product.id}`],
+      ['PUT', () => `/api/services/${ids.b.product.id}`],
+      ['DELETE', () => `/api/services/${ids.b.product.id}`],
     ])('%s sobre un recurso de otro salón responde 404', async (method, url) => {
       const res = await (request(app) as any)[method.toLowerCase()](url()).set(authA()).send({ notes: 'x', name: 'x' });
       expect([404, 400]).toContain(res.status);
@@ -186,7 +179,7 @@ describeIfDb('aislamiento multi-tenant', () => {
       const res = await request(app)
         .post('/api/appointments')
         .set(authA())
-        .send({ date: '2030-01-08T00:00:00.000Z', startTime: '10:00', clientId: ids.b.client.id, productId: ids.a.product.id });
+        .send({ date: '2030-01-08T00:00:00.000Z', startTime: '10:00', clientId: ids.b.client.id, serviceId: ids.a.product.id });
       expect(res.status).toBe(400);
     });
 

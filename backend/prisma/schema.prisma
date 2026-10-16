@@ -12,8 +12,10 @@ datasource db {
 // ================= Enums =================
 
 enum Role {
-  ADMIN
-  CLIENT
+  OWNER // Dueño del salón: todo, incluida la facturación del plan
+  ADMIN // Operación del salón
+  STAFF // Profesional: solo su propia agenda
+  CLIENT // Cuenta de cliente final (opcional)
 }
 
 enum TenantStatus {
@@ -72,9 +74,16 @@ model Tenant {
 
   users             User[]
   clients           Client[]
-  products          Product[]
+  services          Service[]
   categories        Category[]
-  staff             Staff[]
+  professionals            Professional[]
+  professionalServices     ProfessionalService[]
+  professionalSchedules    ProfessionalSchedule[]
+  timeOffs                 TimeOff[]
+  resources                Resource[]
+  serviceResources         ServiceResource[]
+  locations                Location[]
+  settings                 TenantSettings?
   appointments      Appointment[]
   businessHours     BusinessHour[]
   closedDates       ClosedDate[]
@@ -113,7 +122,8 @@ model User {
 
   // Relaciones existentes
   clients  Client[]  @relation("AdminofClient") // Relación inversa: admin de varios clientes
-  products       Product[]
+  professional Professional?
+  services       Service[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -185,7 +195,7 @@ model Category {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   // Relaciones
-  products Product[]
+  services Service[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -195,7 +205,7 @@ model Category {
 }
 
 // Productos y Servicios
-model Product {
+model Service {
   id          String      @id @default(uuid())
   name        String
   description String?     @db.Text
@@ -205,9 +215,12 @@ model Product {
   currency     String       @default("USD")
 
   // Estado y configuración
-  status          ProductStatus @default(ACTIVE)
+  status          ServiceStatus @default(ACTIVE)
   isPublic        Boolean       @default(true) // Visible en portal de cliente
   durationMinutes Int           @default(60) // Duración del servicio; determina la hora de fin de la cita
+  bufferBeforeMin Int           @default(0) // Preparación antes de la cita
+  bufferAfterMin  Int           @default(0) // Limpieza/descanso después de la cita
+  onlineBookable  Boolean       @default(true) // Se puede reservar desde la página pública
 
   // Salón al que pertenece este producto/servicio.
   tenantId String
@@ -225,6 +238,8 @@ model Product {
   // Relaciones
   appointments  Appointment[]
   galleryItems  GalleryItem[]
+  professionals ProfessionalService[]
+  resources     ServiceResource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -245,19 +260,16 @@ model GalleryItem {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([productId])
+  @@index([serviceId])
   @@index([tenantId])
 }
 
-// Profesionales del salón. El horario comercial (BusinessHour) sigue siendo
-// general para todo el salón; asignar una cita a un Staff es informativo por
-// ahora y no implica horarios ni cupos independientes por profesional.
-model Staff {
+model Professional {
   id       String  @id @default(uuid())
   name     String
   email    String?
@@ -265,12 +277,21 @@ model Staff {
   color    String? // Para distinguir profesionales en la agenda (hex color)
   isActive Boolean @default(true)
 
+  // Si es false, solo se le asignan citas desde el panel (no desde la reserva pública).
+  acceptsOnlineBookings Boolean @default(true)
+
   // Salón al que pertenece este profesional.
   tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  // Cuenta con la que el profesional inicia sesión (rol STAFF), si la tiene.
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   appointments Appointment[]
+  services     ProfessionalService[]
+  schedules    ProfessionalSchedule[]
+  timeOffs     TimeOff[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -279,40 +300,176 @@ model Staff {
   @@index([tenantId])
 }
 
-// Sistema de Citas (Appointments)
-model Appointment {
-  id        String            @id @default(uuid())
-  date      DateTime // Fecha exacta de la cita
-  startTime String // Hora de inicio (Ej: "10:00")
-  endTime   String // Hora de fin (Ej: "11:30")
-  status    AppointmentStatus @default(SCHEDULED)
-  notes     String?           @db.Text
+// Servicios que realiza cada profesional.
+model ProfessionalService {
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  serviceId      String
+  service        Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
-  // Salón al que pertenece esta cita.
+  @@id([professionalId, serviceId])
+  @@index([tenantId])
+  @@index([serviceId])
+}
+
+// Horario semanal de un profesional. Puede haber varios tramos el mismo día
+// (jornada partida). Sin tramos ese día, el profesional no trabaja.
+model ProfessionalSchedule {
+  id             String       @id @default(uuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int // 0 = Domingo ... 6 = Sábado
+  startTime      String // "HH:mm"
+  endTime        String // "HH:mm"
+
+  @@index([tenantId])
+  @@index([professionalId, dayOfWeek])
+}
+
+// Ausencia de un profesional (vacaciones, enfermedad, descanso).
+model TimeOff {
+  id             String       @id @default(uuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  startsAt       DateTime     @db.Timestamptz(3)
+  endsAt         DateTime     @db.Timestamptz(3)
+  reason         String?
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([professionalId, startsAt])
+}
+
+// Sede física (preparado para multi-sede; todavía sin interfaz).
+model Location {
+  id       String  @id @default(uuid())
   tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name     String
+  address  String? @db.Text
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-
-  // Relaciones
-  clientId String
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-
-  productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-
-  // Profesional que atiende la cita (opcional: el horario sigue siendo general del salón)
-  staffId String?
-  staff   Staff?  @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  resources Resource[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([clientId])
-  @@index([productId])
-  @@index([staffId])
-  @@index([date])
-  @@index([status])
   @@index([tenantId])
+}
+
+// Recurso físico que una cita ocupa: silla, cabina, camilla, sala.
+model Resource {
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name     String
+  isActive Boolean @default(true)
+
+  locationId String?
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  appointments Appointment[]
+  services     ServiceResource[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+}
+
+// Recursos que puede usar un servicio. Si un servicio no tiene ninguno, no
+// necesita recurso. Si tiene alguno, cada cita ocupa uno libre de ellos.
+model ServiceResource {
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  serviceId  String
+  service    Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  resourceId String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, resourceId])
+  @@index([tenantId])
+  @@index([resourceId])
+}
+
+// Configuración de reservas y vocabulario de cada salón (una fila por salón).
+model TenantSettings {
+  tenantId String @id
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  vertical        Vertical @default(GENERIC)
+  slotIntervalMin Int      @default(30) // cada cuántos minutos se ofrece un hueco
+  minNoticeHours  Int      @default(2) // antelación mínima para reservar
+  maxAdvanceDays  Int      @default(60) // hasta cuántos días adelante se puede reservar
+  cancelWindowHrs Int      @default(12) // el cliente puede cancelar hasta X horas antes (0 = siempre)
+  bookingEnabled  Boolean  @default(true) // activa la reserva pública
+
+  // Vocabulario de la interfaz: { "customer": "clienta", "appointment": "cita", ... }
+  labels Json @default("{}")
+
+  updatedAt DateTime @updatedAt
+}
+
+model Appointment {
+  id     String            @id @default(uuid())
+  status AppointmentStatus @default(SCHEDULED)
+  notes  String?           @db.Text
+
+  // Intervalo del servicio, en instantes absolutos. La hora local del salón se
+  // calcula con Tenant.timezone.
+  startsAt DateTime @db.Timestamptz(3)
+  endsAt   DateTime @db.Timestamptz(3)
+
+  // Intervalo que realmente se ocupa (servicio + preparación y limpieza). Las
+  // restricciones EXCLUDE de la base impiden que dos citas del mismo
+  // profesional o recurso se solapen en este intervalo.
+  blockStartsAt DateTime @db.Timestamptz(3)
+  blockEndsAt   DateTime @db.Timestamptz(3)
+
+  // Datos del servicio congelados al reservar: cambiar el servicio después no
+  // reescribe la historia.
+  serviceName     String
+  priceAmount     Decimal @db.Decimal(10, 2)
+  currency        String  @default("USD")
+  durationMin     Int
+  bufferBeforeMin Int     @default(0)
+  bufferAfterMin  Int     @default(0)
+
+  source      BookingSource @default(ADMIN)
+  cancelledBy CancelledBy?
+  cancelledAt DateTime?
+
+  // Salón al que pertenece esta cita.
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+
+  resourceId String?
+  resource   Resource? @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId, startsAt])
+  @@index([tenantId, status])
+  @@index([clientId])
+  @@index([serviceId])
+  @@index([professionalId, startsAt])
+  @@index([resourceId, startsAt])
 }
 
 model Notification {
@@ -410,16 +567,40 @@ enum BillingCycle {
   YEARLY
 }
 
-enum ProductStatus {
+enum ServiceStatus {
   ACTIVE
   INACTIVE
   DISCONTINUED
 }
 
 enum AppointmentStatus {
-  SCHEDULED
+  PENDING // Reservada, pendiente de confirmar
+  SCHEDULED // Confirmada
   COMPLETED
   CANCELLED
+  NO_SHOW
+}
+
+enum CancelledBy {
+  CUSTOMER
+  STAFF
+  SYSTEM
+}
+
+enum BookingSource {
+  ADMIN
+  PORTAL
+  PUBLIC
+}
+
+enum Vertical {
+  GENERIC
+  NAILS
+  BARBER
+  SPA
+  TATTOO
+  HAIR
+  FITNESS
 }
 
 enum NotificationType {
@@ -453,7 +634,7 @@ model PlatformAdmin {
 }
 
 // Catálogo de planes que el SaaS vende a los salones (Free/Basic/Pro/...).
-// No confundir con Product, que es el catálogo de servicios que CADA salón
+// No confundir con Service, que es el catálogo de servicios que CADA salón
 // vende a sus propias clientas.
 model Plan {
   id          String  @id @default(uuid())

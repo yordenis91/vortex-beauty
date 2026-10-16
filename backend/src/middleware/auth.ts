@@ -71,15 +71,16 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 };
 
 /**
- * Middleware para verificar que el usuario es ADMIN
- * Debe ser utilizado DESPUÉS de authenticateToken
+ * Middleware para verificar que el usuario administra el salón (OWNER o ADMIN).
+ * Debe ser utilizado DESPUÉS de authenticateToken. Para permisos más finos
+ * (p. ej. el profesional STAFF) ver middleware/can.ts.
  */
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  if (req.user.role !== 'ADMIN') {
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'OWNER') {
     return res.status(403).json({ error: 'Admin access required' });
   }
 

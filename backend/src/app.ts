@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth';
 import clientRoutes from './routes/clients';
-import productRoutes from './routes/products';
+import serviceRoutes from './routes/services';
 import categoryRoutes from './routes/categories';
 import appointmentRoutes from './routes/appointments';
 import notificationRoutes from './routes/notifications';
@@ -14,7 +14,8 @@ import overridesRoutes from './routes/overrides';
 import settingsRoutes from './routes/settings';
 import galleryRoutes from './routes/gallery';
 import closedDatesRoutes from './routes/closedDates';
-import staffRoutes from './routes/staff';
+import professionalRoutes from './routes/professionals';
+import resourceRoutes from './routes/resources';
 import platformAuthRoutes from './routes/platformAuth';
 import platformTenantsRoutes from './routes/platformTenants';
 import platformPlansRoutes from './routes/platformPlans';
@@ -68,7 +69,8 @@ app.use('/api/platform/auth/login', authLimiter);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/services', serviceRoutes);
+app.use('/api/resources', resourceRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -88,8 +90,8 @@ app.use('/api/gallery', galleryRoutes);
 // Closed dates routes
 app.use('/api/closed-dates', closedDatesRoutes);
 
-// Staff routes
-app.use('/api/staff', staffRoutes);
+// Professionals routes
+app.use('/api/professionals', professionalRoutes);
 
 // Portal de plataforma (Super Admin): namespace separado de las rutas de
 // tenant de arriba, con su propio sistema de auth (ver middleware/platformAuth).

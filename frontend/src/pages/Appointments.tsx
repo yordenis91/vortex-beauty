@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAppointments, useClients, useProducts, useStaff, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useFullyBookedDates, useAvailableSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
+import { useAppointments, useClients, useServices, useProfessionals, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useClosedDates, useFullyBookedDates, useAdminSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
 import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle, UserCog } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { format, isBefore, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { api } from '../lib/api';
+import type { Appointment, AppointmentStatus } from '../types';
+import { canManage } from '../types';
+import { useAuth } from '../contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
@@ -25,57 +28,16 @@ interface BusinessHour {
   updatedAt: string;
 }
 
-interface Appointment {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
-  notes?: string;
-  clientId: string;
-  productId: string;
-  staffId?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  client?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  product?: {
-    id: string;
-    name: string;
-    price: number;
-    durationMinutes?: number;
-  };
-  staff?: {
-    id: string;
-    name: string;
-  } | null;
-}
 
 interface FormData {
   clientId: string;
-  productId: string;
-  staffId: string;
+  serviceId: string;
+  professionalId: string;
   date: string;
   startTime: string;
-  endTime: string;
   notes: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  status: AppointmentStatus;
 }
-
-// Calcula la hora de fin a partir de la duración del servicio, igual que el
-// backend (availabilityService.addMinutesToTime). Es solo para mostrarla en
-// el formulario — la que manda es la que calcula el servidor al guardar.
-const computeEndTime = (startTime: string, durationMinutes: number): string => {
-  const [hours, minutes] = startTime.split(':').map(Number);
-  const total = hours * 60 + minutes + durationMinutes;
-  const wrapped = ((total % 1440) + 1440) % 1440;
-  const hh = Math.floor(wrapped / 60).toString().padStart(2, '0');
-  const mm = (wrapped % 60).toString().padStart(2, '0');
-  return `${hh}:${mm}`;
-};
 
 interface ClosedDate {
   id: string;
@@ -131,31 +93,12 @@ const useBusinessHours = () => {
   });
 };
 
-// Función auxiliar para validar si una hora está dentro del horario comercial
-const isTimeWithinBusinessHours = (
-  date: Date,
-  startTime: string,
-  endTime: string,
-  businessHours: BusinessHour[]
-): boolean => {
-  const dayOfWeek = date.getDay();
-  const businessHour = businessHours.find((bh) => bh.dayOfWeek === dayOfWeek);
-
-  if (!businessHour || !businessHour.isOpen) {
-    return false;
-  }
-
-  const [reqStartHour, reqStartMin] = startTime.split(':').map(Number);
-  const [reqEndHour, reqEndMin] = endTime.split(':').map(Number);
-  const [shopStartHour, shopStartMin] = businessHour.startTime.split(':').map(Number);
-  const [shopEndHour, shopEndMin] = businessHour.endTime.split(':').map(Number);
-
-  const reqStartMinutes = reqStartHour * 60 + reqStartMin;
-  const reqEndMinutes = reqEndHour * 60 + reqEndMin;
-  const shopStartMinutes = shopStartHour * 60 + shopStartMin;
-  const shopEndMinutes = shopEndHour * 60 + shopEndMin;
-
-  return reqStartMinutes >= shopStartMinutes && reqEndMinutes <= shopEndMinutes;
+const STATUS_STYLES: Record<AppointmentStatus, { label: string; border: string; badge: string }> = {
+  PENDING: { label: 'Pendiente', border: '#f59e0b', badge: 'bg-amber-50 text-amber-700 border-amber-200' },
+  SCHEDULED: { label: 'Agendada', border: '#3b82f6', badge: 'bg-blue-50 text-blue-700 border-blue-200' },
+  COMPLETED: { label: 'Completada', border: '#10b981', badge: 'bg-green-50 text-green-700 border-green-200' },
+  CANCELLED: { label: 'Cancelada', border: '#ef4444', badge: 'bg-red-50 text-red-700 border-red-200' },
+  NO_SHOW: { label: 'No asistió', border: '#6b7280', badge: 'bg-muted text-muted-foreground border-border' },
 };
 
 const Appointments: React.FC = () => {
@@ -175,20 +118,26 @@ const Appointments: React.FC = () => {
 
   const [formData, setFormData] = useState<FormData>({
     clientId: '',
-    productId: '',
-    staffId: '',
+    serviceId: '',
+    professionalId: '',
     date: new Date().toISOString().split('T')[0],
-    startTime: '10:00',
-    endTime: '11:00',
+    startTime: '',
     notes: '',
     status: 'SCHEDULED',
   });
 
+  const { role } = useAuth();
+  const isManager = canManage(role);
+  // Selección para ver huecos libres y filtro de la agenda por profesional
+  const [slotServiceId, setSlotServiceId] = useState('');
+  const [slotProfessionalId, setSlotProfessionalId] = useState('any');
+  const [agendaProfessionalId, setAgendaProfessionalId] = useState('');
+
   // Hooks
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
-  const { data: products = [], isLoading: productsLoading } = useProducts();
-  const { data: staffList = [] } = useStaff(true);
+  const { data: services = [], isLoading: servicesLoading } = useServices();
+  const { data: professionalList = [] } = useProfessionals(true);
   const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
   const { data: closedDates = [], isLoading: closedDatesLoading } = useClosedDates();
   const { data: fullyBookedDates = [], isLoading: fullyBookedLoading } = useFullyBookedDates();
@@ -245,15 +194,34 @@ const Appointments: React.FC = () => {
 
   const selectedDateStr = format(currentDate, 'yyyy-MM-dd');
   const canShowAvailableSlots = isDayAvailable(currentDate, closedDates, businessHours);
-  const { data: availableSlots = [], isLoading: slotsLoading } = useAvailableSlots(
-    canShowAvailableSlots ? selectedDateStr : ''
+  const effectiveSlotServiceId = slotServiceId || services.find((svc) => svc.status === 'ACTIVE')?.id || '';
+  const { data: availableSlots = [], isLoading: slotsLoading } = useAdminSlots(
+    canShowAvailableSlots ? selectedDateStr : '',
+    effectiveSlotServiceId,
+    slotProfessionalId
   );
+
+  // Horas libres para el formulario (incluye la hora actual de la cita que se edita)
+  const { data: modalSlots = [], isLoading: modalSlotsLoading } = useAdminSlots(
+    showModal && activeTab === 'appointment' ? formData.date : '',
+    formData.serviceId,
+    formData.professionalId || 'any',
+    editingAppointment?.id
+  );
+  const modalStartTimes = useMemo(() => {
+    const times = new Set(modalSlots.map((slot) => slot.startTime));
+    if (formData.startTime && editingAppointment && formData.date === editingAppointment.date.split('T')[0]) {
+      times.add(editingAppointment.startTime);
+    }
+    return [...times].sort();
+  }, [modalSlots, formData.startTime, formData.date, editingAppointment]);
 
   const dailyAppointments = useMemo(() => {
     return appointments
       .filter((apt) => apt.date.split('T')[0] === selectedDateStr)
+      .filter((apt) => !agendaProfessionalId || apt.professionalId === agendaProfessionalId)
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [appointments, selectedDateStr]);
+  }, [appointments, selectedDateStr, agendaProfessionalId]);
 
   const appointmentDays = useMemo(() => {
     const uniqueDates = new Set(
@@ -303,41 +271,35 @@ const Appointments: React.FC = () => {
     return true;
   };
 
-  const handleSlotClick = (slotTime: string) => {
-    const [hours, minutes] = slotTime.split(':').map(Number);
-    const slotStart = new Date(currentDate);
-    slotStart.setHours(hours, minutes, 0, 0);
-    const slotEnd = new Date(slotStart);
-    slotEnd.setHours(hours + 1, minutes, 0, 0);
-    openModal(undefined, slotStart, slotEnd);
+  const handleSlotClick = (slot: { startTime: string; professionalIds: string[] }) => {
+    openModal(undefined, {
+      date: selectedDateStr,
+      startTime: slot.startTime,
+      serviceId: effectiveSlotServiceId,
+      professionalId: slotProfessionalId !== 'any' ? slotProfessionalId : '',
+    });
   };
 
   // Funciones de Modal
-  const openModal = (appointment?: Appointment, slotStart?: Date, slotEnd?: Date) => {
+  const openModal = (
+    appointment?: Appointment,
+    preset?: { date: string; startTime: string; serviceId: string; professionalId: string }
+  ) => {
     if (appointment) {
       setEditingAppointment(appointment);
       setFormData({
         clientId: appointment.clientId,
-        productId: appointment.productId,
-        staffId: appointment.staffId || '',
+        serviceId: appointment.serviceId,
+        professionalId: appointment.professionalId || '',
         date: appointment.date.split('T')[0],
         startTime: appointment.startTime,
-        endTime: appointment.endTime,
         notes: appointment.notes || '',
         status: appointment.status,
       });
       setSelectedDate(appointment.date.split('T')[0]);
     } else {
       setEditingAppointment(null);
-      let newDate = format(currentDate, 'yyyy-MM-dd');
-      let newStartTime = '10:00';
-      let newEndTime = '11:00';
-
-      if (slotStart && slotEnd) {
-        newDate = format(slotStart, 'yyyy-MM-dd');
-        newStartTime = format(slotStart, 'HH:mm');
-        newEndTime = format(slotEnd, 'HH:mm');
-      }
+      const newDate = preset?.date ?? format(currentDate, 'yyyy-MM-dd');
 
       const targetDate = parseDateString(newDate);
       if (!validateDayForBooking(targetDate)) {
@@ -352,11 +314,10 @@ const Appointments: React.FC = () => {
 
       setFormData({
         clientId: '',
-        productId: '',
-        staffId: '',
+        serviceId: preset?.serviceId ?? '',
+        professionalId: preset?.professionalId ?? '',
         date: newDate,
-        startTime: newStartTime,
-        endTime: newEndTime,
+        startTime: preset?.startTime ?? '',
         notes: '',
         status: 'SCHEDULED',
       });
@@ -422,7 +383,7 @@ const Appointments: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.clientId || !formData.productId) {
+    if (!formData.clientId || !formData.serviceId || !formData.startTime) {
       toast.error('Por favor completa todos los campos requeridos');
       return;
     }
@@ -432,16 +393,15 @@ const Appointments: React.FC = () => {
       return;
     }
 
-    // Validar que las horas seleccionadas estén dentro del horario comercial
-    if (!isTimeWithinBusinessHours(appointmentDate, formData.startTime, formData.endTime, businessHours)) {
-      toast.error('Las horas seleccionadas están fuera del horario comercial');
-      return;
-    }
-
+    // La disponibilidad (horario, profesional, solapes) la valida el servidor.
     const appointmentData = {
-      ...formData,
+      clientId: formData.clientId,
+      serviceId: formData.serviceId,
       date: new Date(formData.date).toISOString(),
-      staffId: formData.staffId || null,
+      startTime: formData.startTime,
+      professionalId: formData.professionalId || 'any',
+      notes: formData.notes,
+      status: formData.status,
     };
 
     if (editingAppointment) {
@@ -459,7 +419,7 @@ const Appointments: React.FC = () => {
     deleteMutation.mutate(id);
   };
 
-  const isLoading = appointmentsLoading || clientsLoading || productsLoading || businessHoursLoading || closedDatesLoading || fullyBookedLoading;
+  const isLoading = appointmentsLoading || clientsLoading || servicesLoading || businessHoursLoading || closedDatesLoading || fullyBookedLoading;
 
   return (
     <div className="space-y-6">
@@ -546,17 +506,19 @@ const Appointments: React.FC = () => {
               </div>
             </Card>
 
-            <button
-              onClick={() => {
-                setSelectedDate(format(currentDate, 'yyyy-MM-dd'));
-                setActiveTab('schedule');
-                setShowModal(true);
-              }}
-              className="w-full py-3 px-4 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl font-medium transition flex items-center justify-center gap-2"
-            >
-              <CalendarIcon className="w-4 h-4" />
-              Gestionar Horario de este Día
-            </button>
+            {isManager && (
+              <button
+                onClick={() => {
+                  setSelectedDate(format(currentDate, 'yyyy-MM-dd'));
+                  setActiveTab('schedule');
+                  setShowModal(true);
+                }}
+                className="w-full py-3 px-4 border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl font-medium transition flex items-center justify-center gap-2"
+              >
+                <CalendarIcon className="w-4 h-4" />
+                Gestionar Horario de este Día
+              </button>
+            )}
           </div>
 
           {/* COLUMNA DERECHA: AGENDA DEL DÍA */}
@@ -580,6 +542,21 @@ const Appointments: React.FC = () => {
                 >
                   {selectedDayStatus.label}
                 </Badge>
+                {professionalList.length > 1 && isManager && (
+                  <select
+                    aria-label="Filtrar por profesional"
+                    value={agendaProfessionalId}
+                    onChange={(e) => setAgendaProfessionalId(e.target.value)}
+                    className="px-3 py-1 border border-border rounded-full bg-card text-sm"
+                  >
+                    <option value="">Todos los profesionales</option>
+                    {professionalList.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <span className="bg-muted text-foreground px-3 py-1 rounded-full text-sm font-medium">
                   {dailyAppointments.length} citas
                 </span>
@@ -614,6 +591,34 @@ const Appointments: React.FC = () => {
                   )}
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  <select
+                    aria-label="Servicio"
+                    value={effectiveSlotServiceId}
+                    onChange={(e) => setSlotServiceId(e.target.value)}
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-card text-sm"
+                  >
+                    {services.filter((svc) => svc.status === 'ACTIVE').map((svc) => (
+                      <option key={svc.id} value={svc.id}>
+                        {svc.name} · {svc.durationMinutes} min
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Profesional"
+                    value={slotProfessionalId}
+                    onChange={(e) => setSlotProfessionalId(e.target.value)}
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-card text-sm"
+                  >
+                    <option value="any">Cualquier profesional</option>
+                    {professionalList.map((member) => (
+                      <option key={member.id} value={member.id}>
+                        {member.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {slotsLoading ? (
                   <div className="flex items-center justify-center py-6">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
@@ -623,13 +628,13 @@ const Appointments: React.FC = () => {
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                     {availableSlots.map((slot) => (
                       <Button
-                        key={slot}
+                        key={slot.startTime}
                         type="button"
                         variant="outline"
                         onClick={() => handleSlotClick(slot)}
                         className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
                       >
-                        {slot}
+                        {slot.startTime}
                       </Button>
                     ))}
                   </div>
@@ -637,7 +642,7 @@ const Appointments: React.FC = () => {
                   <div className="text-center py-6 text-muted-foreground">
                     <Clock className="h-10 w-10 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm font-medium">No hay horarios disponibles</p>
-                    <p className="text-xs mt-1">Todos los slots de este día están ocupados o no configurados.</p>
+                    <p className="text-xs mt-1">Ese servicio no tiene huecos libres este día (horario, profesionales o citas existentes).</p>
                   </div>
                 )}
               </Card>
@@ -669,12 +674,7 @@ const Appointments: React.FC = () => {
                     key={appointment.id}
                     className="overflow-hidden border-l-4 shadow-sm hover:shadow-md transition"
                     style={{
-                      borderLeftColor:
-                        appointment.status === 'COMPLETED'
-                          ? '#10b981'
-                          : appointment.status === 'CANCELLED'
-                            ? '#ef4444'
-                            : '#3b82f6',
+                      borderLeftColor: STATUS_STYLES[appointment.status].border,
                     }}
                   >
                     <div className="p-5">
@@ -687,15 +687,9 @@ const Appointments: React.FC = () => {
                         </div>
                         <Badge
                           variant="outline"
-                          className={
-                            appointment.status === 'COMPLETED'
-                              ? 'bg-green-50 text-green-700 border-green-200'
-                              : appointment.status === 'CANCELLED'
-                                ? 'bg-red-50 text-red-700 border-red-200'
-                                : 'bg-blue-50 text-blue-700 border-blue-200'
-                          }
+                          className={STATUS_STYLES[appointment.status].badge}
                         >
-                          {appointment.status}
+                          {STATUS_STYLES[appointment.status].label}
                         </Badge>
                       </div>
                       <div className="space-y-2">
@@ -705,12 +699,12 @@ const Appointments: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 text-foreground">
                           <Package className="w-4 h-4 text-muted-foreground" />
-                          <span>{appointment.product?.name}</span>
+                          <span>{appointment.serviceName}</span>
                         </div>
-                        {appointment.staff && (
+                        {appointment.professional && (
                           <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <UserCog className="w-4 h-4 text-muted-foreground" />
-                            <span>{appointment.staff.name}</span>
+                            <span>{appointment.professional.name}</span>
                           </div>
                         )}
                       </div>
@@ -791,30 +785,20 @@ const Appointments: React.FC = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="product" className="block text-sm font-medium text-foreground mb-1">
+                    <label htmlFor="service" className="block text-sm font-medium text-foreground mb-1">
                       Servicio <span className="text-red-500">*</span>
                     </label>
                     <select
-                      id="product"
-                      value={formData.productId}
-                      onChange={(e) => {
-                        const productId = e.target.value;
-                        const selected = products.find((p) => p.id === productId);
-                        setFormData({
-                          ...formData,
-                          productId,
-                          endTime: selected
-                            ? computeEndTime(formData.startTime, selected.durationMinutes)
-                            : formData.endTime,
-                        });
-                      }}
+                      id="service"
+                      value={formData.serviceId}
+                      onChange={(e) => setFormData({ ...formData, serviceId: e.target.value, startTime: '' })}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       required
                     >
                       <option value="">-- Selecciona un servicio --</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name} (${Number(product.price).toFixed(2)} · {product.durationMinutes} min)
+                      {services.map((service) => (
+                        <option key={service.id} value={service.id}>
+                          {service.name} (${Number(service.price).toFixed(2)} · {service.durationMinutes} min)
                         </option>
                       ))}
                     </select>
@@ -822,17 +806,17 @@ const Appointments: React.FC = () => {
                 </div>
 
                 <div className="border-b border-border pb-4">
-                  <label htmlFor="staff" className="block text-sm font-medium text-foreground mb-1">
-                    Profesional <span className="text-muted-foreground">(opcional)</span>
+                  <label htmlFor="professional" className="block text-sm font-medium text-foreground mb-1">
+                    Profesional
                   </label>
                   <select
-                    id="staff"
-                    value={formData.staffId}
-                    onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
+                    id="professional"
+                    value={formData.professionalId}
+                    onChange={(e) => setFormData({ ...formData, professionalId: e.target.value, startTime: '' })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   >
-                    <option value="">-- Sin asignar --</option>
-                    {staffList.map((member) => (
+                    <option value="">Cualquiera disponible</option>
+                    {professionalList.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.name}
                       </option>
@@ -840,7 +824,7 @@ const Appointments: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-border pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-border pb-4">
                   <div>
                     <label htmlFor="date" className="block text-sm font-medium text-foreground mb-1">
                       Fecha de la Cita <span className="text-red-500">*</span>
@@ -849,7 +833,7 @@ const Appointments: React.FC = () => {
                       id="date"
                       type="date"
                       value={formData.date}
-                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value, startTime: '' })}
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       required
                     />
@@ -858,36 +842,26 @@ const Appointments: React.FC = () => {
                     <label htmlFor="startTime" className="block text-sm font-medium text-foreground mb-1">
                       Hora de Inicio <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <select
                       id="startTime"
-                      type="time"
                       value={formData.startTime}
-                      onChange={(e) => {
-                        const startTime = e.target.value;
-                        const selected = products.find((p) => p.id === formData.productId);
-                        setFormData({
-                          ...formData,
-                          startTime,
-                          endTime: selected ? computeEndTime(startTime, selected.durationMinutes) : formData.endTime,
-                        });
-                      }}
-                      className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      disabled={!formData.serviceId}
+                      className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition disabled:bg-muted"
                       required
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="endTime" className="block text-sm font-medium text-foreground mb-1">
-                      Hora de Fin
-                    </label>
-                    <input
-                      id="endTime"
-                      type="time"
-                      value={formData.endTime}
-                      readOnly
-                      disabled
-                      className="w-full px-4 py-2 border border-border bg-muted text-muted-foreground rounded-lg outline-none cursor-not-allowed"
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">Se calcula según la duración del servicio.</p>
+                    >
+                      <option value="">
+                        {!formData.serviceId ? 'Elige primero un servicio' : modalSlotsLoading ? 'Cargando...' : '-- Selecciona una hora --'}
+                      </option>
+                      {modalStartTimes.map((time) => (
+                        <option key={time} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                    {formData.serviceId && !modalSlotsLoading && modalStartTimes.length === 0 && (
+                      <p className="mt-1 text-xs text-amber-700">No hay horarios libres con esa combinación.</p>
+                    )}
                   </div>
                 </div>
 
@@ -901,7 +875,7 @@ const Appointments: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                     rows={3}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="Ej: Cliente prefiere lado izquierdo, alergia a productos sin perfume..."
+                    placeholder="Ej: Cliente prefiere lado izquierdo, alergia a servicios sin perfume..."
                   />
                 </div>
 
@@ -912,11 +886,13 @@ const Appointments: React.FC = () => {
                   <select
                     id="status"
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' })}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value as AppointmentStatus })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   >
+                    <option value="PENDING">Pendiente</option>
                     <option value="SCHEDULED">Agendada</option>
                     <option value="COMPLETED">Completada</option>
+                    <option value="NO_SHOW">No asistió</option>
                     <option value="CANCELLED">Cancelada</option>
                   </select>
                 </div>

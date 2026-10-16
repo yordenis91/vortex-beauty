@@ -1,6 +1,7 @@
 import express from 'express';
 import prisma from '../prismaClient';
-import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
+import { requirePermission } from '../middleware/can';
 import { isMercadoPagoConfigured, createCheckout } from '../services/mercadoPagoService';
 
 const router = express.Router();
@@ -31,7 +32,7 @@ router.get('/status', async (req, res) => {
 // POST /api/billing/checkout — genera la URL de autorización de Mercado
 // Pago para el plan/ciclo que el salón ya tiene asignado, y redirige al
 // admin del salón ahí a conectar su tarjeta. Solo ADMIN del salón.
-router.post('/checkout', requireAdmin, async (req, res) => {
+router.post('/checkout', requirePermission('billing:manage'), async (req, res) => {
   try {
     if (!isMercadoPagoConfigured()) {
       return res.status(503).json({ error: 'La pasarela de pago todavía no está configurada en esta plataforma.' });

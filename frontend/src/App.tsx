@@ -17,7 +17,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
-import Products from './pages/Products';
+import Services from './pages/Services';
 import Categories from './pages/Categories';
 import Appointments from './pages/Appointments';
 import Notifications from './pages/Notifications';
@@ -30,7 +30,9 @@ import ClientProfile from './pages/client/ClientProfile';
 import Settings from './pages/Settings';
 import Billing from './pages/Billing';
 import AdminGallery from './pages/AdminGallery';
-import Staff from './pages/Staff';
+import Professional from './pages/Professionals';
+import Resources from './pages/Resources';
+import { isPanelRole, canManage } from './types';
 
 /**
  * Protected route component para usuarios ADMIN
@@ -50,11 +52,21 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (user.role !== 'ADMIN') {
+  if (!isPanelRole(user.role)) {
     return <Navigate to="/portal/dashboard" replace />;
   }
 
   return <>{children}</>;
+};
+
+/**
+ * Páginas que solo ven quienes administran el salón (OWNER/ADMIN). Un
+ * profesional (STAFF) vuelve al panel de control.
+ */
+const ManagerRoute: React.FC<{ children: React.ReactNode; ownerOnly?: boolean }> = ({ children, ownerOnly }) => {
+  const { user } = useAuth();
+  const allowed = ownerOnly ? user?.role === 'OWNER' : canManage(user?.role);
+  return allowed ? <>{children}</> : <Navigate to="/admin/dashboard" replace />;
 };
 
 /**
@@ -75,8 +87,8 @@ const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Si es ADMIN, redirige al panel de admin
-  if (user.role === 'ADMIN') {
+  // Quien usa el panel del salón no entra al portal de clientes
+  if (isPanelRole(user.role)) {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
@@ -124,7 +136,7 @@ const RootRedirect: React.FC = () => {
   }
 
   // Redirige según el rol
-  return user.role === 'ADMIN' 
+  return isPanelRole(user.role)
     ? <Navigate to="/admin/dashboard" replace /> 
     : <Navigate to="/portal/dashboard" replace />;
 };
@@ -173,16 +185,17 @@ function App() {
             >
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
-              <Route path="clients" element={<Clients />} />
+              <Route path="clients" element={<ManagerRoute><Clients /></ManagerRoute>} />
               <Route path="appointments" element={<Appointments />} />
-              <Route path="staff" element={<Staff />} />
-              <Route path="products" element={<Products />} />
-              <Route path="categories" element={<Categories />} />
-              <Route path="gallery" element={<AdminGallery />} />
+              <Route path="professionals" element={<ManagerRoute><Professional /></ManagerRoute>} />
+              <Route path="resources" element={<ManagerRoute><Resources /></ManagerRoute>} />
+              <Route path="services" element={<ManagerRoute><Services /></ManagerRoute>} />
+              <Route path="categories" element={<ManagerRoute><Categories /></ManagerRoute>} />
+              <Route path="gallery" element={<ManagerRoute><AdminGallery /></ManagerRoute>} />
               <Route path="notifications" element={<Notifications />} />
               <Route path="profile" element={<MyProfile />} />
-              <Route path="billing" element={<Billing />} />
-              <Route path="settings" element={<Settings />} />
+              <Route path="billing" element={<ManagerRoute ownerOnly><Billing /></ManagerRoute>} />
+              <Route path="settings" element={<ManagerRoute><Settings /></ManagerRoute>} />
             </Route>
 
             {/* Client/Portal routes */}

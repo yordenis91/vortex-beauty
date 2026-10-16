@@ -1,5 +1,10 @@
 // User types
-export type UserRole = 'ADMIN' | 'CLIENT';
+export type UserRole = 'OWNER' | 'ADMIN' | 'STAFF' | 'CLIENT';
+
+/** Roles que usan el panel del salón (todos menos el cliente final). */
+export const isPanelRole = (role: UserRole | null | undefined) => role === 'OWNER' || role === 'ADMIN' || role === 'STAFF';
+/** Roles que administran el salón (catálogo, ajustes, clientes). */
+export const canManage = (role: UserRole | null | undefined) => role === 'OWNER' || role === 'ADMIN';
 
 export interface User {
   id: string;
@@ -85,55 +90,86 @@ export interface Category {
   id: string;
   name: string;
   description?: string;
-  type: 'PRODUCT' | 'TICKET' | 'KNOWLEDGE_BASE';
   color?: string;
   icon?: string;
   order: number;
   createdAt: string;
   updatedAt: string;
-  _count?: {
-    products: number;
-    tickets: number;
-    articles: number;
-  };
+  _count?: { services: number };
 }
 
-// Product types
-export interface Product {
+// Service types
+export interface Service {
   id: string;
   name: string;
   description?: string;
-  price: number;
+  price: number | string;
   currency: string;
   status: 'ACTIVE' | 'INACTIVE' | 'DISCONTINUED';
   isPublic: boolean;
+  onlineBookable: boolean;
   durationMinutes: number;
+  bufferBeforeMin: number;
+  bufferAfterMin: number;
   categoryId: string;
   userId: string;
   createdAt: string;
   updatedAt: string;
   category?: Category;
+  professionalIds?: string[];
+  resourceIds?: string[];
   _count?: { appointments: number };
 }
 
-// Staff types
-export interface Staff {
+// Professional types
+export interface ScheduleBlock {
+  dayOfWeek: number; // 0 = domingo ... 6 = sábado
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+}
+
+export interface Professional {
   id: string;
   name: string;
-  email?: string;
-  phone?: string;
-  color?: string;
+  email?: string | null;
+  phone?: string | null;
+  color?: string | null;
   isActive: boolean;
+  acceptsOnlineBookings: boolean;
+  userId?: string | null;
+  user?: { id: string; email: string } | null;
+  schedules?: Array<ScheduleBlock & { id: string }>;
+  serviceIds?: string[];
   createdAt: string;
   updatedAt: string;
 }
 
-export interface CreateStaffRequest {
+export interface CreateProfessionalRequest {
   name: string;
   email?: string;
   phone?: string;
   color?: string;
   isActive?: boolean;
+  acceptsOnlineBookings?: boolean;
+  schedule?: ScheduleBlock[];
+  serviceIds?: string[];
+  account?: { email: string; password: string };
+}
+
+export interface TimeOff {
+  id: string;
+  professionalId: string;
+  startsAt: string;
+  endsAt: string;
+  reason?: string | null;
+}
+
+// Resource types
+export interface Resource {
+  id: string;
+  name: string;
+  isActive: boolean;
+  serviceIds?: string[];
 }
 
 export interface GalleryItem {
@@ -141,75 +177,107 @@ export interface GalleryItem {
   title: string;
   imageUrl: string;
   isActive: boolean;
-  productId: string;
-  product: Product;
+  serviceId: string;
+  service: Service;
   createdAt: string;
   updatedAt: string;
 }
 
-// Request/Response types for new APIs
-export interface CreateProductRequest {
+// Request/Response types
+export interface CreateServiceRequest {
   name: string;
   description?: string;
   price: number;
   currency?: string;
   categoryId: string;
+  status?: Service['status'];
   isPublic?: boolean;
+  onlineBookable?: boolean;
   durationMinutes?: number;
+  bufferBeforeMin?: number;
+  bufferAfterMin?: number;
+  professionalIds?: string[];
+  resourceIds?: string[];
 }
 
 export interface CreateCategoryRequest {
   name: string;
   description?: string;
-  type: Category['type'];
   color?: string;
   icon?: string;
   order?: number;
 }
 
 // Appointment types
+export type AppointmentStatus = 'PENDING' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+
 export interface Appointment {
   id: string;
+  // Hora local del salón (el backend las calcula desde startsAt/endsAt).
   date: string;
   startTime: string;
   endTime: string;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  startsAt: string;
+  endsAt: string;
+  status: AppointmentStatus;
   notes?: string;
+  // Datos del servicio congelados al reservar
+  serviceName: string;
+  priceAmount: number | string;
+  currency: string;
+  durationMin: number;
   clientId: string;
-  productId: string;
-  staffId?: string | null;
+  serviceId: string;
+  professionalId?: string | null;
+  resourceId?: string | null;
+  cancelledBy?: 'CUSTOMER' | 'STAFF' | 'SYSTEM' | null;
   createdAt: string;
   updatedAt: string;
   client?: Client;
-  product?: Product;
-  staff?: Staff | null;
+  service?: Service;
+  professional?: Professional | null;
+  resource?: Resource | null;
 }
 
 export interface CreateAppointmentRequest {
   date: string;
   startTime: string;
-  // endTime ya no lo decide el cliente: el backend lo calcula desde la
-  // duración del servicio. Se puede omitir; si se manda, se ignora.
-  endTime?: string;
-  // Requerido en /api/appointments (admin, identifica al cliente de la cita).
-  // En /api/portal/appointments el backend ignora este campo y usa el
-  // clientId del token de sesión, así que ahí es opcional.
-  clientId?: string;
-  productId: string;
-  staffId?: string | null;
-  status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  clientId?: string; // obligatorio en el panel; el portal usa el cliente de la sesión
+  serviceId: string;
+  // Un profesional concreto, 'any' (cualquiera libre) o ausente
+  professionalId?: string | 'any' | null;
+  status?: AppointmentStatus;
   notes?: string;
 }
 
 export interface UpdateAppointmentRequest {
   date?: string;
   startTime?: string;
-  endTime?: string;
   clientId?: string;
-  productId?: string;
-  staffId?: string | null;
-  status?: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  serviceId?: string;
+  professionalId?: string | 'any' | null;
+  status?: AppointmentStatus;
   notes?: string;
+}
+
+export interface AvailableSlot {
+  startTime: string;
+  professionalIds: string[];
+}
+
+// Booking settings
+export interface BookingSettings {
+  name: string;
+  slug: string;
+  currency: string;
+  timezone: string;
+  vertical: 'GENERIC' | 'NAILS' | 'BARBER' | 'SPA' | 'TATTOO' | 'HAIR' | 'FITNESS';
+  slotIntervalMin: number;
+  minNoticeHours: number;
+  maxAdvanceDays: number;
+  cancelWindowHrs: number;
+  bookingEnabled: boolean;
+  labels: Record<string, string>;
 }
 
 // Notification types
@@ -265,6 +333,6 @@ export interface UpdateClientProfileRequest {
 export interface CreateGalleryItemRequest {
   title: string;
   imageUrl: string;
-  productId: string;
+  serviceId: string;
   isActive?: boolean;
 }

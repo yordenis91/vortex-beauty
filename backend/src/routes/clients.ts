@@ -5,11 +5,13 @@ import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { runInTransaction } from '../lib/db';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { requirePermission } from '../middleware/can';
 
 const router = express.Router();
 
-// Todas las rutas de clientes son exclusivas de ADMIN.
-router.use(authenticateToken, requireAdmin);
+// Lectura: cualquier usuario del panel (un STAFF necesita ver clientes para agendar).
+// Escritura: dueño y administradores.
+router.use(authenticateToken);
 
 const clientSchema = z.object({
   name: z.string().min(1),
@@ -34,7 +36,7 @@ const createClientSchema = clientSchema.extend({
 const updateClientSchema = clientSchema.partial();
 
 // GET /api/clients - List all clients
-router.get('/', async (req, res) => {
+router.get('/', requirePermission('customers:read'), async (req, res) => {
   try {
     const clients = await prisma.client.findMany({
       where: { tenantId: req.user!.tenantId },
@@ -46,7 +48,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/clients/:id - Get single client
-router.get('/:id', async (req, res) => {
+router.get('/:id', requirePermission('customers:read'), async (req, res) => {
   try {
     const client = await prisma.client.findFirst({
       where: { id: req.params.id as string, tenantId: req.user!.tenantId },
@@ -63,7 +65,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/clients - Create new client
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try {
     const parsed = createClientSchema.parse(req.body);
     const {
@@ -119,7 +121,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /api/clients/:id - Update client
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const data = updateClientSchema.parse(req.body);
 
@@ -151,7 +153,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/clients/:id - Delete client
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     // Verify client exists and belongs to user
     const existingClient = await prisma.client.findFirst({

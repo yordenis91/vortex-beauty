@@ -9,7 +9,7 @@ const galleryItemSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   imageUrl: z.string().min(1, 'Image URL is required'),
   isActive: z.boolean().optional().default(true),
-  productId: z.string().uuid('Invalid product ID'),
+  serviceId: z.string().uuid('Invalid service ID'),
 });
 
 // GET /api/gallery - Active items for the salón del usuario autenticado
@@ -18,7 +18,7 @@ router.get('/', authenticateToken, async (req, res) => {
     const tenantId = req.user!.tenantId;
     const galleryItems = await prisma.galleryItem.findMany({
       where: { isActive: true, tenantId },
-      include: { product: true },
+      include: { service: true },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -35,7 +35,7 @@ router.get('/admin', authenticateToken, requireAdmin, async (req, res) => {
     const tenantId = req.user!.tenantId;
     const galleryItems = await prisma.galleryItem.findMany({
       where: { tenantId },
-      include: { product: true },
+      include: { service: true },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -52,9 +52,9 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
     const validatedData = galleryItemSchema.parse(req.body);
     const tenantId = req.user!.tenantId;
 
-    const product = await prisma.product.findFirst({ where: { id: validatedData.productId, tenantId } });
-    if (!product) {
-      return res.status(400).json({ error: 'Invalid product ID' });
+    const service = await prisma.service.findFirst({ where: { id: validatedData.serviceId, tenantId } });
+    if (!service) {
+      return res.status(400).json({ error: 'Invalid service ID' });
     }
 
     const createdItem = await prisma.galleryItem.create({
@@ -62,10 +62,10 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
         title: validatedData.title,
         imageUrl: validatedData.imageUrl,
         isActive: validatedData.isActive ?? true,
-        productId: validatedData.productId,
+        serviceId: validatedData.serviceId,
         tenantId,
       },
-      include: { product: true },
+      include: { service: true },
     });
 
     res.status(201).json(createdItem);
@@ -90,10 +90,10 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Gallery item not found' });
     }
 
-    if (validatedData.productId) {
-      const product = await prisma.product.findFirst({ where: { id: validatedData.productId, tenantId } });
-      if (!product) {
-        return res.status(400).json({ error: 'Invalid product ID' });
+    if (validatedData.serviceId) {
+      const service = await prisma.service.findFirst({ where: { id: validatedData.serviceId, tenantId } });
+      if (!service) {
+        return res.status(400).json({ error: 'Invalid service ID' });
       }
     }
 
@@ -103,9 +103,9 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
         title: validatedData.title ?? existingItem.title,
         imageUrl: validatedData.imageUrl ?? existingItem.imageUrl,
         isActive: validatedData.isActive ?? existingItem.isActive,
-        productId: validatedData.productId ?? existingItem.productId,
+        serviceId: validatedData.serviceId ?? existingItem.serviceId,
       },
-      include: { product: true },
+      include: { service: true },
     });
 
     res.json(updatedItem);

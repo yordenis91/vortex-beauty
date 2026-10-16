@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
               <li key={apt.id} className="px-4 py-4 sm:px-6 flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{apt.client?.name}</p>
-                  <p className="text-sm text-muted-foreground truncate">{apt.product?.name}</p>
+                  <p className="text-sm text-muted-foreground truncate">{apt.serviceName}</p>
                 </div>
                 <div className="text-sm text-foreground text-right">
                   <p>{new Date(apt.date).toLocaleDateString('es', { timeZone: 'UTC' })}</p>

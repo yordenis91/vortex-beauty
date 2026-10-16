@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { useProducts, useCategories } from '../hooks/useQueries';
+import { useServices, useCategories } from '../hooks/useQueries';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Command,
@@ -13,39 +13,39 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface ProductCategorySelectProps {
+interface ServiceCategorySelectProps {
   value?: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   className?: string;
 }
 
-const ProductCategorySelect: React.FC<ProductCategorySelectProps> = ({
+const ServiceCategorySelect: React.FC<ServiceCategorySelectProps> = ({
   value,
   onChange,
   disabled = false,
   className,
 }) => {
   const [open, setOpen] = useState(false);
-  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: services = [], isLoading: servicesLoading } = useServices();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
-  const loading = productsLoading || categoriesLoading;
+  const loading = servicesLoading || categoriesLoading;
 
-  const selectedProduct = products.find((product) => product.id === value);
-  const selectedLabel = selectedProduct ? selectedProduct.name : 'Seleccionar producto/servicio...';
+  const selectedService = services.find((service) => service.id === value);
+  const selectedLabel = selectedService ? selectedService.name : 'Seleccionar servicio/servicio...';
 
-  const groupedProducts = useMemo(
+  const groupedServices = useMemo(
     () =>
       categories.map((category) => ({
         category,
-        products: products.filter((product) => product.categoryId === category.id),
+        services: services.filter((service) => service.categoryId === category.id),
       })),
-    [categories, products]
+    [categories, services]
   );
 
-  const uncategorizedProducts = useMemo(
-    () => products.filter((product) => !product.categoryId),
-    [products]
+  const uncategorizedServices = useMemo(
+    () => services.filter((service) => !service.categoryId),
+    [services]
   );
 
   return (
@@ -60,7 +60,7 @@ const ProductCategorySelect: React.FC<ProductCategorySelectProps> = ({
           )}
           disabled={disabled || loading}
         >
-          <span className={cn('truncate', !selectedProduct && 'text-muted-foreground')}>
+          <span className={cn('truncate', !selectedService && 'text-muted-foreground')}>
             {loading ? 'Cargando...' : selectedLabel}
           </span>
           <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
@@ -73,47 +73,47 @@ const ProductCategorySelect: React.FC<ProductCategorySelectProps> = ({
           <CommandList>
             <CommandEmpty>No se encontraron resultados.</CommandEmpty>
 
-            {groupedProducts.map(({ category, products: categoryProducts }) =>
-              categoryProducts.length > 0 ? (
+            {groupedServices.map(({ category, services: categoryServices }) =>
+              categoryServices.length > 0 ? (
                 <CommandGroup key={category.id} heading={category.name}>
-                  {categoryProducts.map((product) => (
+                  {categoryServices.map((service) => (
                     <CommandItem
-                      key={product.id}
+                      key={service.id}
                       onSelect={() => {
-                        onChange(product.id);
+                        onChange(service.id);
                         setOpen(false);
                       }}
                     >
                       <Check
                         className={cn(
                           'mr-2 h-4 w-4 text-blue-600 transition-opacity',
-                          value === product.id ? 'opacity-100' : 'opacity-0'
+                          value === service.id ? 'opacity-100' : 'opacity-0'
                         )}
                       />
-                      {product.name}
+                      {service.name}
                     </CommandItem>
                   ))}
                 </CommandGroup>
               ) : null
             )}
 
-            {uncategorizedProducts.length > 0 && (
+            {uncategorizedServices.length > 0 && (
               <CommandGroup heading="Otros">
-                {uncategorizedProducts.map((product) => (
+                {uncategorizedServices.map((service) => (
                   <CommandItem
-                    key={product.id}
+                    key={service.id}
                     onSelect={() => {
-                      onChange(product.id);
+                      onChange(service.id);
                       setOpen(false);
                     }}
                   >
                     <Check
                       className={cn(
                         'mr-2 h-4 w-4 text-blue-600 transition-opacity',
-                        value === product.id ? 'opacity-100' : 'opacity-0'
+                        value === service.id ? 'opacity-100' : 'opacity-0'
                       )}
                     />
-                    {product.name}
+                    {service.name}
                   </CommandItem>
                 ))}
               </CommandGroup>
@@ -125,4 +125,4 @@ const ProductCategorySelect: React.FC<ProductCategorySelectProps> = ({
   );
 };
 
-export default ProductCategorySelect;
+export default ServiceCategorySelect;

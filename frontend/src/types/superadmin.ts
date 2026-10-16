@@ -70,6 +70,7 @@ export interface CreateTenantRequest {
   billingCycle: 'MONTHLY' | 'YEARLY';
   adminName: string;
   adminEmail: string;
+  vertical?: 'GENERIC' | 'NAILS' | 'BARBER' | 'SPA' | 'TATTOO' | 'HAIR' | 'FITNESS';
 }
 
 export interface CreateTenantResponse {
@@ -77,6 +78,7 @@ export interface CreateTenantResponse {
   admin: { id: string; email: string; name: string };
   tempPassword: string;
   registerUrl: string;
+  loginUrl: string;
 }
 
 export interface TenantListItem {

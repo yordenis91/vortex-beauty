@@ -3,23 +3,27 @@ import toast from 'react-hot-toast';
 import api from '../lib/api';
 import type {
   Client,
-  Product,
+  Service,
   Category,
   Appointment,
   GalleryItem,
   ClosedDate,
   ScheduleOverride,
-  Staff,
+  Professional,
   Notification,
   ClientProfileResponse,
   UpdateClientProfileRequest,
   CreateGalleryItemRequest,
   CreateClientRequest,
-  CreateProductRequest,
+  CreateServiceRequest,
   CreateCategoryRequest,
   CreateAppointmentRequest,
   UpdateAppointmentRequest,
-  CreateStaffRequest,
+  CreateProfessionalRequest,
+  AvailableSlot,
+  Resource,
+  TimeOff,
+  BookingSettings,
 } from '../types';
 
 // Extrae un mensaje legible de un error de axios (o de cualquier otro tipo)
@@ -49,32 +53,28 @@ export const useClients = () => {
   });
 };
 
-// Projects
-// Invoices
-// Products
-export const useProducts = () => {
+// Services
+export const useServices = () => {
   return useQuery({
-    queryKey: ['products'],
+    queryKey: ['services'],
     queryFn: async () => {
-      const response = await api.get<Product[]>('/products');
+      const response = await api.get<Service[]>('/services');
       return response.data;
     },
   });
 };
 
 // Categories
-export const useCategories = (type?: string) => {
+export const useCategories = () => {
   return useQuery({
-    queryKey: ['categories', type],
+    queryKey: ['categories'],
     queryFn: async () => {
-      const url = type ? `/categories?type=${type}` : '/categories';
-      const response = await api.get<Category[]>(url);
+      const response = await api.get<Category[]>('/categories');
       return response.data;
     },
   });
 };
 
-// Tickets
 // Mutations
 export const useUpdateClient = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
@@ -132,57 +132,57 @@ export const useCreateClient = (options?: MutationOptions) => {
   });
 };
 
-export const useUpdateProduct = (options?: MutationOptions) => {
+export const useUpdateService = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, productData }: { id: string; productData: Partial<CreateProductRequest> }) => {
-      const response = await api.put(`/products/${id}`, productData);
+    mutationFn: async ({ id, serviceData }: { id: string; serviceData: Partial<CreateServiceRequest> }) => {
+      const response = await api.put(`/services/${id}`, serviceData);
       return response.data;
     },
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteProduct = (options?: MutationOptions) => {
+export const useDeleteService = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
     mutationFn: async (id: string) => {
-      await api.delete(`/products/${id}`);
+      await api.delete(`/services/${id}`);
     },
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useCreateProduct = (options?: MutationOptions) => {
+export const useCreateService = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (productData: CreateProductRequest) => {
-      const response = await api.post('/products', productData);
+    mutationFn: async (serviceData: CreateServiceRequest) => {
+      const response = await api.post('/services', serviceData);
       return response.data;
     },
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
@@ -323,18 +323,48 @@ export const useCreateAppointment = (options?: MutationOptions) => {
 };
 
 // Available Slots
-// productId es opcional: si se manda, el backend filtra los huecos usando la
+// serviceId es opcional: si se manda, el backend filtra los huecos usando la
 // duración real de ese servicio en vez de solo el instante de inicio.
-export const useAvailableSlots = (date: string, productId?: string) => {
+export const useAvailableSlots = (date: string, serviceId?: string, professionalId?: string) => {
   return useQuery({
-    queryKey: ['available-slots', date, productId],
+    queryKey: ['available-slots', date, serviceId, professionalId],
     queryFn: async () => {
-      const params = new URLSearchParams({ date });
-      if (productId) params.set('productId', productId);
+      const params = new URLSearchParams({ date, serviceId: serviceId! });
+      if (professionalId && professionalId !== 'any') params.set('professionalId', professionalId);
       const response = await api.get<string[]>(`/portal/available-slots?${params.toString()}`);
       return response.data;
     },
-    enabled: !!date,
+    enabled: !!date && !!serviceId,
+  });
+};
+
+// Huecos desde el panel (sin antelación mínima/máxima). excludeAppointmentId
+// evita que la cita que se está editando bloquee su propio hueco.
+export const useAdminSlots = (date: string, serviceId?: string, professionalId?: string, excludeAppointmentId?: string) => {
+  return useQuery({
+    queryKey: ['admin-slots', date, serviceId, professionalId, excludeAppointmentId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ date, serviceId: serviceId! });
+      if (professionalId && professionalId !== 'any') params.set('professionalId', professionalId);
+      if (excludeAppointmentId) params.set('excludeAppointmentId', excludeAppointmentId);
+      const response = await api.get<AvailableSlot[]>(`/appointments/available-slots?${params.toString()}`);
+      return response.data;
+    },
+    enabled: !!date && !!serviceId,
+  });
+};
+
+// Profesionales reservables por el cliente final para un servicio
+export const useClientProfessionals = (serviceId?: string) => {
+  return useQuery({
+    queryKey: ['client-professionals', serviceId],
+    queryFn: async () => {
+      const response = await api.get<Pick<Professional, 'id' | 'name' | 'color'>[]>(
+        `/portal/professionals${serviceId ? `?serviceId=${serviceId}` : ''}`
+      );
+      return response.data;
+    },
+    enabled: !!serviceId,
   });
 };
 
@@ -482,14 +512,14 @@ export const useCancelAppointment = (options?: MutationOptions) => {
 };
 
 /**
- * Hook para obtener los productos/servicios disponibles para clientes
- * Usa endpoint /api/portal/products
+ * Hook para obtener los servicios/servicios disponibles para clientes
+ * Usa endpoint /api/portal/services
  */
-export const useClientProducts = () => {
+export const useClientServices = () => {
   return useQuery({
-    queryKey: ['client-products'],
+    queryKey: ['client-services'],
     queryFn: async () => {
-      const response = await api.get<Product[]>('/portal/products');
+      const response = await api.get<Service[]>('/portal/services');
       return response.data;
     },
   });
@@ -752,71 +782,152 @@ export const useFullyBookedDates = () => {
   });
 };
 
-// ==================== STAFF HOOKS ====================
+// ==================== PROFESSIONAL HOOKS ====================
 
-export const useStaff = (activeOnly?: boolean) => {
+export const useProfessionals = (activeOnly?: boolean) => {
   return useQuery({
-    queryKey: ['staff', activeOnly],
+    queryKey: ['professionals', activeOnly],
     queryFn: async () => {
-      const url = activeOnly ? '/staff?active=true' : '/staff';
-      const response = await api.get<Staff[]>(url);
+      const url = activeOnly ? '/professionals?active=true' : '/professionals';
+      const response = await api.get<Professional[]>(url);
       return response.data;
     },
   });
 };
 
-export const useCreateStaff = (options?: MutationOptions) => {
+export const useCreateProfessional = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (staffData: CreateStaffRequest) => {
-      const response = await api.post('/staff', staffData);
+    mutationFn: async (professionalData: CreateProfessionalRequest) => {
+      const response = await api.post('/professionals', professionalData);
       return response.data;
     },
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['professionals'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useUpdateStaff = (options?: MutationOptions) => {
+export const useUpdateProfessional = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async ({ id, staffData }: { id: string; staffData: Partial<CreateStaffRequest> }) => {
-      const response = await api.put(`/staff/${id}`, staffData);
+    mutationFn: async ({ id, professionalData }: { id: string; professionalData: Partial<CreateProfessionalRequest> }) => {
+      const response = await api.put(`/professionals/${id}`, professionalData);
       return response.data;
     },
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['professionals'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
 
-export const useDeleteStaff = (options?: MutationOptions) => {
+export const useDeleteProfessional = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
     mutationFn: async (id: string) => {
-      await api.delete(`/staff/${id}`);
+      await api.delete(`/professionals/${id}`);
     },
     onError: (error: unknown) => {
       toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['staff'] });
+      queryClient.invalidateQueries({ queryKey: ['professionals'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };
+
+
+// ==================== RESOURCES ====================
+
+export const useResources = () => {
+  return useQuery({
+    queryKey: ['resources'],
+    queryFn: async () => (await api.get<Resource[]>('/resources')).data,
+  });
+};
+
+function useResourceMutation<TVars>(
+  fn: (vars: TVars) => Promise<unknown>,
+  invalidate: string[][],
+  options?: MutationOptions
+) {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: fn,
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
+    },
+    onSuccess: (data, variables, context) => {
+      invalidate.forEach((queryKey) => queryClient.invalidateQueries({ queryKey }));
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+}
+
+export const useCreateResource = (options?: MutationOptions) =>
+  useResourceMutation(async (data: { name: string; isActive?: boolean }) => (await api.post('/resources', data)).data, [['resources']], options);
+
+export const useUpdateResource = (options?: MutationOptions) =>
+  useResourceMutation(
+    async ({ id, data }: { id: string; data: { name?: string; isActive?: boolean } }) => (await api.put(`/resources/${id}`, data)).data,
+    [['resources']],
+    options
+  );
+
+export const useDeleteResource = (options?: MutationOptions) =>
+  useResourceMutation(async (id: string) => (await api.delete(`/resources/${id}`)).data, [['resources']], options);
+
+// ==================== TIME OFF ====================
+
+export const useTimeOff = (professionalId?: string) => {
+  return useQuery({
+    queryKey: ['time-off', professionalId],
+    queryFn: async () => (await api.get<TimeOff[]>(`/professionals/${professionalId}/time-off`)).data,
+    enabled: !!professionalId,
+  });
+};
+
+export const useCreateTimeOff = (options?: MutationOptions) =>
+  useResourceMutation(
+    async ({ professionalId, ...data }: { professionalId: string; startsAt: string; endsAt: string; reason?: string; force?: boolean }) =>
+      (await api.post(`/professionals/${professionalId}/time-off`, data)).data,
+    [['time-off']],
+    options
+  );
+
+export const useDeleteTimeOff = (options?: MutationOptions) =>
+  useResourceMutation(async (id: string) => (await api.delete(`/professionals/time-off/${id}`)).data, [['time-off']], options);
+
+// ==================== BOOKING SETTINGS ====================
+
+export const useBookingSettings = () => {
+  return useQuery({
+    queryKey: ['booking-settings'],
+    queryFn: async () => (await api.get<BookingSettings>('/settings/booking')).data,
+    staleTime: 60_000,
+  });
+};
+
+export const useUpdateBookingSettings = (options?: MutationOptions) =>
+  useResourceMutation(
+    async (data: Partial<Omit<BookingSettings, 'name' | 'slug' | 'currency'>>) => (await api.put('/settings/booking', data)).data,
+    [['booking-settings']],
+    options
+  );
