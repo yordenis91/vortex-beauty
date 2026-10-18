@@ -282,6 +282,8 @@ export interface BookingSettings {
   ownerAlerts: boolean;
   telegramConfigured: boolean;
   telegramChatId: string;
+  telegramBotUsername: string | null;
+  telegramOwnerCode: string | null;
   labels: Record<string, string>;
 }
 

@@ -137,3 +137,12 @@ La cola usa `pg-boss` sobre la propia Postgres: no hace falta Redis. Los recorda
 | `PRISMA_LOG_QUERIES=1` | Registra las consultas SQL (solo para depurar) |
 
 `GET /api/health` responde 200 si la base de datos contesta y 503 si no: úsalo como health check de Easypanel.
+
+## Telegram para clientes
+
+Cada salón usa su propio bot (token de @BotFather) que pega en Ajustes → Reservas. Al guardar, el API valida el token y registra el webhook `POST /api/telegram/webhook/:tenantId` en Telegram con un secreto propio del salón. Requisitos:
+
+- El API debe ser accesible por **HTTPS público** (Telegram no llama a `http` ni a hosts internos). La URL se toma de la propia petición; si hay un proxy que la cambia, define `API_PUBLIC_URL=https://tu-api`.
+- El cliente enlaza su chat desde la confirmación de su reserva (botón «Recibir avisos por Telegram»); desde entonces los avisos le llegan por Telegram y, si bloquea el bot, vuelven al correo.
+- El dueño recibe los avisos del salón enviando `/vincular <código>` al bot (el código aparece en Ajustes y se renueva al usarse).
+- Comandos del bot para clientes: `/citas` (próximas citas) y `/parar` (dejar de recibir avisos).

@@ -12,6 +12,7 @@ import {
   type PublicCatalog,
   type PublicSlot,
 } from '../../lib/publicApi';
+import TelegramOptIn from './TelegramOptIn';
 import PublicShell from './PublicShell';
 import { money } from './format';
 import { Spinner } from './shared';
@@ -336,6 +337,7 @@ const Booking: React.FC = () => {
             <div className="text-muted-foreground">{money(booked.priceAmount, booked.currency)}</div>
           </div>
           {customer.email && <p className="text-sm text-muted-foreground">Te enviamos la confirmación a {customer.email}.</p>}
+          <TelegramOptIn telegram={booked.telegram} />
           {booked.manageUrl && (
             <Link to={booked.manageUrl} className="inline-flex items-center gap-2 text-blue-600 font-medium">
               <CalendarCheck className="h-4 w-4" /> Cambiar o cancelar mi {word('appointment', 'cita')}

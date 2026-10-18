@@ -282,6 +282,24 @@ interface PresentableAppointment {
   cancelToken: string | null;
 }
 
+/**
+ * Enlace para que el cliente reciba avisos por el bot del salón. Solo si el salón
+ * tiene bot; `linked` indica que este cliente ya lo activó.
+ */
+async function telegramInfo(tenantId: string, clientId: string, cancelToken: string | null) {
+  const [settings, client] = await Promise.all([
+    prisma.tenantSettings.findUnique({ where: { tenantId }, select: { telegramBotUsername: true, telegramBotToken: true } }),
+    prisma.client.findUnique({ where: { id: clientId }, select: { telegramChatId: true } }),
+  ]);
+  if (!settings?.telegramBotToken || !settings.telegramBotUsername || !cancelToken) return null;
+  return {
+    botUsername: settings.telegramBotUsername,
+    linked: !!client?.telegramChatId,
+    // Un token de cita (secreto, 43 caracteres base64url) cabe en el parámetro de /start (máx. 64).
+    deepLink: `https://t.me/${settings.telegramBotUsername}?start=${cancelToken}`,
+  };
+}
+
 const presentAppointment = (a: PresentableAppointment, slug: string) => ({
   id: a.id,
   status: a.status,
@@ -331,7 +349,10 @@ router.post('/:slug/bookings', writeLimiter, requireBookingEnabled, validateBody
       enforceWindow: true,
     });
 
-    res.status(201).json(presentAppointment(appointment, tenant.slug));
+    res.status(201).json({
+      ...presentAppointment(appointment, tenant.slug),
+      telegram: await telegramInfo(tenant.id, client.id, appointment.cancelToken),
+    });
   } catch (error) {
     const handled = toBookingHttpErrorOrThrow(error);
     return res.status(handled.status).json({ error: handled.message });
@@ -369,6 +390,7 @@ const presentManage = async (tenantId: string, tenant: { slug: string; name: str
   return {
     salonName: tenant.name,
     appointment: { ...presentAppointment(dto, tenant.slug), serviceId: appointment.serviceId, professionalId: appointment.professionalId },
+    telegram: await telegramInfo(tenantId, appointment.clientId, appointment.cancelToken),
     ...(await manageState(tenantId, appointment)),
   };
 };

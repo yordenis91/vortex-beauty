@@ -133,14 +133,39 @@ async function alertOwner(tenantId: string, data: Loaded, kind: 'created' | 'can
 }
 
 async function sendToCustomer(tenantId: string, data: Loaded, keyBase: string, message: { subject: string; text: string; html: string }): Promise<'done' | 'retry'> {
-  const email = data.appointment.client.email;
-  if (!email) return 'done'; // cliente solo con teléfono: sin canal de correo
+  const { client } = data.appointment;
+  const { telegramBotToken } = data.settings;
+
+  // Telegram primero si el cliente lo activó: es el canal que de verdad leen.
+  if (client.telegramChatId && telegramBotToken) {
+    const chatId = client.telegramChatId;
+    let blocked = false;
+    const outcome = await deliver({
+      tenantId,
+      channel: 'TELEGRAM',
+      recipient: chatId,
+      content: message.text,
+      clientId: client.id,
+      dedupeKey: `${keyBase}:customer:telegram`,
+      send: async () => {
+        const result = await sendTelegram(telegramBotToken, chatId, message.text);
+        if (!result.ok && result.blocked) blocked = true;
+        return result;
+      },
+    });
+    if (!blocked) return outcome;
+    // El cliente bloqueó el bot: se desenlaza y se intenta por correo.
+    await prisma.client.update({ where: { id: client.id }, data: { telegramChatId: null } });
+  }
+
+  const email = client.email;
+  if (!email) return 'done'; // cliente solo con teléfono y sin Telegram: sin canal
   return deliver({
     tenantId,
     channel: 'EMAIL',
     recipient: email,
     content: message.text,
-    clientId: data.appointment.clientId,
+    clientId: client.id,
     dedupeKey: `${keyBase}:customer:email`,
     send: () => sendEmail({ to: email, subject: message.subject, text: message.text, html: message.html }),
   });

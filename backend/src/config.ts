@@ -28,6 +28,8 @@ export const config = {
   platformJwtSecret,
   // URL pública del frontend, para los enlaces de los correos ("gestionar mi cita").
   appPublicUrl: (process.env.APP_PUBLIC_URL || 'http://localhost:5173').replace(/\/$/, ''),
+  // URL pública (https) del API: Telegram la usa para llamar al webhook. Si falta, se toma de la petición.
+  apiPublicUrl: (process.env.API_PUBLIC_URL || '').replace(/\/$/, ''),
   // Cola de trabajos (pg-boss): puede usar otra conexión con permiso para crear su schema.
   queueDatabaseUrl: process.env.QUEUE_DATABASE_URL || databaseUrl,
   // 'memory' guarda los trabajos en memoria (tests); 'off' no encola nada.
