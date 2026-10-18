@@ -335,7 +335,7 @@ const Booking: React.FC = () => {
           <div className="mx-auto h-14 w-14 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
             <Check className="h-7 w-7" />
           </div>
-          <h2 className="text-xl font-bold text-foreground">¡Listo! Tu {word('appointment', 'cita')} está confirmada</h2>
+          <h2 className="text-xl font-bold text-foreground">¡Listo! Ya tienes tu {word('appointment', 'cita')}</h2>
           <div className="text-left bg-muted rounded-xl p-4 space-y-1 text-sm">
             <div className="font-medium text-foreground">{booked.serviceName}</div>
             <div className="text-muted-foreground">

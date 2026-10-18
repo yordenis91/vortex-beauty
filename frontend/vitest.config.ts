@@ -14,6 +14,8 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
+    // Las pantallas llaman a esta URL; MSW (src/test/server.ts) responde por ella.
+    env: { VITE_API_BASE_URL: 'http://api.test/api' },
     restoreMocks: true,
   },
 })
