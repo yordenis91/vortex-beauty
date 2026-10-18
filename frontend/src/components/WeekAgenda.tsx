@@ -7,6 +7,7 @@ import type { Appointment } from '../types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import './week-agenda.css';
+import { useLabels } from '@/hooks/useLabels';
 
 const localizer = dateFnsLocalizer({
   format,
@@ -74,18 +75,20 @@ interface Props {
 }
 
 const WeekAgenda: React.FC<Props> = ({ appointments, date, view, hours, stepMinutes, onNavigate, onViewChange, onSelectAppointment, onCreateAt, onMove }) => {
+  const { label } = useLabels();
+  const customerWord = label('customer', true);
   const events = useMemo<AgendaEvent[]>(
     () =>
       appointments
         .filter((a) => a.status !== 'CANCELLED')
         .map((a) => ({
           id: a.id,
-          title: `${a.client?.name ?? 'Cliente'} · ${a.serviceName}`,
+          title: `${a.client?.name ?? customerWord} · ${a.serviceName}`,
           start: wallClock(a.date, a.startTime),
           end: wallClock(a.date, a.endTime),
           appointment: a,
         })),
-    [appointments]
+    [appointments, customerWord]
   );
 
   const minTime = useMemo(() => new Date(1970, 0, 1, Math.floor(toMinutes(hours.from) / 60), toMinutes(hours.from) % 60), [hours.from]);
@@ -148,9 +151,9 @@ const WeekAgenda: React.FC<Props> = ({ appointments, date, view, hours, stepMinu
           day: 'Día',
           date: 'Fecha',
           time: 'Hora',
-          event: 'Cita',
+          event: label('appointment', true),
           allDay: 'Todo el día',
-          noEventsInRange: 'Sin citas en este rango.',
+          noEventsInRange: `Sin ${label('appointments')} en este rango.`,
           showMore: (n) => `+${n} más`,
         }}
       />

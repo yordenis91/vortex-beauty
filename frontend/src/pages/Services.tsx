@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal';
 import Pagination from '../components/Pagination';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Package, Plus, Edit, Trash2, Search, DollarSign, Clock, Eye, EyeOff } from 'lucide-react';
+import { useLabels } from '@/hooks/useLabels';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -72,6 +73,7 @@ function CheckList({
 }
 
 const Services: React.FC = () => {
+  const { label } = useLabels();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [filterVisibility, setFilterVisibility] = useState('ALL');
@@ -209,7 +211,7 @@ const Services: React.FC = () => {
           <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
             Servicios
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Los servicios que tus clientes pueden reservar.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Los servicios que {label('customers')} pueden reservar.</p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
           <button
@@ -349,7 +351,7 @@ const Services: React.FC = () => {
             </div>
             <CheckList
               label="Lo realizan"
-              emptyText="Aún no hay profesionales."
+              emptyText={`Aún no hay ${label('professionals')}.`}
               items={professionals.filter((p) => p.isActive).map((p) => ({ id: p.id, name: p.name }))}
               selected={formData.professionalIds}
               onChange={(professionalIds) => setFormData({ ...formData, professionalIds })}
