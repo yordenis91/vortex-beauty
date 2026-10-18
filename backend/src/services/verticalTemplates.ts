@@ -144,6 +144,7 @@ export async function applyVerticalTemplate(
   if (existing) return;
 
   const template = TEMPLATES[vertical];
+  const { currency } = await tx.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { currency: true } });
   const hours = overrides?.hours ?? DEFAULT_HOURS;
   const services: TemplateService[] = overrides?.services?.map((s) => ({ ...s, category: s.category?.trim() || template.categories[0] })) ?? template.services;
   const professionalNames = overrides?.professionals?.length ? overrides.professionals : [template.defaultProfessional];
@@ -192,6 +193,7 @@ export async function applyVerticalTemplate(
         name: s.name,
         description: s.description,
         price: s.price,
+        currency, // la del salón (CUP, USD...), no la de fábrica
         durationMinutes: s.durationMinutes,
         bufferAfterMin: s.bufferAfterMin ?? 0,
         bufferBeforeMin: s.bufferBeforeMin ?? 0,

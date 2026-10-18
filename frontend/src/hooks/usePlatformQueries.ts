@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import platformApi from '../lib/platformApi';
 import { getErrorMessage } from './useQueries';
 import type {
+  TenantTemplates,
   Plan,
   CreatePlanRequest,
   TenantListItem,
@@ -152,3 +153,20 @@ export const useDeletePlan = (options?: MutationOptions) => {
 };
 
 export { getErrorMessage };
+
+/** Servicios, profesional y horario de fábrica de cada vertical: el asistente de alta los precarga. */
+export const useTenantTemplates = () =>
+  useQuery({
+    queryKey: ['platform', 'tenant-templates'],
+    queryFn: async () => (await platformApi.get<TenantTemplates>('/tenants/templates')).data,
+    staleTime: Infinity,
+  });
+
+/** ¿Está libre este identificador de salón? (el asistente lo comprueba mientras se escribe). */
+export const useSlugAvailability = (slug: string) =>
+  useQuery({
+    queryKey: ['platform', 'slug-available', slug],
+    queryFn: async () => (await platformApi.get<{ slug: string; available: boolean; reason: string | null }>('/tenants/slug-available', { params: { slug } })).data,
+    enabled: slug.length >= 2,
+    staleTime: 10_000,
+  });

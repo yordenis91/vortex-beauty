@@ -126,6 +126,8 @@ describeIfDb('alta asistida de salones', () => {
     );
     expect(t.timezone).toBe('America/Havana');
     expect(t.currency).toBe('CUP');
+    // los precios se muestran en la moneda del salón, no en la de fábrica (USD)
+    expect(t.services.map((x) => x.currency)).toEqual(['CUP', 'CUP']);
     expect(t.services.map((x) => [x.name, Number(x.price), x.category.name]).sort()).toEqual([
       ['Barba', 300, 'Barba'],
       ['Corte clásico', 500, 'Cortes'],
@@ -138,6 +140,23 @@ describeIfDb('alta asistida de salones', () => {
       expect(pro.schedules[0]).toMatchObject({ startTime: '10:00', endTime: '19:00' });
     }
     expect(t.businessHours.filter((h) => h.isOpen)).toHaveLength(5);
+  });
+
+  it('un servicio nuevo creado desde el panel hereda la moneda del salón', async () => {
+    const s = slug('moneda');
+    const created = await create({ slug: s, vertical: 'BARBER', currency: 'CUP' });
+    expect(created.status).toBe(201);
+    const login = await request(app)
+      .post('/api/auth/login')
+      .set('X-Requested-With', 'XMLHttpRequest')
+      .send({ tenantSlug: s, email: 'dueno@nuevo.com', password: created.body.tempPassword });
+    const category = await ctx.runAsAdmin(() => prisma.category.findFirstOrThrow({ where: { tenant: { slug: s } } }));
+    const res = await request(app)
+      .post('/api/services')
+      .set('Authorization', `Bearer ${login.body.token}`)
+      .send({ name: 'Servicio nuevo', price: 100, categoryId: category.id, durationMinutes: 30 });
+    expect(res.status).toBe(201);
+    expect(res.body.currency).toBe('CUP');
   });
 
   it('rechaza datos inválidos: horario sin días abiertos, cierre antes de apertura, zona inexistente', async () => {
