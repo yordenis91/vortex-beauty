@@ -1,5 +1,6 @@
 import { config } from './config';
 import { getBoss, QUEUES, stopBoss } from './lib/queue';
+import { pingHeartbeat, runBackup } from './services/backup';
 import { processCancelled, processConfirmed, processReminder } from './services/notifications/notifier';
 
 /**
@@ -30,6 +31,26 @@ export async function startWorker() {
   await boss.work<{ tenantId: string; appointmentId: string; by: 'CUSTOMER' | 'STAFF' | 'SYSTEM' }>(QUEUES.cancelled, async (jobs) => {
     for (const job of jobs) settle(await processCancelled(job.data.tenantId, job.data.appointmentId, job.data.by));
   });
+
+  // Respaldo programado. pg-boss guarda el horario en la base: con varias réplicas solo una lo ejecuta.
+  if (config.backup.enabled) {
+    await boss.schedule(QUEUES.backup, config.backup.cron, {}, { tz: config.backup.timezone, retryLimit: 2, retryDelay: 600, expireInSeconds: 3600 });
+    await boss.work(QUEUES.backup, async () => {
+      try {
+        const result = await runBackup();
+        console.log(`[backup] ${result.key} (${(result.sizeBytes / 1024).toFixed(0)} KB); retención borró ${result.prunedKeys.length}`);
+        await pingHeartbeat(true);
+      } catch (error) {
+        console.error('[backup] FALLÓ:', (error as Error).message);
+        await pingHeartbeat(false);
+        throw error; // pg-boss reintenta (2 veces, cada 10 min)
+      }
+    });
+    console.log(`[backup] programado (${config.backup.cron} ${config.backup.timezone}), retención ${config.backup.retentionDays} días`);
+  } else {
+    await boss.unschedule(QUEUES.backup); // por si estuvo activo antes: que no queden trabajos sin worker
+    console.warn('[backup] DESACTIVADO: faltan variables BACKUP_S3_*. Sin ellas no hay copias de la base.');
+  }
   console.log('[worker] escuchando trabajos de avisos');
 }
 

@@ -15,7 +15,8 @@ RUN npm prune --production
 
 FROM node:22-alpine AS runtime
 
-RUN apk add --no-cache openssl
+# postgresql17-client: pg_dump para los respaldos (debe ser >= la versión del servidor)
+RUN apk add --no-cache openssl postgresql17-client
 WORKDIR /app
 
 COPY --from=builder /app/package*.json ./
