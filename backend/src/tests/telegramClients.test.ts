@@ -226,6 +226,28 @@ describeIfDb('Telegram para clientes', () => {
     expect(await clientChat(booking.id)).toBeNull();
   });
 
+  it('/historial lista los trabajos completados de esa clienta y no las citas futuras', async () => {
+    const empty = await book();
+    await hook(`/start ${tokenOf(empty.manageUrl)}`, 4747);
+    await settle();
+    sent.length = 0;
+    await hook('/historial', 4747);
+    await settle();
+    expect(sent[0].text).toContain('Aún no tienes trabajos');
+
+    await adminPool.query(`UPDATE "Appointment" SET status = 'COMPLETED' WHERE id = $1`, [empty.id]);
+    sent.length = 0;
+    await hook('/historial', 4747);
+    await settle();
+    expect(sent[0].text).toContain('Tus últimos trabajos');
+    expect(sent[0].text).toContain('Corte');
+    // un chat sin vincular no ve nada
+    sent.length = 0;
+    await hook('/historial', 4848);
+    await settle();
+    expect(sent[0].text).toContain('Aún no tienes trabajos');
+  });
+
   it('el dueño enlaza su chat con /vincular <código>, que solo sirve una vez', async () => {
     const before = (await request(app).get('/api/settings/booking').set('Authorization', `Bearer ${ownerToken}`)).body.telegramOwnerCode;
     await hook('/vincular CODIGO00', 9001);
