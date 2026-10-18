@@ -1,17 +1,19 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { addDays, endOfMonth, format, isBefore, startOfDay, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { CalendarCheck, Check, ChevronLeft, Clock, User, Users } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
 import {
   apiErrorMessage,
   publicApi,
   type PublicAppointment,
   type PublicCatalog,
+  takePrefetchedCatalog,
   type PublicSlot,
 } from '../../lib/publicApi';
+import LazyCalendar from './LazyCalendar';
+import { loadCalendar } from './calendarLoader';
 import TelegramOptIn from './TelegramOptIn';
 import PublicShell from './PublicShell';
 import { money } from './format';
@@ -39,9 +41,15 @@ const Booking: React.FC = () => {
   const [error, setError] = useState('');
   const [booked, setBooked] = useState<PublicAppointment | null>(null);
 
+  // Con la primera pantalla ya pintada, descarga el calendario en segundo plano para que el paso 2 sea instantáneo.
+  useEffect(() => {
+    const id = window.setTimeout(() => void loadCalendar(), 800);
+    return () => window.clearTimeout(id);
+  }, []);
+
   const catalog = useQuery({
     queryKey: ['public-catalog', tenantSlug],
-    queryFn: async () => (await publicApi.get<PublicCatalog>(`/${tenantSlug}`)).data,
+    queryFn: async () => (await takePrefetchedCatalog(tenantSlug)) ?? (await publicApi.get<PublicCatalog>(`/${tenantSlug}`)).data,
     retry: false,
   });
   const data = catalog.data;
@@ -231,7 +239,7 @@ const Booking: React.FC = () => {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Elige el día</h2>
           <div className="bg-card rounded-2xl border border-border p-3 overflow-x-auto">
-            <Calendar
+            <LazyCalendar
               mode="single"
               locale={es}
               month={month}

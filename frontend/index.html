@@ -1,13 +1,46 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
     <title>Vortex Beauty</title>
+    <!-- Abre la conexión con el API mientras se descarga el JS -->
+    <link rel="preconnect" href="__API_ORIGIN__" crossorigin />
+    <style>
+      /* Esqueleto: se ve en cuanto llega el HTML, antes de que cargue React */
+      body { margin: 0; font-family: system-ui, sans-serif; background: #f4f4f5; color: #111827; }
+      .boot-head { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 40px 16px 24px; }
+      .boot-head div { max-width: 720px; margin: 0 auto; }
+      .boot-bar { height: 28px; width: 55%; background: #e5e7eb; border-radius: 6px; }
+      .boot-bar.s { height: 14px; width: 35%; margin-top: 12px; }
+      .boot-spin { margin: 56px auto; width: 32px; height: 32px; border: 3px solid #d1d5db; border-top-color: #2563eb; border-radius: 50%; animation: boot-r .8s linear infinite; }
+      @keyframes boot-r { to { transform: rotate(360deg); } }
+      @media (prefers-color-scheme: dark) { body { background: #0a0a0a; } .boot-head { background: #111; border-color: #262626; } .boot-bar { background: #262626; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-head"><div><div class="boot-bar"></div><div class="boot-bar s"></div></div></div>
+      <div class="boot-spin" role="status" aria-label="Cargando"></div>
+    </div>
+    <script>
+      // Reserva pública: pide el catálogo ya, en paralelo con la descarga del JS (Booking lo recoge en cuanto arranca).
+      (function () {
+        var m = location.pathname.match(/^\/([a-z0-9-]+)\/reservar\/?$/);
+        if (!m) return;
+        var api = '__API_BASE_URL__';
+        window.__catalog = {
+          slug: m[1],
+          promise: fetch(api + '/public/booking/' + m[1]).then(function (r) {
+            if (!r.ok) throw new Error('catalog ' + r.status);
+            return r.json();
+          }),
+        };
+        window.__catalog.promise.catch(function () {});
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

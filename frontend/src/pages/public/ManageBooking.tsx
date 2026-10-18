@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addDays, format, isBefore, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale/es';
-import { Calendar } from '@/components/ui/calendar';
+import LazyCalendar from './LazyCalendar';
 import { apiErrorMessage, publicApi, type ManageView, type PublicSlot } from '../../lib/publicApi';
 import PublicShell from './PublicShell';
 import TelegramOptIn from './TelegramOptIn';
@@ -138,7 +138,7 @@ const ManageBooking: React.FC = () => {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">Elige el nuevo día y hora</h2>
           <div className="bg-card rounded-2xl border border-border p-3 overflow-x-auto">
-            <Calendar
+            <LazyCalendar
               mode="single"
               locale={es}
               selected={date}
