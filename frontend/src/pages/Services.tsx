@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Service } from '../types';
-import { useServices, useCategories, useCreateService, useUpdateService, useDeleteService, useProfessionals, useResources } from '../hooks/useQueries';
+import { useServices, useCategories, useCreateService, useUpdateService, useDeleteService, useProfessionals, useResources, useBookingSettings } from '../hooks/useQueries';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import Pagination from '../components/Pagination';
@@ -74,6 +74,7 @@ function CheckList({
 
 const Services: React.FC = () => {
   const { label } = useLabels();
+  const { data: settings } = useBookingSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('ALL');
   const [filterVisibility, setFilterVisibility] = useState('ALL');
@@ -166,7 +167,7 @@ const Services: React.FC = () => {
 
   // Un servicio nuevo lo realizan, por defecto, todos los profesionales activos.
   const openCreateModal = () => {
-    setFormData({ ...emptyForm, professionalIds: professionals.filter((p) => p.isActive).map((p) => p.id) });
+    setFormData({ ...emptyForm, currency: settings?.currency ?? emptyForm.currency, professionalIds: professionals.filter((p) => p.isActive).map((p) => p.id) });
     setShowCreateModal(true);
   };
 

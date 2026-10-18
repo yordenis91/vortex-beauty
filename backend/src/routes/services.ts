@@ -15,7 +15,8 @@ const serviceBody = z.object({
   name: z.string().min(1, 'Name is required'),
   description: z.string().optional(),
   price: z.number().min(0, 'Price must be positive'),
-  currency: z.string().default('USD'),
+  // Sin moneda, el servicio usa la del salón.
+  currency: z.string().length(3).optional(),
   categoryId: z.string().uuid('Invalid category ID'),
   status: z.enum(['ACTIVE', 'INACTIVE', 'DISCONTINUED']).default('ACTIVE'),
   isPublic: z.boolean().default(true),
@@ -99,7 +100,8 @@ router.post('/', requirePermission('catalog:manage'), validateBody(createService
       const proIds =
         professionalIds ?? (await tx.professional.findMany({ where: { tenantId, isActive: true }, select: { id: true } })).map((p) => p.id);
 
-      const created = await tx.service.create({ data: { ...data, tenantId, userId } });
+      const currency = data.currency ?? (await tx.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { currency: true } })).currency;
+      const created = await tx.service.create({ data: { ...data, currency, tenantId, userId } });
       if (proIds.length) {
         await tx.professionalService.createMany({ data: proIds.map((professionalId) => ({ tenantId, professionalId, serviceId: created.id })) });
       }

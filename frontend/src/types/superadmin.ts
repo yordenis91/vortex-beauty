@@ -70,12 +70,41 @@ export interface CreateTenantRequest {
   billingCycle: 'MONTHLY' | 'YEARLY';
   adminName: string;
   adminEmail: string;
-  vertical?: 'GENERIC' | 'NAILS' | 'BARBER' | 'SPA' | 'TATTOO' | 'HAIR' | 'FITNESS';
+  vertical?: Vertical;
+  // Alta asistida
+  timezone?: string;
+  currency?: string;
+  professionals?: string[];
+  services?: Array<{ name: string; price: number; durationMinutes: number; category?: string }>;
+  hours?: TenantHours[];
+  telegramBotToken?: string;
+}
+
+export type Vertical = 'GENERIC' | 'NAILS' | 'BARBER' | 'SPA' | 'TATTOO' | 'HAIR' | 'FITNESS';
+
+export interface TenantHours {
+  dayOfWeek: number;
+  isOpen: boolean;
+  startTime: string;
+  endTime: string;
+}
+
+export interface VerticalTemplate {
+  services: Array<{ name: string; price: number; durationMinutes: number; category: string }>;
+  professional: string;
+  resources: string[];
+  labels: Record<string, string>;
+}
+
+export interface TenantTemplates {
+  templates: Record<Vertical, VerticalTemplate>;
+  hours: TenantHours[];
 }
 
 export interface CreateTenantResponse {
   tenant: { id: string; name: string; slug: string };
   admin: { id: string; email: string; name: string };
+  telegram: { ok: true; botUsername: string; ownerCode: string } | { ok: false; error: string } | null;
   tempPassword: string;
   registerUrl: string;
   loginUrl: string;

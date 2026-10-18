@@ -184,3 +184,15 @@ pg_restore --dbname="postgresql://<usuario>:<clave>@<host>/vortex_restore_test" 
 ```
 
 `--clean --if-exists` evita el choque con el schema `public` que ya trae toda base nueva. Después comprueba tablas y conteos (`Tenant`, `User`, `Appointment`, `_prisma_migrations`). Para restaurar en producción con RLS, el rol `vortex_app` debe existir antes (lo crea la migración `row_level_security`, o créalo a mano: `CREATE ROLE vortex_app NOLOGIN`) y reaplica `GRANT` si cambias de usuario de la app. Haz un ensayo de restauración al menos una vez al mes.
+
+## Alta de un salón nuevo (Super Admin)
+
+Super Admin → Salones → **Nuevo salón** abre un asistente de 3 pasos:
+
+1. **Negocio:** nombre, enlace de reservas (`/r/<slug>`, comprobado en vivo; hay nombres reservados como `admin`, `r` o `login`), oficio, zona horaria, moneda y plan.
+2. **Servicios y horario:** servicios, profesionales y horario precargados con la plantilla del oficio y editables. Todos los profesionales atienden todos los servicios; el horario del negocio es también el de cada profesional. Respeta el límite de profesionales del plan.
+3. **Dueño y bot:** nombre y correo del dueño (su usuario) y, opcionalmente, el token del bot de Telegram del salón.
+
+Al terminar muestra un mensaje listo para enviar al dueño (enlace de reservas, panel, correo y contraseña temporal, que solo se ve una vez), el QR con cartel imprimible y, si se indicó el bot, el comando `/vincular <código>` para que el dueño reciba los avisos. Si el bot falla, el salón se crea igual y se puede conectar luego en Ajustes. Los servicios nacen en la moneda del salón.
+
+API: `POST /api/platform/tenants` (acepta `timezone`, `currency`, `professionals`, `services`, `hours`, `telegramBotToken`), `GET /api/platform/tenants/templates` y `GET /api/platform/tenants/slug-available?slug=`.
