@@ -82,7 +82,7 @@ interface Update {
 const HELP =
   'Hola 👋 Este bot te avisa de tus citas.\n\n' +
   'Para activarlo, reserva en la página del salón y toca «Recibir avisos por Telegram» en tu confirmación.\n\n' +
-  'Comandos:\n/citas — tus próximas citas\n/parar — dejar de recibir avisos';
+  'Comandos:\n/citas — tus próximas citas\n/historial — tus últimos trabajos\n/parar — dejar de recibir avisos';
 
 export async function handleUpdate(tenantId: string, update: Update): Promise<void> {
   const text = update.message?.text?.trim();
@@ -122,7 +122,7 @@ export async function handleUpdate(tenantId: string, update: Update): Promise<vo
     await reply(
       `✅ Avisos activados, ${appointment.client.name}.\n\n` +
         `${tenant.name}\n${appointment.serviceName}\n${formatLocalDateTime(tenant.timezone, appointment.startsAt)}\n\n` +
-        'Te escribiremos aquí para confirmar y recordarte tus citas. /citas para verlas, /parar para dejar de recibirlas.'
+        'Te escribiremos aquí para confirmar y recordarte tus citas. /citas para verlas, /historial para ver tus trabajos anteriores, /parar para dejar de recibirlas.'
     );
     return;
   }
@@ -151,6 +151,30 @@ export async function handleUpdate(tenantId: string, update: Update): Promise<vo
       upcoming
         .map((a) => `• ${formatLocalDateTime(tenant.timezone, a.startsAt)} — ${a.serviceName}${a.cancelToken ? `\n  ${config.appPublicUrl}/${tenant.slug}/mi-cita/${a.cancelToken}` : ''}`)
         .join('\n')
+    );
+    return;
+  }
+
+  if (cmd === '/historial') {
+    const clients = await prisma.client.findMany({ where: { tenantId, telegramChatId: chat }, select: { id: true } });
+    const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { timezone: true } });
+    const done = clients.length
+      ? await prisma.appointment.findMany({
+          where: { tenantId, clientId: { in: clients.map((c) => c.id) }, status: 'COMPLETED' },
+          include: { professional: { select: { name: true } } },
+          orderBy: { startsAt: 'desc' },
+          take: 5,
+        })
+      : [];
+    if (!done.length) {
+      await reply('Aún no tienes trabajos realizados.');
+      return;
+    }
+    await reply(
+      'Tus últimos trabajos:\n' +
+        done
+          .map((a) => `• ${formatLocalDateTime(tenant.timezone, a.startsAt)} — ${a.serviceName}${a.professional ? ` con ${a.professional.name}` : ''}`)
+          .join('\n')
     );
     return;
   }

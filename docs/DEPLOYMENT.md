@@ -145,7 +145,7 @@ Cada salón usa su propio bot (token de @BotFather) que pega en Ajustes → Rese
 - El API debe ser accesible por **HTTPS público** (Telegram no llama a `http` ni a hosts internos). La URL se toma de la propia petición; si hay un proxy que la cambia, define `API_PUBLIC_URL=https://tu-api`.
 - El cliente enlaza su chat desde la confirmación de su reserva (botón «Recibir avisos por Telegram»); desde entonces los avisos le llegan por Telegram y, si bloquea el bot, vuelven al correo.
 - El dueño recibe los avisos del salón enviando `/vincular <código>` al bot (el código aparece en Ajustes y se renueva al usarse).
-- Comandos del bot para clientes: `/citas` (próximas citas) y `/parar` (dejar de recibir avisos).
+- Comandos del bot para clientes: `/citas` (próximas citas), `/historial` (últimos 5 trabajos completados) y `/parar` (dejar de recibir avisos).
 
 ## Respaldos automáticos
 
