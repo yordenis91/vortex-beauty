@@ -50,7 +50,6 @@ function mockApi(created: Record<string, unknown> | null = null, taken = ['ocupa
           admin: { id: 'u1', email: 'yoel@example.com', name: 'Yoel Prueba' },
           telegram: null,
           tempPassword: 'Temp1234abcd',
-          registerUrl: '/barberia-el-elegante/register',
           loginUrl: '/barberia-el-elegante/login',
         },
         { status: 201 },
@@ -198,7 +197,6 @@ describe('Asistente de alta de salón', () => {
       admin: { id: 'u1', email: 'yoel@example.com', name: 'Yoel Prueba' },
       telegram: { ok: false, error: 'Telegram no reconoce ese token.' },
       tempPassword: 'Temp1234abcd',
-      registerUrl: '',
       loginUrl: '/barberia-el-elegante/login',
     })
     const user = userEvent.setup()
@@ -221,7 +219,6 @@ describe('Asistente de alta de salón', () => {
       admin: { id: 'u1', email: 'yoel@example.com', name: 'Yoel Prueba' },
       telegram: { ok: true, botUsername: 'elegante_bot', ownerCode: 'A1B2C3D4' },
       tempPassword: 'Temp1234abcd',
-      registerUrl: '',
       loginUrl: '/barberia-el-elegante/login',
     })
     const user = userEvent.setup()

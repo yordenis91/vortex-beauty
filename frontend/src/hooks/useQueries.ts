@@ -11,7 +11,6 @@ import type {
   ScheduleOverride,
   Professional,
   Notification,
-  ClientProfileResponse,
   UpdateClientProfileRequest,
   CreateGalleryItemRequest,
   CreateClientRequest,
@@ -244,29 +243,6 @@ export const useDeleteCategory = (options?: MutationOptions) => {
   });
 };
 
-// Portal hooks - Client-specific data
-export const useMyProfile = () => {
-  return useQuery({
-    queryKey: ['my-profile'],
-    queryFn: async () => {
-      const response = await api.get<ClientProfileResponse>('/portal/my-profile');
-      return response.data;
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
-export const useClientProfile = () => {
-  return useQuery({
-    queryKey: ['client-profile'],
-    queryFn: async () => {
-      const response = await api.get<ClientProfileResponse>('/portal/my-profile');
-      return response.data;
-    },
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
 export const useUpdateClientProfile = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
@@ -324,22 +300,6 @@ export const useCreateAppointment = (options?: MutationOptions) => {
   });
 };
 
-// Available Slots
-// serviceId es opcional: si se manda, el backend filtra los huecos usando la
-// duración real de ese servicio en vez de solo el instante de inicio.
-export const useAvailableSlots = (date: string, serviceId?: string, professionalId?: string) => {
-  return useQuery({
-    queryKey: ['available-slots', date, serviceId, professionalId],
-    queryFn: async () => {
-      const params = new URLSearchParams({ date, serviceId: serviceId! });
-      if (professionalId && professionalId !== 'any') params.set('professionalId', professionalId);
-      const response = await api.get<string[]>(`/portal/available-slots?${params.toString()}`);
-      return response.data;
-    },
-    enabled: !!date && !!serviceId,
-  });
-};
-
 // Huecos desde el panel (sin antelación mínima/máxima). excludeAppointmentId
 // evita que la cita que se está editando bloquee su propio hueco.
 export const useAdminSlots = (date: string, serviceId?: string, professionalId?: string, excludeAppointmentId?: string) => {
@@ -353,20 +313,6 @@ export const useAdminSlots = (date: string, serviceId?: string, professionalId?:
       return response.data;
     },
     enabled: !!date && !!serviceId,
-  });
-};
-
-// Profesionales reservables por el cliente final para un servicio
-export const useClientProfessionals = (serviceId?: string) => {
-  return useQuery({
-    queryKey: ['client-professionals', serviceId],
-    queryFn: async () => {
-      const response = await api.get<Pick<Professional, 'id' | 'name' | 'color'>[]>(
-        `/portal/professionals${serviceId ? `?serviceId=${serviceId}` : ''}`
-      );
-      return response.data;
-    },
-    enabled: !!serviceId,
   });
 };
 
@@ -474,70 +420,6 @@ export const useDeleteClosedDate = (options?: MutationOptions) => {
 
 // ==================== CLIENT PORTAL HOOKS ====================
 
-/**
- * Hook para obtener las citas del cliente autenticado
- * Usa endpoint /api/portal/my-appointments
- */
-export const useClientAppointments = () => {
-  return useQuery({
-    queryKey: ['client-appointments'],
-    queryFn: async () => {
-      const response = await api.get<Appointment[]>('/portal/my-appointments');
-      return response.data;
-    },
-  });
-};
-
-/**
- * Hook para cancelar una cita del cliente autenticado
- * Usa endpoint PATCH /api/portal/appointments/:id/cancel
- */
-export const useCancelAppointment = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (appointmentId: string) => {
-      const response = await api.patch(`/portal/appointments/${appointmentId}/cancel`);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'No se pudo cancelar la cita. Intenta nuevamente.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
-      toast.success('Cita cancelada exitosamente');
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-/**
- * Hook para obtener los servicios/servicios disponibles para clientes
- * Usa endpoint /api/portal/services
- */
-export const useClientServices = () => {
-  return useQuery({
-    queryKey: ['client-services'],
-    queryFn: async () => {
-      const response = await api.get<Service[]>('/portal/services');
-      return response.data;
-    },
-  });
-};
-
-// Gallery (inspiration)
-export const useGalleryItems = () => {
-  return useQuery({
-    queryKey: ['gallery-items'],
-    queryFn: async () => {
-      const response = await api.get<GalleryItem[]>('/gallery');
-      return response.data;
-    },
-  });
-};
-
 export const useAdminGalleryItems = () => {
   return useQuery({
     queryKey: ['admin-gallery-items'],
@@ -602,29 +484,6 @@ export const useDeleteGalleryItem = (options?: MutationOptions) => {
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['admin-gallery-items'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
-  });
-};
-
-/**
- * Hook para crear una nueva cita como cliente
- * Usa endpoint /api/portal/appointments
- */
-export const useCreateClientAppointment = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (appointmentData: CreateAppointmentRequest) => {
-      const response = await api.post('/portal/appointments', appointmentData);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error al crear la cita.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['client-appointments'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });

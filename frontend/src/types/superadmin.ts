@@ -106,7 +106,6 @@ export interface CreateTenantResponse {
   admin: { id: string; email: string; name: string };
   telegram: { ok: true; botUsername: string; ownerCode: string } | { ok: false; error: string } | null;
   tempPassword: string;
-  registerUrl: string;
   loginUrl: string;
 }
 

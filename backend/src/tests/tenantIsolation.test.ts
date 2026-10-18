@@ -212,20 +212,6 @@ describeIfDb('aislamiento multi-tenant', () => {
       expect(wrongTenant.body).toEqual(wrongPass.body);
     });
 
-    it('registrarse sin salón es rechazado', async () => {
-      const res = await request(app).post('/api/auth/register').send({ email: 'nuevo@x.com', password: 'secret123', name: 'Nuevo' });
-      expect(res.status).toBe(400);
-    });
-
-    it('registrarse crea la clienta en el salón indicado', async () => {
-      const res = await request(app)
-        .post('/api/auth/register')
-        .send({ email: 'clienta@x.com', password: 'secret123', name: 'Clienta Nueva', tenantSlug: ids.b.slug });
-      expect(res.status).toBe(200);
-      const created = await ctx.runAsAdmin(() => prisma.user.findFirst({ where: { email: 'clienta@x.com' } }));
-      expect(created!.tenantId).toBe(ids.b.tenant.id);
-    });
-
     it('un salón suspendido pierde el acceso (login y token vigente)', async () => {
       const before = await login(ids.b.slug, 'admin@mismo.com');
       expect(before.status).toBe(200);

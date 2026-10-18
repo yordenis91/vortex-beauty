@@ -257,7 +257,6 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
       admin: { id: adminUser.id, email: adminUser.email, name: adminUser.name },
       telegram,
       tempPassword,
-      registerUrl: `/${tenant.slug}/register`,
       loginUrl: `/${tenant.slug}/login`,
     });
   } catch (error: any) {
