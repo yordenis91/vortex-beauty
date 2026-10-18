@@ -29,6 +29,7 @@ import publicTenantsRoutes from './routes/publicTenants';
 import billingRoutes from './routes/billing';
 import mercadoPagoWebhookRoutes from './routes/mercadoPagoWebhook';
 import publicBookingRoutes from './routes/publicBooking';
+import telegramWebhookRoutes from './routes/telegramWebhook';
 
 const app = express();
 
@@ -134,6 +135,7 @@ app.use('/api/platform/dashboard', platformDashboardRoutes);
 app.use('/api/public/tenants', publicTenantsRoutes);
 // Reserva pública sin cuenta
 app.use('/api/public/booking', publicBookingRoutes);
+app.use('/api/telegram', telegramWebhookRoutes);
 
 // Facturación del propio salón a la plataforma (Mercado Pago)
 app.use('/api/billing', billingRoutes);

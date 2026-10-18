@@ -2,11 +2,13 @@ import { Router } from 'express';
 import { z } from 'zod';
 import prisma from '../prismaClient';
 import { authenticateToken } from '../middleware/auth';
-import { requirePermission } from '../middleware/can';
+import { hasPermission, requirePermission } from '../middleware/can';
 import { validateBody } from '../middleware/validate';
 import { invalidateTenantTimezone } from '../lib/tenantInfo';
 import { isValidTimezone, timeToMinutes } from '../lib/time';
 import { Vertical } from '@prisma/client';
+import { apiBaseUrl, BotSetupError, connectBot, disconnectBot } from '../services/telegramBot';
+
 
 const router = Router();
 
@@ -107,7 +109,7 @@ const bookingSettingsSchema = z.object({
   labels: z.record(z.string(), z.string().max(40)).optional(),
 });
 
-async function loadBookingSettings(tenantId: string) {
+async function loadBookingSettings(tenantId: string, canManage: boolean) {
   const [settings, tenant] = await Promise.all([
     prisma.tenantSettings.findUnique({ where: { tenantId } }),
     prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { name: true, slug: true, timezone: true, currency: true } }),
@@ -128,6 +130,9 @@ async function loadBookingSettings(tenantId: string) {
     ownerAlerts: settings?.ownerAlerts ?? true,
     telegramConfigured: !!(settings?.telegramBotToken && settings?.telegramChatId),
     telegramChatId: settings?.telegramChatId ?? '',
+    // Bot de clientes: el código de enlace del dueño solo lo ven quienes gestionan ajustes.
+    telegramBotUsername: settings?.telegramBotUsername ?? null,
+    telegramOwnerCode: canManage ? (settings?.telegramOwnerCode ?? null) : null,
     labels: (settings?.labels as Record<string, string> | undefined) ?? {},
   };
 }
@@ -135,7 +140,7 @@ async function loadBookingSettings(tenantId: string) {
 // GET /api/settings/booking
 router.get('/booking', async (req, res) => {
   try {
-    res.json(await loadBookingSettings(req.user!.tenantId));
+    res.json(await loadBookingSettings(req.user!.tenantId, hasPermission(req.user!.role, 'settings:manage')));
   } catch (error) {
     console.error('Error fetching booking settings:', error);
     res.status(500).json({ error: 'Failed to fetch booking settings' });
@@ -150,7 +155,6 @@ router.put('/booking', requirePermission('settings:manage'), validateBody(bookin
     const settings = {
       ...rest,
       ...(reminderHours && { reminderHours: [...new Set(reminderHours)].sort((a, b) => b - a) }),
-      ...(telegramBotToken !== undefined && { telegramBotToken: telegramBotToken || null }),
       ...(telegramChatId !== undefined && { telegramChatId: telegramChatId || null }),
     };
 
@@ -163,8 +167,14 @@ router.put('/booking', requirePermission('settings:manage'), validateBody(bookin
       await prisma.tenant.update({ where: { id: tenantId }, data: { timezone } });
       invalidateTenantTimezone(tenantId);
     }
-    res.json(await loadBookingSettings(tenantId));
+    // El token se valida con Telegram y activa el webhook; vacío desconecta el bot.
+    if (telegramBotToken !== undefined) {
+      if (telegramBotToken) await connectBot(tenantId, telegramBotToken.trim(), apiBaseUrl(req));
+      else await disconnectBot(tenantId, (await prisma.tenantSettings.findUnique({ where: { tenantId }, select: { telegramBotToken: true } }))?.telegramBotToken ?? null);
+    }
+    res.json(await loadBookingSettings(tenantId, true));
   } catch (error) {
+    if (error instanceof BotSetupError) return res.status(400).json({ error: error.message });
     console.error('Error updating booking settings:', error);
     res.status(500).json({ error: 'Failed to update booking settings' });
   }

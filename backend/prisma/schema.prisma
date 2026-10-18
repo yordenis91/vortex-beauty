@@ -72,24 +72,24 @@ model Tenant {
   timezone String       @default("UTC")
   status   TenantStatus @default(ACTIVE)
 
-  users             User[]
-  clients           Client[]
-  services          Service[]
-  categories        Category[]
-  professionals            Professional[]
-  professionalServices     ProfessionalService[]
-  professionalSchedules    ProfessionalSchedule[]
-  timeOffs                 TimeOff[]
-  resources                Resource[]
-  serviceResources         ServiceResource[]
-  locations                Location[]
-  settings                 TenantSettings?
-  appointments      Appointment[]
-  businessHours     BusinessHour[]
-  closedDates       ClosedDate[]
-  scheduleOverrides ScheduleOverride[]
-  notifications     Notification[]
-  galleryItems      GalleryItem[]
+  users                 User[]
+  clients               Client[]
+  services              Service[]
+  categories            Category[]
+  professionals         Professional[]
+  professionalServices  ProfessionalService[]
+  professionalSchedules ProfessionalSchedule[]
+  timeOffs              TimeOff[]
+  resources             Resource[]
+  serviceResources      ServiceResource[]
+  locations             Location[]
+  settings              TenantSettings?
+  appointments          Appointment[]
+  businessHours         BusinessHour[]
+  closedDates           ClosedDate[]
+  scheduleOverrides     ScheduleOverride[]
+  notifications         Notification[]
+  galleryItems          GalleryItem[]
 
   // Suscripción de este salón a un Plan de la plataforma (lo que el SaaS le
   // cobra al salón), y sus facturas de plataforma.
@@ -123,10 +123,10 @@ model User {
   client   Client? @relation("UserAsClient", fields: [clientId], references: [id], onDelete: SetNull)
 
   // Relaciones existentes
-  clients  Client[]  @relation("AdminofClient") // Relación inversa: admin de varios clientes
-  professional Professional?
+  clients       Client[]       @relation("AdminofClient") // Relación inversa: admin de varios clientes
+  professional  Professional?
   refreshTokens RefreshToken[]
-  services       Service[]
+  services      Service[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -152,12 +152,14 @@ model Client {
   phone          String?
   // Teléfono normalizado (solo dígitos) para reconocer al mismo cliente entre reservas.
   phoneKey       String?
-  address        String?    @db.Text
+  // Chat de Telegram al que el cliente pidió recibir sus avisos (enlazado desde el bot del salón).
+  telegramChatId String?
+  address        String? @db.Text
   city           String?
   state          String?
   zipCode        String?
   country        String?
-  currency       String     @default("USD")
+  currency       String  @default("USD")
 
   // Foto de perfil (Base64)
   imageUrl String? @db.Text
@@ -184,16 +186,17 @@ model Client {
   @@unique([tenantId, phoneKey])
   @@index([userId])
   @@index([tenantId])
+  @@index([tenantId, telegramChatId])
 }
 
 // Categorías para organizar productos y tickets
 model Category {
-  id          String       @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String?
   color       String? // Para UI (hex color)
   icon        String? // Nombre del icono
-  order       Int          @default(0) // Para ordenar categorías
+  order       Int     @default(0) // Para ordenar categorías
 
   // Salón al que pertenece esta categoría.
   tenantId String
@@ -212,13 +215,13 @@ model Category {
 
 // Productos y Servicios
 model Service {
-  id          String      @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
-  description String?     @db.Text
+  description String? @db.Text
 
   // Precios
-  price        Decimal      @db.Decimal(10, 2)
-  currency     String       @default("USD")
+  price    Decimal @db.Decimal(10, 2)
+  currency String  @default("USD")
 
   // Estado y configuración
   status          ServiceStatus @default(ACTIVE)
@@ -409,19 +412,24 @@ model TenantSettings {
   tenantId String @id
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
-  vertical        Vertical @default(GENERIC)
-  slotIntervalMin Int      @default(30) // cada cuántos minutos se ofrece un hueco
-  minNoticeHours  Int      @default(2) // antelación mínima para reservar
-  maxAdvanceDays  Int      @default(60) // hasta cuántos días adelante se puede reservar
-  cancelWindowHrs Int      @default(12) // el cliente puede cancelar hasta X horas antes (0 = siempre)
-  bookingEnabled  Boolean  @default(true) // activa la reserva pública
-  maxActivePerCustomer Int @default(3) // citas futuras activas por cliente en la reserva pública
+  vertical             Vertical @default(GENERIC)
+  slotIntervalMin      Int      @default(30) // cada cuántos minutos se ofrece un hueco
+  minNoticeHours       Int      @default(2) // antelación mínima para reservar
+  maxAdvanceDays       Int      @default(60) // hasta cuántos días adelante se puede reservar
+  cancelWindowHrs      Int      @default(12) // el cliente puede cancelar hasta X horas antes (0 = siempre)
+  bookingEnabled       Boolean  @default(true) // activa la reserva pública
+  maxActivePerCustomer Int      @default(3) // citas futuras activas por cliente en la reserva pública
 
   // Avisos
-  reminderHours  Int[]    @default([24, 2]) // horas antes de la cita en que se recuerda al cliente
-  ownerAlerts    Boolean  @default(true) // avisar al dueño de reservas y cancelaciones
-  telegramBotToken String? // bot propio del salón para avisos al dueño (nunca se devuelve por la API)
-  telegramChatId   String?
+  reminderHours         Int[]   @default([24, 2]) // horas antes de la cita en que se recuerda al cliente
+  ownerAlerts           Boolean @default(true) // avisar al dueño de reservas y cancelaciones
+  telegramBotToken      String? // bot propio del salón para avisos al dueño (nunca se devuelve por la API)
+  telegramChatId        String?
+  // Bot de clientes: usuario del bot (para el enlace t.me), secreto del webhook y código de un solo uso
+  // con el que el dueño enlaza su propio chat enviando /vincular <código>.
+  telegramBotUsername   String?
+  telegramWebhookSecret String?
+  telegramOwnerCode     String?
 
   // Vocabulario de la interfaz: { "customer": "clienta", "appointment": "cita", ... }
   labels Json @default("{}")
@@ -736,9 +744,9 @@ model TenantSubscription {
 
   // Referencias a la pasarela de pago (Mercado Pago / Stripe / etc.), cuando
   // se conecte una; hasta entonces la suscripción se administra a mano.
-  gateway                 String?
-  externalCustomerId      String?
-  externalSubscriptionId  String?
+  gateway                String?
+  externalCustomerId     String?
+  externalSubscriptionId String?
 
   invoices PlatformInvoice[]
 
@@ -761,9 +769,9 @@ model PlatformInvoice {
   tenantSubscriptionId String?
   tenantSubscription   TenantSubscription? @relation(fields: [tenantSubscriptionId], references: [id], onDelete: SetNull)
 
-  amount   Decimal                @db.Decimal(10, 2)
-  currency String                 @default("USD")
-  status   PlatformInvoiceStatus  @default(PENDING)
+  amount   Decimal               @db.Decimal(10, 2)
+  currency String                @default("USD")
+  status   PlatformInvoiceStatus @default(PENDING)
 
   issueDate DateTime  @default(now())
   dueDate   DateTime
