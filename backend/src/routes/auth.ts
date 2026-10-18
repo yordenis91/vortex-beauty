@@ -14,14 +14,6 @@ const router = express.Router();
 // el email o la contraseña eran los incorrectos.
 const INVALID_CREDENTIALS = { error: 'Credenciales inválidas' };
 
-const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(128),
-  name: z.string().min(2),
-  // Slug del salón (viene de la URL pública /:tenantSlug/register).
-  tenantSlug: z.string().min(1),
-});
-
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string(),
@@ -36,60 +28,6 @@ async function findActiveTenant(slug: string) {
   if (!tenant || tenant.status === 'SUSPENDED') return null;
   return tenant;
 }
-
-// Register (clienta nueva de un salón)
-router.post('/register', async (req, res) => {
-  try {
-    const { email, password, name, tenantSlug } = registerSchema.parse(req.body);
-
-    const tenant = await findActiveTenant(tenantSlug);
-    if (!tenant) {
-      return res.status(404).json({ error: 'Salón no encontrado o no disponible' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await runWithTenant(tenant.id, async () => {
-      const existingUser = await prisma.user.findUnique({
-        where: { tenantId_email: { tenantId: tenant.id, email } },
-        select: { id: true },
-      });
-      if (existingUser) return null;
-
-      return runInTransaction(async (tx) => {
-        // Client.userId es obligatorio en el schema: el admin de ESE salón.
-        const adminUser = await tx.user.findFirst({ where: { role: { in: ['OWNER', 'ADMIN'] }, tenantId: tenant.id }, orderBy: { createdAt: 'asc' } });
-        if (!adminUser) {
-          throw new Error('El salón no tiene un administrador');
-        }
-
-        const newClient = await tx.client.upsert({
-          where: { tenantId_email: { tenantId: tenant.id, email } },
-          update: { name },
-          create: { name, email, userId: adminUser.id, tenantId: tenant.id },
-        });
-
-        return tx.user.create({
-          data: { email, password: hashedPassword, name, role: 'CLIENT', clientId: newClient.id, tenantId: tenant.id },
-          select: { id: true, email: true, name: true, role: true, clientId: true },
-        });
-      });
-    });
-
-    if (!result) {
-      return res.status(400).json({ error: 'Ya existe una cuenta con ese email en este salón' });
-    }
-
-    const token = await startSession(req, res, { id: result.id, role: result.role, clientId: result.clientId, tenantId: tenant.id });
-    res.json({ user: result, token });
-  } catch (error: any) {
-    if (error?.name === 'ZodError') {
-      return res.status(400).json(zodResponse(error));
-    }
-    console.error(error);
-    return res.status(500).json({ error: 'Error interno del servidor' });
-  }
-});
 
 // Login (siempre dentro de un salón)
 router.post('/login', async (req, res) => {

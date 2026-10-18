@@ -25,7 +25,6 @@ import platformAuthRoutes from './routes/platformAuth';
 import platformTenantsRoutes from './routes/platformTenants';
 import platformPlansRoutes from './routes/platformPlans';
 import platformDashboardRoutes from './routes/platformDashboard';
-import publicTenantsRoutes from './routes/publicTenants';
 import billingRoutes from './routes/billing';
 import mercadoPagoWebhookRoutes from './routes/mercadoPagoWebhook';
 import publicBookingRoutes from './routes/publicBooking';
@@ -97,7 +96,6 @@ const authLimiter = rateLimit({
   message: { error: 'Demasiados intentos. Inténtalo de nuevo en unos minutos.' },
 });
 app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/change-password', authLimiter); // con un token robado no se puede adivinar la clave actual
 app.use('/api/platform/auth/login', authLimiter);
 
@@ -110,7 +108,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Portal routes (for CLIENT users)
+// Perfil propio (mi perfil)
 app.use('/api/portal', portalRoutes);
 
 // Schedule overrides routes
@@ -135,8 +133,6 @@ app.use('/api/platform/tenants', platformTenantsRoutes);
 app.use('/api/platform/plans', platformPlansRoutes);
 app.use('/api/platform/dashboard', platformDashboardRoutes);
 
-// Info pública por salón (sin auth): usada por la página de registro /:tenantSlug/register
-app.use('/api/public/tenants', publicTenantsRoutes);
 // Reserva pública sin cuenta
 app.use('/api/public/booking', publicBookingRoutes);
 app.use('/api/telegram', telegramWebhookRoutes);

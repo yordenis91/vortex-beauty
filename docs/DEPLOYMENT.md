@@ -106,7 +106,7 @@ Las migraciones (`prisma migrate deploy`, que `start:prod` ejecuta al arrancar) 
 
 ## Acceso por salón
 
-El login y el registro son siempre por salón: `/:slug/login` y `/:slug/register`. El mismo email puede existir en salones distintos.
+El login es siempre por salón: `/:slug/login`. El mismo email puede existir en salones distintos. No hay registro público de clientas: reservan sin cuenta.
 
 ## Reserva pública, correos y recordatorios
 

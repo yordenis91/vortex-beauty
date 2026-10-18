@@ -30,7 +30,6 @@ Estado real de este repo. Cada punto indica dónde se garantiza y cómo se compr
 - [x] Campo trampa, Turnstile opcional y tope de reservas activas por cliente.
 - [x] Enlaces de gestión con token de 256 bits, válidos hasta 7 días después de la cita; cancelar o mover respeta la ventana del salón.
 - [x] La reserva pública no revela si un cliente ya existía.
-- [ ] El registro de cuentas (`/auth/register`) sí distingue "ya existe una cuenta con ese correo" (necesario para que el usuario sepa qué hacer).
 
 ## Datos y entrada
 

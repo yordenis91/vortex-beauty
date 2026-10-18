@@ -9,7 +9,6 @@ interface AuthContextType {
   role: UserRole | null;
   setUser: (user: User | null) => void;
   login: (email: string, password: string, tenantSlug: string) => Promise<void>;
-  register: (email: string, password: string, name: string, tenantSlug?: string) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -86,15 +85,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (email: string, password: string, name: string, tenantSlug?: string) => {
-    const response = await api.post<AuthResponse>('/auth/register', { email, password, name, tenantSlug });
-    const { user, token } = response.data;
-    setAccessToken(token);
-    rememberSession();
-    if (tenantSlug) saveTenantSlug(tenantSlug);
-    setUser(user);
-  };
-
   const logout = () => {
     void endSession();
     queryClient.clear();
@@ -106,7 +96,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     role: user?.role ?? null,
     setUser,
     login,
-    register,
     logout,
     isLoading,
   };

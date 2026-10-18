@@ -8,12 +8,18 @@ import { PlatformAuthProvider, usePlatformAuth } from './contexts/PlatformAuthCo
 import { queryClient } from './lib/queryClient';
 import Booking from './pages/public/Booking';
 import ManageBooking from './pages/public/ManageBooking';
+import { getSavedTenantSlug } from './lib/tenantSlug';
 import { isPanelRole, canManage } from './types';
+
+// Las cuentas de clienta ya no tienen portal: van a la reserva pública de su salón.
+const clientHome = () => {
+  const slug = getSavedTenantSlug();
+  return slug ? `/${slug}/reservar` : '/login';
+};
 
 // Cada pantalla se descarga al visitarla: la reserva pública (la que abren los clientes desde el móvil)
 // no arrastra el panel, la agenda ni los gráficos.
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
-const ClientLayout = lazy(() => import('./components/ClientLayout'));
 const SuperAdminLayout = lazy(() => import('./components/superadmin/SuperAdminLayout'));
 const SuperAdminLogin = lazy(() => import('./pages/superadmin/Login'));
 const SuperAdminDashboard = lazy(() => import('./pages/superadmin/Dashboard'));
@@ -21,7 +27,6 @@ const SuperAdminTenants = lazy(() => import('./pages/superadmin/Tenants'));
 const SuperAdminTenantDetail = lazy(() => import('./pages/superadmin/TenantDetail'));
 const SuperAdminPlans = lazy(() => import('./pages/superadmin/Plans'));
 const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Clients = lazy(() => import('./pages/Clients'));
 const Services = lazy(() => import('./pages/Services'));
@@ -29,11 +34,7 @@ const Categories = lazy(() => import('./pages/Categories'));
 const Appointments = lazy(() => import('./pages/Appointments'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const MyProfile = lazy(() => import('./pages/MyProfile'));
-const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard'));
 const DesignSystem = lazy(() => import('./pages/DesignSystem'));
-const ClientGallery = lazy(() => import('./pages/client/ClientGallery'));
-const ClientAppointments = lazy(() => import('./pages/client/ClientAppointments'));
-const ClientProfile = lazy(() => import('./pages/client/ClientProfile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Billing = lazy(() => import('./pages/Billing'));
 const AdminGallery = lazy(() => import('./pages/AdminGallery'));
@@ -59,7 +60,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   if (!isPanelRole(user.role)) {
-    return <Navigate to="/portal/dashboard" replace />;
+    return <Navigate to={clientHome()} replace />;
   }
 
   return <>{children}</>;
@@ -73,32 +74,6 @@ const ManagerRoute: React.FC<{ children: React.ReactNode; ownerOnly?: boolean }>
   const { user } = useAuth();
   const allowed = ownerOnly ? user?.role === 'OWNER' : canManage(user?.role);
   return allowed ? <>{children}</> : <Navigate to="/admin/dashboard" replace />;
-};
-
-/**
- * Protected route component para usuarios CLIENT
- */
-const ClientRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Quien usa el panel del salón no entra al portal de clientes
-  if (isPanelRole(user.role)) {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-
-  return <>{children}</>;
 };
 
 /**
@@ -150,7 +125,7 @@ const RootRedirect: React.FC = () => {
   // Redirige según el rol
   return isPanelRole(user.role)
     ? <Navigate to="/admin/dashboard" replace /> 
-    : <Navigate to="/portal/dashboard" replace />;
+    : <Navigate to={clientHome()} replace />;
 };
 
 const PageSpinner: React.FC = () => (
@@ -174,7 +149,6 @@ function App() {
             <Route path="/:tenantSlug/reservar" element={<Booking />} />
             <Route path="/r/:tenantSlug" element={<ShortBookingLink />} />
             <Route path="/:tenantSlug/mi-cita/:token" element={<ManageBooking />} />
-            <Route path="/:tenantSlug/register" element={<Register />} />
             <Route path="/design-system" element={<DesignSystem />} />
 
             {/* Super Admin (plataforma) routes — sistema de auth separado */}
@@ -219,22 +193,6 @@ function App() {
               <Route path="profile" element={<MyProfile />} />
               <Route path="billing" element={<ManagerRoute ownerOnly><Billing /></ManagerRoute>} />
               <Route path="settings" element={<ManagerRoute><Settings /></ManagerRoute>} />
-            </Route>
-
-            {/* Client/Portal routes */}
-            <Route
-              path="/portal"
-              element={
-                <ClientRoute>
-                  <ClientLayout />
-                </ClientRoute>
-              }
-            >
-              <Route index element={<Navigate to="/portal/dashboard" replace />} />
-              <Route path="dashboard" element={<ClientDashboard />} />
-              <Route path="appointments" element={<ClientAppointments />} />
-              <Route path="gallery" element={<ClientGallery />} />
-              <Route path="my-profile" element={<ClientProfile />} />
             </Route>
 
             {/* Catch all - redirect to root */}
