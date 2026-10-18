@@ -788,7 +788,7 @@ export const useBookingSettings = () => {
 
 export const useUpdateBookingSettings = (options?: MutationOptions) =>
   useResourceMutation(
-    async (data: Partial<Omit<BookingSettings, 'name' | 'slug' | 'currency'>> & { telegramBotToken?: string }) => (await api.put('/settings/booking', data)).data,
+    async (data: Partial<Omit<BookingSettings, 'name' | 'slug' | 'currency' | 'logoUrl' | 'brandColor'>> & { telegramBotToken?: string; logoUrl?: string; brandColor?: string }) => (await api.put('/settings/booking', data)).data,
     [['booking-settings']],
     options
   );

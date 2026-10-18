@@ -109,6 +109,8 @@ router.get('/:slug', async (req, res) => {
       bookingEnabled: settings?.bookingEnabled ?? true,
       vertical: settings?.vertical ?? 'GENERIC',
       labels: settings?.labels ?? {},
+      logoUrl: settings?.logoUrl ?? null,
+      brandColor: settings?.brandColor ?? null,
       minNoticeHours: settings?.minNoticeHours ?? 2,
       maxAdvanceDays: settings?.maxAdvanceDays ?? 60,
       cancelWindowHrs: settings?.cancelWindowHrs ?? 12,
@@ -387,8 +389,11 @@ async function manageState(tenantId: string, appointment: { status: string; star
 
 const presentManage = async (tenantId: string, tenant: { slug: string; name: string }, appointment: Awaited<ReturnType<typeof loadByToken>> & {}, timezone: string) => {
   const dto = toAppointmentDto(appointment, timezone);
+  const brand = await prisma.tenantSettings.findUnique({ where: { tenantId }, select: { logoUrl: true, brandColor: true } });
   return {
     salonName: tenant.name,
+    logoUrl: brand?.logoUrl ?? null,
+    brandColor: brand?.brandColor ?? null,
     appointment: { ...presentAppointment(dto, tenant.slug), serviceId: appointment.serviceId, professionalId: appointment.professionalId },
     telegram: await telegramInfo(tenantId, appointment.clientId, appointment.cancelToken),
     ...(await manageState(tenantId, appointment)),

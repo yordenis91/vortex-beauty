@@ -431,6 +431,10 @@ model TenantSettings {
   telegramWebhookSecret String?
   telegramOwnerCode     String?
 
+  // Marca del salón en su página pública de reserva: logo (data URL pequeño) y color #RRGGBB.
+  logoUrl    String? @db.Text
+  brandColor String?
+
   // Vocabulario de la interfaz: { "customer": "clienta", "appointment": "cita", ... }
   labels Json @default("{}")
 

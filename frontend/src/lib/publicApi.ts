@@ -21,6 +21,8 @@ export interface PublicCatalog {
   currency: string;
   bookingEnabled: boolean;
   labels: Record<string, string>;
+  logoUrl: string | null;
+  brandColor: string | null;
   minNoticeHours: number;
   maxAdvanceDays: number;
   cancelWindowHrs: number;
@@ -66,6 +68,8 @@ export interface PublicAppointment {
 
 export interface ManageView {
   salonName: string;
+  logoUrl: string | null;
+  brandColor: string | null;
   appointment: PublicAppointment & { serviceId: string; professionalId: string | null };
   telegram: TelegramOptIn | null;
   cancelWindowHrs: number;

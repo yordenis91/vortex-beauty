@@ -124,7 +124,7 @@ const Booking: React.FC = () => {
   }
   if (!data.bookingEnabled) {
     return (
-      <PublicShell title={data.name}>
+      <PublicShell title={data.name} salon={data}>
         <p className="text-center text-muted-foreground py-12">Este negocio no acepta reservas en línea por ahora.</p>
       </PublicShell>
     );
@@ -168,7 +168,7 @@ const Booking: React.FC = () => {
   const availableSet = new Set(calendar.data ?? []);
 
   return (
-    <PublicShell title={data.name} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
+    <PublicShell title={data.name} salon={data} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
       {step !== 'service' && step !== 'done' && (
         <button onClick={back} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-4 w-4" /> Atrás

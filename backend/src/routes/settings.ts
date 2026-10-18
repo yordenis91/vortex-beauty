@@ -7,6 +7,7 @@ import { validateBody } from '../middleware/validate';
 import { invalidateTenantTimezone } from '../lib/tenantInfo';
 import { isValidTimezone, timeToMinutes } from '../lib/time';
 import { Vertical } from '@prisma/client';
+import { brandColorSchema, logoSchema } from '../lib/images';
 import { apiBaseUrl, BotSetupError, connectBot, disconnectBot } from '../services/telegramBot';
 
 
@@ -106,6 +107,9 @@ const bookingSettingsSchema = z.object({
   // Telegram: el token solo se escribe (nunca se devuelve); '' lo borra.
   telegramBotToken: z.string().max(200).optional(),
   telegramChatId: z.string().max(60).optional(),
+  // Marca del salón: '' quita el logo o el color.
+  logoUrl: logoSchema.or(z.literal('')).optional(),
+  brandColor: brandColorSchema.or(z.literal('')).optional(),
   labels: z.record(z.string(), z.string().max(40)).optional(),
 });
 
@@ -133,6 +137,8 @@ async function loadBookingSettings(tenantId: string, canManage: boolean) {
     // Bot de clientes: el código de enlace del dueño solo lo ven quienes gestionan ajustes.
     telegramBotUsername: settings?.telegramBotUsername ?? null,
     telegramOwnerCode: canManage ? (settings?.telegramOwnerCode ?? null) : null,
+    logoUrl: settings?.logoUrl ?? null,
+    brandColor: settings?.brandColor ?? null,
     labels: (settings?.labels as Record<string, string> | undefined) ?? {},
   };
 }
@@ -151,11 +157,13 @@ router.get('/booking', async (req, res) => {
 router.put('/booking', requirePermission('settings:manage'), validateBody(bookingSettingsSchema), async (req, res) => {
   try {
     const { tenantId } = req.user!;
-    const { timezone, telegramBotToken, telegramChatId, reminderHours, ...rest } = req.body as z.infer<typeof bookingSettingsSchema>;
+    const { timezone, telegramBotToken, telegramChatId, reminderHours, logoUrl, brandColor, ...rest } = req.body as z.infer<typeof bookingSettingsSchema>;
     const settings = {
       ...rest,
       ...(reminderHours && { reminderHours: [...new Set(reminderHours)].sort((a, b) => b - a) }),
       ...(telegramChatId !== undefined && { telegramChatId: telegramChatId || null }),
+      ...(logoUrl !== undefined && { logoUrl: logoUrl || null }),
+      ...(brandColor !== undefined && { brandColor: brandColor ? brandColor.toUpperCase() : null }),
     };
 
     await prisma.tenantSettings.upsert({

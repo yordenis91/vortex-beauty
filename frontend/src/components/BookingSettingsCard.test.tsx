@@ -24,6 +24,8 @@ const settings = (over: Record<string, unknown> = {}) => ({
   telegramChatId: '',
   telegramBotUsername: null,
   telegramOwnerCode: null,
+  logoUrl: null,
+  brandColor: null,
   labels: { appointment: 'turno', appointments: 'turnos' },
   ...over,
 })
