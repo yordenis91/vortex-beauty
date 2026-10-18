@@ -20,6 +20,15 @@ if (isProduction && !process.env.PLATFORM_JWT_SECRET) {
 
 const databaseUrl = required('DATABASE_URL');
 
+// Respaldos: S3 compatible (MinIO en Easypanel). Sin las cuatro variables obligatorias no se programan.
+const backupS3 = {
+  endpoint: process.env.BACKUP_S3_ENDPOINT || '',
+  bucket: process.env.BACKUP_S3_BUCKET || '',
+  region: process.env.BACKUP_S3_REGION || 'us-east-1',
+  accessKeyId: process.env.BACKUP_S3_ACCESS_KEY_ID || '',
+  secretAccessKey: process.env.BACKUP_S3_SECRET_ACCESS_KEY || '',
+};
+
 export const config = {
   isProduction,
   port: Number(process.env.PORT) || 3001,
@@ -50,4 +59,19 @@ export const config = {
         'https://deploy-vortex-frontend.wgteoi.easypanel.host',
         'https://deploy-vortex-backend.wgteoi.easypanel.host',
       ],
+  backup: {
+    s3: backupS3,
+    enabled: !!(backupS3.endpoint && backupS3.bucket && backupS3.accessKeyId && backupS3.secretAccessKey),
+    cron: process.env.BACKUP_CRON || '0 3 * * *',
+    // Zona horaria del cron (por defecto UTC).
+    timezone: process.env.BACKUP_TZ || 'UTC',
+    retentionDays: Number(process.env.BACKUP_RETENTION_DAYS) || 30,
+    // El dump debe leerlo un usuario que no esté sujeto a RLS (con vortex_api saldría incompleto o fallaría):
+    // el administrador de migraciones. Si no hay, se usa DATABASE_URL.
+    databaseUrl: process.env.BACKUP_DATABASE_URL || process.env.MIGRATE_DATABASE_URL || databaseUrl,
+    // Binario de pg_dump (debe ser de la misma versión mayor que el servidor o superior).
+    pgDumpBin: process.env.PG_DUMP_BIN || 'pg_dump',
+    // Opcional: URL de un monitor tipo healthchecks.io; se avisa en cada éxito y en cada fallo (`/fail`).
+    heartbeatUrl: process.env.BACKUP_HEARTBEAT_URL || '',
+  },
 };

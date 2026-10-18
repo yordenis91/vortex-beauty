@@ -21,6 +21,7 @@ export const QUEUES = {
   confirmed: 'booking.confirmed',
   reminder: 'booking.reminder',
   cancelled: 'booking.cancelled',
+  backup: 'system.backup',
 } as const;
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];

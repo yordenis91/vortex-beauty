@@ -146,3 +146,41 @@ Cada salón usa su propio bot (token de @BotFather) que pega en Ajustes → Rese
 - El cliente enlaza su chat desde la confirmación de su reserva (botón «Recibir avisos por Telegram»); desde entonces los avisos le llegan por Telegram y, si bloquea el bot, vuelven al correo.
 - El dueño recibe los avisos del salón enviando `/vincular <código>` al bot (el código aparece en Ajustes y se renueva al usarse).
 - Comandos del bot para clientes: `/citas` (próximas citas) y `/parar` (dejar de recibir avisos).
+
+## Respaldos automáticos
+
+Cada día (03:00 UTC por defecto) el worker hace `pg_dump --format=custom` de la base y lo sube a un bucket S3 compatible (MinIO en Easypanel). El horario vive en pg-boss: con varias réplicas solo una lo ejecuta. Sin las variables `BACKUP_S3_*` el API arranca igual pero avisa `[backup] DESACTIVADO` en los logs: **sin ellas no hay copias**.
+
+| Variable | Descripción |
+|---|---|
+| `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | Obligatorias. Pónlas como secretos en Easypanel, nunca en el repo. |
+| `BACKUP_S3_REGION` | `us-east-1` por defecto (los S3 no-AWS lo ignoran). |
+| `BACKUP_CRON` / `BACKUP_TZ` | `0 3 * * *` / `UTC`. |
+| `BACKUP_RETENTION_DAYS` | 30. Se borran las copias más viejas tras subir la nueva; la más reciente nunca se borra. |
+| `BACKUP_DATABASE_URL` | Usuario para el dump. Por defecto `MIGRATE_DATABASE_URL` y luego `DATABASE_URL`. **No debe ser `vortex_api`**: RLS ocultaría filas y el respaldo saldría incompleto o fallaría. |
+| `BACKUP_HEARTBEAT_URL` | Opcional: monitor tipo healthchecks.io; recibe un aviso en cada éxito y en cada fallo (`/fail`). |
+
+Detalles:
+- Las copias van bajo el prefijo `vortex-beauty-db/` del bucket; la retención solo toca ese prefijo, así que el bucket puede compartirse. Lo recomendable es un bucket y credenciales propios por proyecto.
+- El dump incluye todo el schema público, las extensiones (`btree_gist`) y las imágenes (viven en la base). Excluye el schema `pgboss` (estado de la cola): restaurarlo reviviría recordatorios ya enviados.
+- La imagen del API trae `pg_dump` (`postgresql17-client`); debe ser de la misma versión mayor que el servidor o superior.
+- Si un respaldo falla, pg-boss reintenta 2 veces cada 10 minutos y deja el error en los logs (`[backup] FALLÓ`).
+
+### Comprobar que funcionan
+
+Dentro del contenedor del API (o con `npm run backup:status` en local):
+
+```bash
+node dist/src/scripts/backupCli.js status      # lista las copias; sale con error si la última tiene más de 26 h
+node dist/src/scripts/backupCli.js run         # hace un respaldo ahora mismo
+node dist/src/scripts/backupCli.js download x.dump   # baja la más reciente
+```
+
+### Restaurar (siempre primero en una base de prueba)
+
+```bash
+createdb vortex_restore_test
+pg_restore --dbname="postgresql://<usuario>:<clave>@<host>/vortex_restore_test" --no-owner --clean --if-exists --exit-on-error x.dump
+```
+
+`--clean --if-exists` evita el choque con el schema `public` que ya trae toda base nueva. Después comprueba tablas y conteos (`Tenant`, `User`, `Appointment`, `_prisma_migrations`). Para restaurar en producción con RLS, el rol `vortex_app` debe existir antes (lo crea la migración `row_level_security`, o créalo a mano: `CREATE ROLE vortex_app NOLOGIN`) y reaplica `GRANT` si cambias de usuario de la app. Haz un ensayo de restauración al menos una vez al mes.

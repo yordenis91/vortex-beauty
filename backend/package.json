@@ -13,12 +13,16 @@
     "start:prod": "npm run migrate:deploy && node dist/src/index.js",
     "seed": "tsx src/seed.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "backup:run": "tsx src/scripts/backupCli.ts run",
+    "backup:status": "tsx src/scripts/backupCli.ts status",
+    "backup:download": "tsx src/scripts/backupCli.ts download"
   },
   "keywords": [],
   "author": "Yordenis Correoso",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1152.0",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@sentry/node": "^11.8.0",
