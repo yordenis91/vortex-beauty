@@ -1,4 +1,6 @@
 import React from 'react';
+import { LogoMark } from '../brand/Logo';
+import { brand } from '../brand/brand';
 import { Link, useLocation } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import {
@@ -90,11 +92,9 @@ const AdminSidebar: React.FC = () => {
   return (
     <Sidebar className="bg-white border-r border-gray-200" collapsible="icon">
       <div className="flex h-16 items-center gap-3 px-4 border-b border-gray-200">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-sm font-bold text-white">
-          VB
-        </div>
+        <LogoMark size={40} />
         <span className="text-base font-semibold text-black group-data-[collapsible=icon]:hidden">
-          {salonName ?? 'Vortex'}
+          {salonName ?? brand.name}
         </span>
       </div>
 

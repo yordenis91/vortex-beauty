@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Logo } from '../brand/Logo';
+import { brand } from '../brand/brand';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getSavedTenantSlug } from '../lib/tenantSlug';
@@ -34,7 +36,9 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
+        <div className="flex flex-col items-center">
+          <Logo size={56} />
+          <p className="mt-2 text-sm text-gray-500">{brand.tagline}</p>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Iniciar sesión
           </h2>
