@@ -5,7 +5,7 @@ import { z } from 'zod';
 import prisma, { basePrisma } from '../prismaClient';
 import { runInTransaction } from '../lib/db';
 import { runWithTenant } from '../lib/tenantContext';
-import { endSession, refreshSession, startSession, clearRefreshCookie } from '../services/sessions';
+import { endSession, refreshSession, revokeAllSessions, startSession, clearRefreshCookie } from '../services/sessions';
 import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
@@ -185,6 +185,39 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.json({ user });
   } catch (error) {
     console.error(error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Escribe tu contraseña actual'),
+  newPassword: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres').max(200),
+});
+
+// Cambiar la propia contraseña (también la temporal que entrega el alta de un salón).
+// Cierra las demás sesiones del usuario y deja abierta esta con credenciales nuevas.
+router.post('/change-password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+    const { userId, tenantId, role, clientId } = req.user!;
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { password: true, isActive: true } });
+    if (!user || !user.isActive || !(await bcrypt.compare(currentPassword, user.password))) {
+      return res.status(400).json({ error: 'La contraseña actual no es correcta' });
+    }
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ error: 'La nueva contraseña debe ser distinta de la actual' });
+    }
+
+    await prisma.user.update({ where: { id: userId }, data: { password: await bcrypt.hash(newPassword, 10) } });
+    await revokeAllSessions(userId);
+    const token = await startSession(req, res, { id: userId, role, clientId: clientId ?? null, tenantId });
+    res.json({ token });
+  } catch (error: any) {
+    if (error?.name === 'ZodError') {
+      return res.status(400).json(zodResponse(error));
+    }
+    console.error('Error cambiando la contraseña:', error);
     return res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

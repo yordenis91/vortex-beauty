@@ -85,16 +85,20 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '3mb', strict: true }));
 app.use(express.urlencoded({ limit: '100kb', extended: true }));
 
-// Límite de intentos de login/registro: mitiga fuerza bruta contra cuentas.
+// Límite de intentos fallidos de login/registro/cambio de clave: mitiga fuerza bruta contra cuentas.
+// Solo cuentan los fallos (los correctos no gastan cupo) y el tope es holgado: muchos usuarios
+// comparten IP en redes móviles y no deben bloquearse entre sí.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: 20,
+  skipSuccessfulRequests: true,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiados intentos. Inténtalo de nuevo en unos minutos.' },
 });
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/change-password', authLimiter); // con un token robado no se puede adivinar la clave actual
 app.use('/api/platform/auth/login', authLimiter);
 
 // Routes
