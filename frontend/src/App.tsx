@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -5,36 +6,39 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PlatformAuthProvider, usePlatformAuth } from './contexts/PlatformAuthContext';
 import { queryClient } from './lib/queryClient';
-import AdminLayout from './components/AdminLayout';
-import ClientLayout from './components/ClientLayout';
-import SuperAdminLayout from './components/superadmin/SuperAdminLayout';
-import SuperAdminLogin from './pages/superadmin/Login';
-import SuperAdminDashboard from './pages/superadmin/Dashboard';
-import SuperAdminTenants from './pages/superadmin/Tenants';
-import SuperAdminTenantDetail from './pages/superadmin/TenantDetail';
-import SuperAdminPlans from './pages/superadmin/Plans';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Dashboard from './pages/Dashboard';
-import Clients from './pages/Clients';
-import Services from './pages/Services';
-import Categories from './pages/Categories';
-import Appointments from './pages/Appointments';
-import Notifications from './pages/Notifications';
-import MyProfile from './pages/MyProfile';
-import ClientDashboard from './pages/client/ClientDashboard';
-import DesignSystem from './pages/DesignSystem';
-import ClientGallery from './pages/client/ClientGallery';
-import ClientAppointments from './pages/client/ClientAppointments';
-import ClientProfile from './pages/client/ClientProfile';
-import Settings from './pages/Settings';
-import Billing from './pages/Billing';
-import AdminGallery from './pages/AdminGallery';
-import Professional from './pages/Professionals';
-import Resources from './pages/Resources';
 import Booking from './pages/public/Booking';
 import ManageBooking from './pages/public/ManageBooking';
 import { isPanelRole, canManage } from './types';
+
+// Cada pantalla se descarga al visitarla: la reserva pública (la que abren los clientes desde el móvil)
+// no arrastra el panel, la agenda ni los gráficos.
+const AdminLayout = lazy(() => import('./components/AdminLayout'));
+const ClientLayout = lazy(() => import('./components/ClientLayout'));
+const SuperAdminLayout = lazy(() => import('./components/superadmin/SuperAdminLayout'));
+const SuperAdminLogin = lazy(() => import('./pages/superadmin/Login'));
+const SuperAdminDashboard = lazy(() => import('./pages/superadmin/Dashboard'));
+const SuperAdminTenants = lazy(() => import('./pages/superadmin/Tenants'));
+const SuperAdminTenantDetail = lazy(() => import('./pages/superadmin/TenantDetail'));
+const SuperAdminPlans = lazy(() => import('./pages/superadmin/Plans'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Clients = lazy(() => import('./pages/Clients'));
+const Services = lazy(() => import('./pages/Services'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Appointments = lazy(() => import('./pages/Appointments'));
+const Notifications = lazy(() => import('./pages/Notifications'));
+const MyProfile = lazy(() => import('./pages/MyProfile'));
+const ClientDashboard = lazy(() => import('./pages/client/ClientDashboard'));
+const DesignSystem = lazy(() => import('./pages/DesignSystem'));
+const ClientGallery = lazy(() => import('./pages/client/ClientGallery'));
+const ClientAppointments = lazy(() => import('./pages/client/ClientAppointments'));
+const ClientProfile = lazy(() => import('./pages/client/ClientProfile'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Billing = lazy(() => import('./pages/Billing'));
+const AdminGallery = lazy(() => import('./pages/AdminGallery'));
+const Professional = lazy(() => import('./pages/Professionals'));
+const Resources = lazy(() => import('./pages/Resources'));
 
 /**
  * Protected route component para usuarios ADMIN
@@ -149,12 +153,19 @@ const RootRedirect: React.FC = () => {
     : <Navigate to="/portal/dashboard" replace />;
 };
 
+const PageSpinner: React.FC = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+  </div>
+);
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <PlatformAuthProvider>
           <Router>
+          <Suspense fallback={<PageSpinner />}>
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
@@ -229,6 +240,7 @@ function App() {
             {/* Catch all - redirect to root */}
             <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+          </Suspense>
           </Router>
           <Toaster position="top-right" />
           <ReactQueryDevtools initialIsOpen={false} />
