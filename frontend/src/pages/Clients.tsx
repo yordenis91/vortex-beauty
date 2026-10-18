@@ -5,6 +5,7 @@ import { Users, Plus, Edit, Trash2, Search, Mail, Camera, Eye, EyeOff } from 'lu
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useLabels } from '@/hooks/useLabels';
 
 // Tipado rápido para el componente
 interface Client {
@@ -29,6 +30,7 @@ interface ClientFormData {
 }
 
 const Clients: React.FC = () => {
+  const { label, agree, the } = useLabels();
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
@@ -51,13 +53,13 @@ const Clients: React.FC = () => {
   // Usar hooks centralizados
   const { data: clients = [], isLoading } = useClients();
   const createMutation = useCreateClient({
-    onSuccess: () => toast.success('Cliente creado correctamente'),
+    onSuccess: () => toast.success(`Se creó ${the('customer')}`),
   });
   const updateMutation = useUpdateClient({
-    onSuccess: () => toast.success('Cliente actualizado correctamente'),
+    onSuccess: () => toast.success(`Se actualizó ${the('customer')}`),
   });
   const deleteMutation = useDeleteClient({
-    onSuccess: () => toast.success('Cliente eliminado correctamente'),
+    onSuccess: () => toast.success(`Se eliminó ${the('customer')}`),
   });
 
   // Funciones de UI
@@ -179,8 +181,8 @@ const Clients: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Clientes</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Gestiona tu cartera de clientes</p>
+          <h2 className="text-2xl font-bold text-foreground">{label('customers', true)}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Gestiona tu cartera de {label('customers')}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -210,7 +212,7 @@ const Clients: React.FC = () => {
         {filteredClients.length === 0 ? (
           <div className="col-span-full bg-card rounded-lg shadow-sm border border-border px-4 py-12 text-center text-muted-foreground">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-            <p>No se encontraron clientes.</p>
+            <p>No se encontraron {label('customers')}.</p>
           </div>
         ) : (
           filteredClients.map((client) => (
@@ -248,7 +250,7 @@ const Clients: React.FC = () => {
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); }}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingClient ? 'Editar Cliente' : 'Crear Nuevo Cliente'}</DialogTitle>
+            <DialogTitle>{editingClient ? `Editar ${label('customer')}` : `Crear ${agree('nuev', 'customer')} ${label('customer')}`}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Avatar Section */}
@@ -431,7 +433,7 @@ const Clients: React.FC = () => {
                   />
                   <label htmlFor="sendWelcomeEmail" className="text-sm text-foreground cursor-pointer">
                     <span className="font-medium">Enviar correo de bienvenida</span>
-                    <p className="text-xs text-muted-foreground">El cliente recibirá sus credenciales por email</p>
+                    <p className="text-xs text-muted-foreground">{label('customer', true)} recibirá sus credenciales por email</p>
                   </label>
                 </div>
               </div>
@@ -460,8 +462,8 @@ const Clients: React.FC = () => {
       
       <ConfirmModal
         isOpen={itemToDelete !== null}
-        title="Eliminar Cliente"
-        message="¿Estás seguro de que quieres eliminar este cliente? Esta acción no se puede deshacer."
+        title={`Eliminar ${label('customer')}`}
+        message={`¿Estás seguro de que quieres eliminar ${the('customer')}? Esta acción no se puede deshacer.`}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />

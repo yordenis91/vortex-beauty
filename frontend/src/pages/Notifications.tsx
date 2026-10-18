@@ -4,8 +4,10 @@ import { Mail, MessageSquare, Bell, CheckCircle, Clock, AlertCircle } from 'luci
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import type { Notification } from '../types';
+import { useLabels } from '@/hooks/useLabels';
 
 const Notifications: React.FC = () => {
+  const { the } = useLabels();
   const { data: notifications = [], isLoading } = useNotifications();
 
   // Estadísticas
@@ -181,7 +183,7 @@ const Notifications: React.FC = () => {
       {/* Leyenda */}
       <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 rounded-lg p-4">
         <p className="text-sm text-blue-900 dark:text-blue-200">
-          <strong>Nota:</strong> Este panel muestra todas las notificaciones enviadas a los clientes incluidas WhatsApp, Email y notificaciones del sistema.
+          <strong>Nota:</strong> Este panel muestra todas las notificaciones enviadas a {the('customers')} incluidas Telegram, Email y notificaciones del sistema.
           Cada fila incluye información del remitente, destinatario y estado actual del envío.
         </p>
       </div>

@@ -15,6 +15,7 @@ import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Users, Plus, Edit, Trash2, Search, CalendarOff, KeyRound } from 'lucide-react';
+import { useLabels } from '@/hooks/useLabels';
 
 const DAYS = [
   { value: 1, label: 'Lunes' },
@@ -98,6 +99,7 @@ function TimeOffPanel({ professionalId }: { professionalId: string }) {
 }
 
 const Professionals: React.FC = () => {
+  const { label, agree, the } = useLabels();
   const { role } = useAuth();
   const isOwner = role === 'OWNER';
   const [searchTerm, setSearchTerm] = useState('');
@@ -108,9 +110,9 @@ const Professionals: React.FC = () => {
 
   const { data: professionals = [], isLoading: loading } = useProfessionals();
   const { data: services = [] } = useServices();
-  const createProfessional = useCreateProfessional({ onSuccess: () => toast.success('Profesional creado correctamente') });
-  const updateProfessional = useUpdateProfessional({ onSuccess: () => toast.success('Profesional actualizado correctamente') });
-  const deleteProfessional = useDeleteProfessional({ onSuccess: () => toast.success('Profesional eliminado correctamente') });
+  const createProfessional = useCreateProfessional({ onSuccess: () => toast.success(`Se creó ${the('professional')}`) });
+  const updateProfessional = useUpdateProfessional({ onSuccess: () => toast.success(`Se actualizó ${the('professional')}`) });
+  const deleteProfessional = useDeleteProfessional({ onSuccess: () => toast.success(`Se eliminó ${the('professional')}`) });
 
   const filtered = professionals.filter(
     (p) => p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -205,9 +207,9 @@ const Professionals: React.FC = () => {
     <div className="space-y-6">
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-foreground sm:text-3xl">Profesionales</h2>
+          <h2 className="text-2xl font-bold leading-7 text-foreground sm:text-3xl">{label('professionals', true)}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Quién atiende, cuándo trabaja y qué servicios realiza. Cada profesional tiene su propia agenda.
+            Quién atiende, cuándo trabaja y qué servicios realiza. Cada {label('professional')} tiene su propia agenda.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -223,7 +225,7 @@ const Professionals: React.FC = () => {
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar profesionales..."
+            placeholder={`Buscar ${label('professionals')}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="block w-full pl-10 pr-3 py-2 border border-border rounded-md bg-card"
@@ -235,7 +237,7 @@ const Professionals: React.FC = () => {
         {filtered.length === 0 ? (
           <div className="px-4 py-8 text-center text-muted-foreground">
             <Users className="mx-auto h-12 w-12" />
-            <h3 className="mt-2 text-sm font-medium text-foreground">Sin profesionales</h3>
+            <h3 className="mt-2 text-sm font-medium text-foreground">Sin {label('professionals')}</h3>
           </div>
         ) : (
           <ul className="divide-y divide-border">
@@ -273,7 +275,7 @@ const Professionals: React.FC = () => {
       <Dialog open={showModal} onOpenChange={(open) => !open && closeModal()}>
         <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing ? 'Editar profesional' : 'Nuevo profesional'}</DialogTitle>
+            <DialogTitle>{editing ? `Editar ${label('professional')}` : `${agree('Nuev', 'professional')} ${label('professional')}`}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -366,7 +368,7 @@ const Professionals: React.FC = () => {
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <KeyRound className="h-4 w-4" /> Acceso al panel (opcional)
                 </h4>
-                <p className="text-xs text-muted-foreground">Con una cuenta, el profesional inicia sesión y ve solo su propia agenda.</p>
+                <p className="text-xs text-muted-foreground">Con una cuenta, {the('professional')} inicia sesión y ve solo su propia agenda.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input type="email" placeholder="Correo de acceso" className={inputClass} value={formData.accountEmail} onChange={(e) => setFormData({ ...formData, accountEmail: e.target.value })} />
                   <input type="password" placeholder="Contraseña (mín. 8)" minLength={8} className={inputClass} value={formData.accountPassword} onChange={(e) => setFormData({ ...formData, accountPassword: e.target.value })} />
@@ -386,8 +388,8 @@ const Professionals: React.FC = () => {
 
       <ConfirmModal
         isOpen={itemToDelete !== null}
-        title="Eliminar profesional"
-        message="¿Seguro que quieres eliminar a este profesional? Si tiene citas registradas, desactívalo en su lugar."
+        title={`Eliminar ${label('professional')}`}
+        message={`¿Seguro que quieres eliminar ${the('professional')}? Si tiene ${label('appointments')} ${agree('registrad', 'appointments')}, desactívalo en su lugar.`}
         onConfirm={confirmDelete}
         onCancel={() => setItemToDelete(null)}
       />

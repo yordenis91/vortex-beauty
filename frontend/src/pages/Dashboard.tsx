@@ -2,10 +2,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, CheckCircle2, Clock, Users, ArrowRight } from 'lucide-react';
 import { useAppointments, useClients } from '../hooks/useQueries';
+import { useLabels } from '@/hooks/useLabels';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
 const Dashboard: React.FC = () => {
+  const { label, agree } = useLabels();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
 
@@ -18,10 +20,10 @@ const Dashboard: React.FC = () => {
   const loading = clientsLoading || appointmentsLoading;
 
   const statCards = [
-    { name: 'Citas de hoy', value: todayCount, icon: Clock, color: 'bg-purple-500' },
-    { name: 'Citas programadas', value: scheduled.length, icon: Calendar, color: 'bg-blue-500' },
-    { name: 'Citas completadas', value: completed, icon: CheckCircle2, color: 'bg-green-500' },
-    { name: 'Clientes', value: clients.length, icon: Users, color: 'bg-yellow-500' },
+    { name: `${label('appointments', true)} de hoy`, value: todayCount, icon: Clock, color: 'bg-purple-500' },
+    { name: `${label('appointments', true)} ${agree('programad', 'appointments')}`, value: scheduled.length, icon: Calendar, color: 'bg-blue-500' },
+    { name: `${label('appointments', true)} ${agree('completad', 'appointments')}`, value: completed, icon: CheckCircle2, color: 'bg-green-500' },
+    { name: label('customers', true), value: clients.length, icon: Users, color: 'bg-yellow-500' },
   ];
 
   if (loading) {
@@ -55,14 +57,14 @@ const Dashboard: React.FC = () => {
 
       <div className="bg-card shadow overflow-hidden sm:rounded-md">
         <div className="px-4 py-5 sm:px-6 border-b border-border flex items-center justify-between">
-          <h3 className="text-lg leading-6 font-medium text-foreground">Próximas citas</h3>
+          <h3 className="text-lg leading-6 font-medium text-foreground">{agree('Próxim', 'appointments')} {label('appointments')}</h3>
           <Link to="/admin/appointments" className="text-sm text-primary inline-flex items-center gap-1">
             Ver agenda <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <ul className="divide-y divide-border">
           {upcoming.length === 0 ? (
-            <li className="px-4 py-8 text-center text-muted-foreground">No hay citas próximas.</li>
+            <li className="px-4 py-8 text-center text-muted-foreground">No hay {label('appointments')} {agree('próxim', 'appointments')}.</li>
           ) : (
             upcoming.map((apt) => (
               <li key={apt.id} className="px-4 py-4 sm:px-6 flex items-center justify-between">

@@ -16,6 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useLabels } from '@/hooks/useLabels';
 
 interface BusinessHour {
   id: string;
@@ -108,6 +109,7 @@ const STATUS_STYLES: Record<AppointmentStatus, { label: string; border: string; 
 };
 
 const Appointments: React.FC = () => {
+  const { label, agree, the } = useLabels();
   const [showModal, setShowModal] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -191,21 +193,21 @@ const Appointments: React.FC = () => {
 
   const createMutation = useCreateAppointment({
     onSuccess: () => {
-      toast.success('Cita creada correctamente');
+      toast.success(`Se creó ${the('appointment')}`);
       closeModal();
     },
   });
 
   const updateMutation = useUpdateAppointment({
     onSuccess: () => {
-      toast.success('Cita actualizada correctamente');
+      toast.success(`Se actualizó ${the('appointment')}`);
       closeModal();
     },
   });
 
   const deleteMutation = useDeleteAppointment({
     onSuccess: () => {
-      toast.success('Cita eliminada correctamente');
+      toast.success(`Se eliminó ${the('appointment')}`);
       setItemToDelete(null);
       closeModal();
     },
@@ -439,7 +441,7 @@ const Appointments: React.FC = () => {
 
   // Cambio rápido de estado desde la tarjeta de la agenda
   const quickStatus = (appointment: Appointment, status: AppointmentStatus) => {
-    if (status === 'CANCELLED' && !window.confirm('¿Cancelar esta cita? Se avisará al cliente.')) return;
+    if (status === 'CANCELLED' && !window.confirm(`¿Cancelar ${the('appointment')}? Se avisará ${label('customer') === 'clienta' ? 'a la clienta' : 'al cliente'}.`)) return;
     updateMutation.mutate({ id: appointment.id, appointmentData: { status } });
   };
 
@@ -481,10 +483,10 @@ const Appointments: React.FC = () => {
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
-            Agenda de Citas
+            Agenda de {label('appointments', true)}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gestiona todas las citas del salón de belleza — selecciona un día en el calendario para ver la agenda y editar citas.
+            Gestiona {the('appointments')} de tu negocio — selecciona un día en el calendario para ver la agenda y editarlos.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4 gap-3">
@@ -512,7 +514,7 @@ const Appointments: React.FC = () => {
             className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <Plus className="mr-2 h-5 w-5" />
-            Nueva Cita
+            {agree('Nuev', 'appointment')} {label('appointment')}
           </button>
         </div>
       </div>
@@ -529,12 +531,12 @@ const Appointments: React.FC = () => {
             </p>
             {professionalList.length > 1 && isManager && (
               <select
-                aria-label="Filtrar por profesional"
+                aria-label={`Filtrar por ${label('professional')}`}
                 value={agendaProfessionalId}
                 onChange={(e) => setAgendaProfessionalId(e.target.value)}
                 className="px-3 py-1 border border-border rounded-full bg-card text-sm"
               >
-                <option value="">Todos los profesionales</option>
+                <option value="">Todo el equipo</option>
                 {professionalList.map((member) => (
                   <option key={member.id} value={member.id}>
                     {member.name}
@@ -651,12 +653,12 @@ const Appointments: React.FC = () => {
                 </Badge>
                 {professionalList.length > 1 && isManager && (
                   <select
-                    aria-label="Filtrar por profesional"
+                    aria-label={`Filtrar por ${label('professional')}`}
                     value={agendaProfessionalId}
                     onChange={(e) => setAgendaProfessionalId(e.target.value)}
                     className="px-3 py-1 border border-border rounded-full bg-card text-sm"
                   >
-                    <option value="">Todos los profesionales</option>
+                    <option value="">Todo el equipo</option>
                     {professionalList.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.name}
@@ -712,12 +714,12 @@ const Appointments: React.FC = () => {
                     ))}
                   </select>
                   <select
-                    aria-label="Profesional"
+                    aria-label={label('professional', true)}
                     value={slotProfessionalId}
                     onChange={(e) => setSlotProfessionalId(e.target.value)}
                     className="w-full px-3 py-2 border border-border rounded-lg bg-card text-sm"
                   >
-                    <option value="any">Cualquier profesional</option>
+                    <option value="any">Cualquier {label('professional')}</option>
                     {professionalList.map((member) => (
                       <option key={member.id} value={member.id}>
                         {member.name}
@@ -852,7 +854,7 @@ const Appointments: React.FC = () => {
                           onClick={() => openModal(appointment)}
                           className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          <Edit className="w-4 h-4" /> Editar Cita
+                          <Edit className="w-4 h-4" /> Editar {label('appointment')}
                         </button>
                       </div>
                     </div>
@@ -869,7 +871,7 @@ const Appointments: React.FC = () => {
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); }}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingAppointment ? 'Editar Cita' : 'Crear Cita'} {selectedDate ? ` • ${format(new Date(selectedDate), 'dd/MM/yyyy', { locale: es })}` : ''}</DialogTitle>
+            <DialogTitle>{editingAppointment ? `Editar ${label('appointment')}` : `Crear ${label('appointment')}`} {selectedDate ? ` • ${format(new Date(selectedDate), 'dd/MM/yyyy', { locale: es })}` : ''}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="border-b border-border pb-4">
@@ -883,7 +885,7 @@ const Appointments: React.FC = () => {
                       : 'text-muted-foreground hover:text-foreground hover:bg-card hover:border hover:border-border'
                   }`}
                 >
-                  Agendar Cita
+                  Agendar {label('appointment')}
                 </button>
                 <button
                   type="button"
@@ -903,9 +905,9 @@ const Appointments: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-border pb-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-2 border-b border-border pb-2">Detalles de la Cita</h4>
+                    <h4 className="text-sm font-semibold text-foreground mb-2 border-b border-border pb-2">Detalles de {the('appointment')}</h4>
                     <label htmlFor="client" className="block text-sm font-medium text-foreground mb-1">
-                      Clienta <span className="text-red-500">*</span>
+                      {label('customer', true)} <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="client"
@@ -914,7 +916,7 @@ const Appointments: React.FC = () => {
                       className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       required
                     >
-                      <option value="">-- Selecciona una clienta --</option>
+                      <option value="">-- Selecciona {label('customer') === 'clienta' ? 'una clienta' : 'un cliente'} --</option>
                       {clients.map((client) => (
                         <option key={client.id} value={client.id}>
                           {client.name} ({client.email})
@@ -966,7 +968,7 @@ const Appointments: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-border pb-4">
                   <div>
                     <label htmlFor="date" className="block text-sm font-medium text-foreground mb-1">
-                      Fecha de la Cita <span className="text-red-500">*</span>
+                      Fecha de {the('appointment')} <span className="text-red-500">*</span>
                     </label>
                     <input
                       id="date"
@@ -1062,7 +1064,7 @@ const Appointments: React.FC = () => {
                       disabled={createMutation.isPending || updateMutation.isPending}
                       className="inline-flex items-center px-8 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : 'Guardar Cita'}
+                      {(createMutation.isPending || updateMutation.isPending) ? 'Guardando...' : `Guardar ${label('appointment')}`}
                     </button>
                   </div>
                 </div>
@@ -1163,8 +1165,8 @@ const Appointments: React.FC = () => {
 {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={itemToDelete !== null}
-        title="Eliminar Cita"
-        message="¿Estás seguro que deseas eliminar esta cita? Esta acción no se puede deshacer."
+        title={`Eliminar ${label('appointment')}`}
+        message={`¿Estás seguro que deseas eliminar ${the('appointment')}? Esta acción no se puede deshacer.`}
         onConfirm={() => itemToDelete && handleDeleteAppointment(itemToDelete)}
         onCancel={() => setItemToDelete(null)}
       />
