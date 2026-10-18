@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale/es';
 import { Calendar } from '@/components/ui/calendar';
 import { apiErrorMessage, publicApi, type ManageView, type PublicSlot } from '../../lib/publicApi';
 import PublicShell from './PublicShell';
+import TelegramOptIn from './TelegramOptIn';
 import { money } from './format';
 import { Spinner } from './shared';
 
@@ -67,7 +68,7 @@ const ManageBooking: React.FC = () => {
     );
   }
 
-  const { appointment: a, salonName, canCancel, canReschedule, cancelWindowHrs } = view.data;
+  const { appointment: a, salonName, canCancel, canReschedule, cancelWindowHrs, telegram } = view.data;
   const day = cap(format(new Date(`${a.date.split('T')[0]}T00:00:00`), "EEEE d 'de' MMMM", { locale: es }));
   const today = startOfDay(new Date());
   const active = a.status === 'SCHEDULED' || a.status === 'PENDING';
@@ -87,6 +88,8 @@ const ManageBooking: React.FC = () => {
         {a.professionalName && <div className="text-muted-foreground">Con {a.professionalName}</div>}
         <div className="text-muted-foreground">{money(a.priceAmount, a.currency)}</div>
       </section>
+
+      {active && <TelegramOptIn telegram={telegram} />}
 
       {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200">{error}</div>}
 

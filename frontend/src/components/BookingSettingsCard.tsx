@@ -59,7 +59,6 @@ const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }
         .map((v) => parseInt(v))
         .filter((v) => Number.isFinite(v) && v > 0),
       ownerAlerts: form.ownerAlerts,
-      telegramChatId: form.telegramChatId,
       ...(telegramToken ? { telegramBotToken: telegramToken } : {}),
       labels: form.labels,
     });
@@ -151,24 +150,50 @@ const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }
             <input type="checkbox" checked={form.ownerAlerts} onChange={(e) => set('ownerAlerts', e.target.checked)} />
             Avisarme por correo cuando haya una reserva nueva o una cancelación
           </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">Token del bot de Telegram (opcional)</label>
+          {form.telegramBotUsername ? (
+            <div className="space-y-2 text-sm">
+              <p>
+                Bot conectado:{' '}
+                <a className="text-blue-600 font-medium" href={`https://t.me/${form.telegramBotUsername}`} target="_blank" rel="noreferrer">
+                  @{form.telegramBotUsername}
+                </a>
+                . Tus clientes pueden activar sus avisos desde la confirmación de su reserva.
+              </p>
+              {form.telegramConfigured ? (
+                <p className="text-green-700">✓ Recibes aquí los avisos de reservas y cancelaciones.</p>
+              ) : (
+                <div className="rounded-md bg-muted p-3 space-y-1">
+                  <p>Para recibir tú los avisos, abre el bot y envíale este mensaje:</p>
+                  <code className="block font-mono text-base select-all">/vincular {form.telegramOwnerCode}</code>
+                </div>
+              )}
+              <button
+                type="button"
+                className="text-xs text-red-600 underline"
+                onClick={() => {
+                  if (window.confirm('¿Desconectar el bot? Los clientes dejarán de recibir avisos por Telegram.')) update.mutate({ telegramBotToken: '' });
+                }}
+              >
+                Desconectar bot
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <label className="block text-xs text-muted-foreground">Token del bot de Telegram (opcional)</label>
               <input
                 type="password"
                 autoComplete="off"
                 className={inputClass}
                 value={telegramToken}
                 onChange={(e) => setTelegramToken(e.target.value)}
-                placeholder={form.telegramConfigured ? 'Guardado — escribe uno nuevo para cambiarlo' : '123456:ABC...'}
+                placeholder="123456:ABC..."
               />
+              <p className="text-xs text-muted-foreground">
+                Crea tu bot en Telegram con @BotFather (envía /newbot) y pega aquí su token. Al guardar, tus clientes podrán recibir confirmaciones y
+                recordatorios por Telegram, y tú los avisos de cada reserva.
+              </p>
             </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">ID del chat de Telegram</label>
-              <input className={inputClass} value={form.telegramChatId} onChange={(e) => set('telegramChatId', e.target.value)} placeholder="Tu chat o grupo" />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">Crea un bot con @BotFather, escríbele una vez y pon aquí su token y tu ID de chat para recibir cada reserva en Telegram.</p>
+          )}
         </div>
 
         <div>

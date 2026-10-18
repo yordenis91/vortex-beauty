@@ -42,6 +42,13 @@ export interface PublicSlot {
   professionalIds?: string[];
 }
 
+/** Enlace al bot del salón para recibir avisos; null si el salón no tiene bot. */
+export interface TelegramOptIn {
+  botUsername: string;
+  linked: boolean;
+  deepLink: string;
+}
+
 export interface PublicAppointment {
   id: string;
   status: 'PENDING' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
@@ -54,11 +61,13 @@ export interface PublicAppointment {
   priceAmount: number | string;
   currency: string;
   manageUrl: string | null;
+  telegram?: TelegramOptIn | null;
 }
 
 export interface ManageView {
   salonName: string;
   appointment: PublicAppointment & { serviceId: string; professionalId: string | null };
+  telegram: TelegramOptIn | null;
   cancelWindowHrs: number;
   canCancel: boolean;
   canReschedule: boolean;
