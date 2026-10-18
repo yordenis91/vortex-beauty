@@ -33,6 +33,19 @@ window.matchMedia ??= ((query: string) => ({
   removeListener() {},
   dispatchEvent: () => false,
 })) as unknown as typeof window.matchMedia
+// Radix abre menús con pointerdown: user-event necesita un PointerEvent real (jsdom no lo trae).
+if (!window.PointerEvent) {
+  class PointerEventPolyfill extends MouseEvent {
+    pointerId: number
+    pointerType: string
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params)
+      this.pointerId = params.pointerId ?? 1
+      this.pointerType = params.pointerType ?? 'mouse'
+    }
+  }
+  window.PointerEvent = PointerEventPolyfill as unknown as typeof PointerEvent
+}
 Element.prototype.scrollIntoView ??= () => {}
 Element.prototype.hasPointerCapture ??= () => false
 Element.prototype.releasePointerCapture ??= () => {}

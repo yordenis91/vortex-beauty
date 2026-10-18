@@ -59,3 +59,58 @@ export const manageView = (over: { status?: ManageView['appointment']['status'];
   canCancel: over.canCancel ?? true,
   canReschedule: over.canCancel ?? true,
 })
+
+// ---- Panel del salón ----
+const stamp = { createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z' }
+
+export const panelSettings = (labels: Record<string, string> = {}, over: Record<string, unknown> = {}) => ({
+  name: 'Barbería Demo',
+  slug: SLUG,
+  currency: 'CUP',
+  timezone: 'America/Havana',
+  vertical: 'BARBER',
+  slotIntervalMin: 30,
+  labels,
+  ...over,
+})
+
+export const category = (over: Record<string, unknown> = {}) => ({ id: 'cat1', name: 'Cortes', description: 'Cortes de cabello', order: 0, ...stamp, _count: { services: 2 }, ...over })
+
+export const service = (over: Record<string, unknown> = {}) => ({
+  id: 'srv1',
+  name: 'Corte de cabello',
+  description: 'Clásico',
+  price: '500',
+  currency: 'CUP',
+  status: 'ACTIVE',
+  isPublic: true,
+  onlineBookable: true,
+  durationMinutes: 30,
+  bufferBeforeMin: 0,
+  bufferAfterMin: 0,
+  categoryId: 'cat1',
+  userId: 'u1',
+  ...stamp,
+  category: category(),
+  professionalIds: ['pro1'],
+  resourceIds: [],
+  ...over,
+})
+
+export const client = (over: Record<string, unknown> = {}) => ({ id: 'cli1', name: 'Carlos Méndez', email: 'carlos@example.com', phone: '+53 5 555 0001', userId: 'u1', ...stamp, ...over })
+
+export const professional = (over: Record<string, unknown> = {}) => ({
+  id: 'pro1',
+  name: 'Yoel',
+  email: null,
+  phone: null,
+  color: '#ec4899',
+  isActive: true,
+  acceptsOnlineBookings: true,
+  userId: null,
+  user: null,
+  schedules: [],
+  serviceIds: ['srv1'],
+  ...stamp,
+  ...over,
+})

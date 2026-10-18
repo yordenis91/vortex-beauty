@@ -215,7 +215,7 @@ const Professionals: React.FC = () => {
         <div className="mt-4 flex md:mt-0 md:ml-4">
           <button onClick={openCreate} className="inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
             <Plus className="h-5 w-5 mr-2" />
-            Agregar profesional
+            Agregar {label('professional')}
           </button>
         </div>
       </div>

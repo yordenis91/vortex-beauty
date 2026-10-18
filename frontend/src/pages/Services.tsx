@@ -73,7 +73,7 @@ function CheckList({
 }
 
 const Services: React.FC = () => {
-  const { label } = useLabels();
+  const { label, the } = useLabels();
   const { data: settings } = useBookingSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('ALL');
@@ -212,7 +212,7 @@ const Services: React.FC = () => {
           <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
             Servicios
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">Los servicios que {label('customers')} pueden reservar.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Los servicios que {the('customers')} pueden reservar.</p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
           <button

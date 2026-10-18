@@ -64,7 +64,7 @@ const Billing: React.FC = () => {
 
       {!subscription ? (
         <div className="bg-card rounded-lg shadow-sm border border-border p-8 text-center text-muted-foreground">
-          Todavía no tenés un plan asignado. Contacta a soporte.
+          Todavía no tienes un plan asignado. Contacta a soporte.
         </div>
       ) : (
         <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">

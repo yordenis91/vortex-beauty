@@ -121,7 +121,7 @@ const Clients: React.FC = () => {
     // Validación básica para contraseña (solo crea, no edit)
     if (!editingClient && formData.password) {
       if (formData.password !== formData.confirmPassword) {
-        toast.error('La contraseña y la confirnación de  contraseña deben coincidir');
+        toast.error('La contraseña y la confirmación de la contraseña deben coincidir');
         return;
       }
     }
@@ -189,7 +189,7 @@ const Clients: React.FC = () => {
           className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
         >
           <Plus className="h-5 w-5 mr-2" />
-          Nuevo Cliente
+          {agree('Nuev', 'customer')} {label('customer')}
         </button>
       </div>
 
@@ -326,7 +326,7 @@ const Clients: React.FC = () => {
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="+34 612 345 678"
+                    placeholder="+53 5 555 1234"
                   />
                 </div>
 
@@ -340,7 +340,7 @@ const Clients: React.FC = () => {
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="Calle Principal 123"
+                    placeholder="Calle y número"
                   />
                 </div>
               </div>

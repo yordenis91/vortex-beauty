@@ -126,7 +126,7 @@ const Categories: React.FC = () => {
             Categorías
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Organice sus servicios, servicios, y articulos de la base de conocimiento en categorías para una mejor gestión y navegación.
+            Agrupa tus servicios en categorías: así tus clientes los encuentran más fácil al reservar.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4">
@@ -150,7 +150,7 @@ const Categories: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder="Search categories..."
+                placeholder="Buscar categorías..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-border rounded-md leading-5 bg-card placeholder:text-muted-foreground focus:outline-none focus:placeholder:text-muted-foreground focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
@@ -165,15 +165,15 @@ const Categories: React.FC = () => {
         {filteredCategories.length === 0 ? (
           <div className="col-span-full bg-card rounded-lg shadow px-4 py-8 text-center text-muted-foreground">
             <Folder className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-2 text-sm font-medium text-foreground">No categories</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Get started by creating a new category.</p>
+            <h3 className="mt-2 text-sm font-medium text-foreground">Aún no hay categorías</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Crea la primera para organizar tus servicios.</p>
             <div className="mt-6">
               <button
                 onClick={() => setShowCreateModal(true)}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Add Category
+                Agregar categoría
               </button>
             </div>
           </div>
@@ -243,7 +243,7 @@ const Categories: React.FC = () => {
             <DialogDescription>
               {editingCategory
                 ? 'Actualiza los datos de la categoría.'
-                : 'Crea una nueva categoría para organizar tu contenido.'}
+                : 'Crea una nueva categoría para organizar tus servicios.'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={editingCategory ? handleEdit : handleCreate} className="space-y-8">
