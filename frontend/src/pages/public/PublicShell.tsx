@@ -1,4 +1,6 @@
 import React from 'react';
+import { LogoMark } from '../../brand/Logo';
+import { brand } from '../../brand/brand';
 
 /** Marco común de las páginas públicas: sin menú, pensado para el móvil. */
 const PublicShell: React.FC<{ title: string; subtitle?: string; children: React.ReactNode }> = ({ title, subtitle, children }) => (
@@ -10,6 +12,9 @@ const PublicShell: React.FC<{ title: string; subtitle?: string; children: React.
       </div>
     </header>
     <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">{children}</main>
+    <footer className="max-w-2xl mx-auto px-4 pb-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+      <LogoMark size={18} /> Reservas con {brand.name}
+    </footer>
   </div>
 );
 
