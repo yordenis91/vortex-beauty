@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useBookingSettings, useUpdateBookingSettings } from '../hooks/useQueries';
 import type { BookingSettings } from '../types';
+import BookingQr from './BookingQr';
+import { shortBookingLink } from '../lib/bookingLink';
 
 const VERTICALS: Array<{ value: BookingSettings['vertical']; label: string; words: Record<string, string> }> = [
   { value: 'GENERIC', label: 'Otro negocio con citas', words: { customer: 'cliente', customers: 'clientes', appointment: 'cita', appointments: 'citas', professional: 'profesional', professionals: 'profesionales' } },
@@ -65,7 +67,7 @@ const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }
     setTelegramToken('');
   };
 
-  const bookingLink = `${window.location.origin}/${form.slug}/reservar`;
+  const bookingLink = shortBookingLink(form.slug);
   const copyLink = async () => {
     await navigator.clipboard.writeText(bookingLink);
     toast.success('Enlace copiado');
@@ -131,6 +133,7 @@ const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }
             </button>
           </div>
           <p className="text-xs text-muted-foreground">Compártelo en tu Instagram, WhatsApp o Google Maps: tus clientes reservan solos, sin cuenta.</p>
+          <BookingQr url={bookingLink} salonName={form.name} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

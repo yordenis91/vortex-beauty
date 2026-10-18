@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
@@ -122,6 +122,12 @@ const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) 
 /**
  * Root redirect component que redirige a los usuarios según su rol
  */
+// Enlace corto para compartir y para el QR: /r/<slug> → /<slug>/reservar
+const ShortBookingLink: React.FC = () => {
+  const { tenantSlug } = useParams();
+  return <Navigate to={`/${tenantSlug}/reservar`} replace />;
+};
+
 const RootRedirect: React.FC = () => {
   const { user, isLoading } = useAuth();
 
@@ -155,6 +161,7 @@ function App() {
             <Route path="/:tenantSlug/login" element={<Login />} />
             {/* Reserva pública, sin cuenta */}
             <Route path="/:tenantSlug/reservar" element={<Booking />} />
+            <Route path="/r/:tenantSlug" element={<ShortBookingLink />} />
             <Route path="/:tenantSlug/mi-cita/:token" element={<ManageBooking />} />
             <Route path="/:tenantSlug/register" element={<Register />} />
             <Route path="/design-system" element={<DesignSystem />} />
