@@ -486,7 +486,7 @@ const Appointments: React.FC = () => {
             Agenda de {label('appointments', true)}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gestiona {the('appointments')} de tu negocio — selecciona un día en el calendario para ver la agenda y editarlos.
+            Gestiona {the('appointments')} de tu negocio — selecciona un día en el calendario para ver y editar la agenda.
           </p>
         </div>
         <div className="mt-4 flex md:mt-0 md:ml-4 gap-3">
@@ -527,7 +527,7 @@ const Appointments: React.FC = () => {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              Arrastra una cita para cambiarla de día u hora. Haz clic en un hueco vacío para crear una nueva.
+              Arrastra un bloque para cambiar su día u hora. Haz clic en un hueco vacío para reservar ahí.
             </p>
             {professionalList.length > 1 && isManager && (
               <select
@@ -772,8 +772,8 @@ const Appointments: React.FC = () => {
                   {selectedDayStatus.variant === 'unavailable'
                     ? 'No hay actividad programada en un día cerrado.'
                     : selectedDayStatus.variant === 'full'
-                      ? 'No hay citas registradas, pero todos los slots están ocupados.'
-                      : 'No hay citas programadas para este día.'}
+                      ? `No hay ${label('appointments')} ${agree('registrad', 'appointments')}, pero todos los horarios están ocupados.`
+                      : `No hay ${label('appointments')} ${agree('programad', 'appointments')} para este día.`}
                 </p>
               </div>
             ) : (
