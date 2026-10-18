@@ -72,3 +72,18 @@ export interface ManageView {
   canCancel: boolean;
   canReschedule: boolean;
 }
+
+declare global {
+  interface Window {
+    /** Catálogo pedido por index.html antes de que cargara el JS (solo en /<slug>/reservar). */
+    __catalog?: { slug: string; promise: Promise<PublicCatalog> };
+  }
+}
+
+/** Devuelve (una sola vez) el catálogo adelantado si es del salón pedido; `null` si no hay o falló. */
+export async function takePrefetchedCatalog(slug: string): Promise<PublicCatalog | null> {
+  const early = window.__catalog;
+  window.__catalog = undefined;
+  if (!early || early.slug !== slug) return null;
+  return early.promise.catch(() => null);
+}
