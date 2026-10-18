@@ -9,7 +9,9 @@ import { config } from '../config';
 import { runInTransaction } from '../lib/db';
 import { authenticatePlatformAdmin, requireSuperAdmin, PlatformAuthRequest } from '../middleware/platformAuth';
 import { invalidateTenantStatus } from '../middleware/auth';
-import { applyVerticalTemplate } from '../services/verticalTemplates';
+import { applyVerticalTemplate, DEFAULT_HOURS, TEMPLATES } from '../services/verticalTemplates';
+import { apiBaseUrl, BotSetupError, connectBot } from '../services/telegramBot';
+import { isValidTimezone, timeToMinutes } from '../lib/time';
 import { logAudit } from '../services/auditLogService';
 import { TenantStatus, Vertical } from '@prisma/client';
 
@@ -85,6 +87,41 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Identificadores que chocan con rutas de la aplicación (/admin, /r/<slug>, /<slug>/login...).
+const RESERVED_SLUGS = new Set(['admin', 'api', 'superadmin', 'login', 'register', 'portal', 'r', 'design-system', 'assets', 'static']);
+
+const slugProblem = async (slug: string): Promise<string | null> => {
+  if (!slug) return 'No se pudo generar un identificador válido a partir del nombre';
+  if (RESERVED_SLUGS.has(slug)) return `"${slug}" es un nombre reservado por el sistema`;
+  if (await prisma.tenant.findUnique({ where: { slug }, select: { id: true } })) return `Ya existe un salón con el identificador "${slug}"`;
+  return null;
+};
+
+// GET /api/platform/tenants/slug-available?slug=... — para el asistente de alta
+router.get('/slug-available', async (req, res) => {
+  const slug = slugify(String(req.query.slug ?? ''));
+  const problem = await slugProblem(slug);
+  res.json({ slug, available: !problem, reason: problem });
+});
+
+// GET /api/platform/tenants/templates — servicios, profesional y horario de fábrica de cada vertical (el asistente los precarga)
+router.get('/templates', (_req, res) => {
+  const templates = Object.fromEntries(
+    Object.entries(TEMPLATES).map(([vertical, t]) => [
+      vertical,
+      {
+        services: t.services.map((s) => ({ name: s.name, price: s.price, durationMinutes: s.durationMinutes, category: s.category })),
+        professional: t.defaultProfessional,
+        resources: t.resources,
+        labels: t.labels,
+      },
+    ])
+  );
+  res.json({ templates, hours: DEFAULT_HOURS });
+});
+
+const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora inválida (HH:mm)');
+
 const createTenantSchema = z.object({
   name: z.string().min(2),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/, 'El slug solo puede tener minúsculas, números y guiones').optional(),
@@ -93,6 +130,30 @@ const createTenantSchema = z.object({
   vertical: z.nativeEnum(Vertical).default('GENERIC'),
   adminName: z.string().min(2),
   adminEmail: z.string().email(),
+  // Alta asistida (todo opcional: sin esto se usa la plantilla del vertical)
+  timezone: z.string().refine(isValidTimezone, 'Zona horaria inválida').optional(),
+  currency: z.string().length(3).transform((c) => c.toUpperCase()).optional(),
+  professionals: z.array(z.string().trim().min(2).max(60)).min(1).max(15).optional(),
+  services: z
+    .array(
+      z.object({
+        name: z.string().trim().min(2).max(80),
+        price: z.number().min(0).max(1_000_000),
+        durationMinutes: z.number().int().min(5).max(600),
+        category: z.string().trim().max(60).optional(),
+      })
+    )
+    .min(1)
+    .max(40)
+    .optional(),
+  hours: z
+    .array(z.object({ dayOfWeek: z.number().int().min(0).max(6), isOpen: z.boolean(), startTime: hhmm, endTime: hhmm }))
+    .length(7)
+    .refine((h) => new Set(h.map((d) => d.dayOfWeek)).size === 7, 'Faltan días en el horario')
+    .refine((h) => h.some((d) => d.isOpen), 'Abre al menos un día')
+    .refine((h) => h.every((d) => !d.isOpen || timeToMinutes(d.startTime) < timeToMinutes(d.endTime)), 'La hora de cierre debe ser posterior a la de apertura')
+    .optional(),
+  telegramBotToken: z.string().trim().min(10).max(200).optional(),
 });
 
 // POST /api/platform/tenants — alta de un salón nuevo con su primer usuario
@@ -106,20 +167,15 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
     const data = createTenantSchema.parse(req.body);
     const slug = data.slug ? slugify(data.slug) : slugify(data.name);
 
-    if (!slug) {
-      return res.status(400).json({ error: 'No se pudo generar un identificador válido a partir del nombre' });
-    }
-
-    const [existingTenant, plan] = await Promise.all([
-      prisma.tenant.findUnique({ where: { slug } }),
-      prisma.plan.findUnique({ where: { id: data.planId } }),
-    ]);
-
-    if (existingTenant) {
-      return res.status(409).json({ error: `Ya existe un salón con el identificador "${slug}"` });
+    const [problem, plan] = await Promise.all([slugProblem(slug), prisma.plan.findUnique({ where: { id: data.planId } })]);
+    if (problem) {
+      return res.status(problem.startsWith('Ya existe') ? 409 : 400).json({ error: problem });
     }
     if (!plan) {
       return res.status(400).json({ error: 'Plan no encontrado' });
+    }
+    if (plan.maxStaff != null && (data.professionals?.length ?? 1) > plan.maxStaff) {
+      return res.status(400).json({ error: `El plan ${plan.name} admite hasta ${plan.maxStaff} profesional(es)` });
     }
 
     const tempPassword = generateTempPassword();
@@ -135,7 +191,9 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
     const trialEndsAt = plan.trialDays > 0 ? new Date(now.getTime() + plan.trialDays * 24 * 60 * 60 * 1000) : null;
 
     const { tenant, adminUser } = await runInTransaction(async (tx) => {
-      const tenant = await tx.tenant.create({ data: { name: data.name, slug } });
+      const tenant = await tx.tenant.create({
+        data: { name: data.name, slug, ...(data.timezone && { timezone: data.timezone }), ...(data.currency && { currency: data.currency }) },
+      });
 
       const adminUser = await tx.user.create({
         data: {
@@ -147,7 +205,12 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
         },
       });
 
-      await applyVerticalTemplate(tx, { tenantId: tenant.id, adminUserId: adminUser.id, vertical: data.vertical });
+      await applyVerticalTemplate(tx, {
+        tenantId: tenant.id,
+        adminUserId: adminUser.id,
+        vertical: data.vertical,
+        overrides: { services: data.services, professionals: data.professionals, hours: data.hours },
+      });
 
       await tx.tenantSubscription.create({
         data: {
@@ -177,9 +240,22 @@ router.post('/', requireSuperAdmin, async (req: PlatformAuthRequest, res) => {
       ip: req.ip,
     });
 
+    // Bot de Telegram del salón (opcional): si falla, el salón ya existe y se avisa para reintentarlo desde Ajustes.
+    let telegram: { ok: true; botUsername: string; ownerCode: string } | { ok: false; error: string } | null = null;
+    if (data.telegramBotToken) {
+      try {
+        await connectBot(tenant.id, data.telegramBotToken, apiBaseUrl(req));
+        const st = await prisma.tenantSettings.findUniqueOrThrow({ where: { tenantId: tenant.id }, select: { telegramBotUsername: true, telegramOwnerCode: true } });
+        telegram = { ok: true, botUsername: st.telegramBotUsername!, ownerCode: st.telegramOwnerCode! };
+      } catch (error) {
+        telegram = { ok: false, error: error instanceof BotSetupError ? error.message : 'No se pudo conectar el bot' };
+      }
+    }
+
     res.status(201).json({
       tenant,
       admin: { id: adminUser.id, email: adminUser.email, name: adminUser.name },
+      telegram,
       tempPassword,
       registerUrl: `/${tenant.slug}/register`,
       loginUrl: `/${tenant.slug}/login`,
