@@ -21,3 +21,19 @@ export const imageSchema = z
     },
     'Formato de imagen no válido (usa PNG, JPG o WebP de hasta 1,5 MB)'
   );
+
+/**
+ * Logo del salón: se sirve dentro del catálogo público en cada visita, así que
+ * es mucho más pequeño que una foto. Solo data URL (nunca SVG, que puede llevar
+ * scripts); el navegador lo reduce a ~256 px antes de subirlo.
+ */
+const MAX_LOGO_BYTES = 100_000;
+export const logoSchema = z
+  .string()
+  .max(Math.ceil((MAX_LOGO_BYTES * 4) / 3) + 100, 'El logo es demasiado grande (máx. 100 KB)')
+  .refine((value) => {
+    const match = DATA_URL.exec(value);
+    return !!match && Math.floor((match[2].length * 3) / 4) <= MAX_LOGO_BYTES;
+  }, 'Formato de logo no válido (usa PNG, JPG o WebP de hasta 100 KB)');
+
+export const brandColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'El color debe ser #RRGGBB');

@@ -284,6 +284,8 @@ export interface BookingSettings {
   telegramChatId: string;
   telegramBotUsername: string | null;
   telegramOwnerCode: string | null;
+  logoUrl: string | null;
+  brandColor: string | null;
   labels: Record<string, string>;
 }
 

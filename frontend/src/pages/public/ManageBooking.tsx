@@ -74,7 +74,7 @@ const ManageBooking: React.FC = () => {
   const active = a.status === 'SCHEDULED' || a.status === 'PENDING';
 
   return (
-    <PublicShell title={salonName} subtitle="Tu reserva">
+    <PublicShell title={salonName} salon={{ name: salonName, logoUrl: view.data.logoUrl, brandColor: view.data.brandColor }} subtitle="Tu reserva">
       <section className="bg-card rounded-2xl border border-border p-5 space-y-2">
         <span
           className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${

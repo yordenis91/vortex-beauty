@@ -8,6 +8,8 @@ export const catalog = (over: Partial<PublicCatalog> = {}): PublicCatalog => ({
   timezone: 'America/Havana',
   currency: 'CUP',
   bookingEnabled: true,
+  logoUrl: null,
+  brandColor: null,
   labels: { appointment: 'turno', appointments: 'turnos', service: 'servicio', services: 'servicios' },
   minNoticeHours: 2,
   maxAdvanceDays: 60,
@@ -39,6 +41,8 @@ export function datesBetween(from: string, to: string): string[] {
 
 export const manageView = (over: { status?: ManageView['appointment']['status']; canCancel?: boolean; telegram?: ManageView['telegram'] } = {}): ManageView => ({
   salonName: 'Barbería Demo',
+  logoUrl: null,
+  brandColor: null,
   appointment: {
     id: 'a1',
     status: over.status ?? 'SCHEDULED',

@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useClosedDates, useCreateClosedDate, useDeleteClosedDate, getErrorMessage } from '../hooks/useQueries';
 import { Trash2 } from 'lucide-react';
 import BookingSettingsCard from '../components/BookingSettingsCard';
+import SalonBrandCard from '../components/SalonBrandCard';
 
 interface BusinessHour {
   id: string;
@@ -256,6 +257,8 @@ const Settings: React.FC = () => {
       </div>
 
       <BookingSettingsCard />
+
+      <SalonBrandCard />
 
       {/* Business Hours Card */}
       <div className="bg-card rounded-lg shadow overflow-hidden">
