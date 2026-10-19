@@ -25,6 +25,7 @@ import {
   Settings as SettingsIcon,
   CreditCard,
   DoorOpen,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLabels } from '@/hooks/useLabels';
@@ -58,6 +59,7 @@ const buildNavigation = (label: (key: string, capitalize?: boolean) => string): 
   { name: 'Galería', href: '/admin/gallery', icon: Sparkles, access: 'manager' },
   { section: 'Operaciones', highlight: true },
   { name: 'Notificaciones', href: '/admin/notifications', icon: Bell, access: 'manager' },
+  { name: 'Equipo', href: '/admin/team', icon: ShieldCheck, access: 'owner' },
   { name: 'Facturación', href: '/admin/billing', icon: CreditCard, access: 'owner' },
   { name: 'Configuraciones', href: '/admin/settings', icon: SettingsIcon, access: 'manager' },
 ];

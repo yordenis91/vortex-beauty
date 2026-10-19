@@ -23,6 +23,8 @@ import type {
   Resource,
   TimeOff,
   BookingSettings,
+  TeamMember,
+  CreateTeamMemberRequest,
 } from '../types';
 
 // Extrae un mensaje legible de un error de axios (o de cualquier otro tipo)
@@ -811,3 +813,65 @@ export const useMyTelegramLink = () =>
 
 export const useUnlinkMyTelegram = (options?: MutationOptions) =>
   useResourceMutation(async () => (await api.delete('/professionals/me/telegram')).data, [['my-telegram-link']], options);
+
+// ---- Equipo: cuentas de acceso al panel ----
+
+export const useTeam = () =>
+  useQuery({
+    queryKey: ['team'],
+    queryFn: async () => (await api.get<TeamMember[]>('/team')).data,
+  });
+
+const teamError = (error: unknown) => toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
+
+export const useCreateTeamMember = (options?: MutationOptions<{ user: TeamMember; tempPassword: string }, CreateTeamMemberRequest>) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (body: CreateTeamMemberRequest) => (await api.post<{ user: TeamMember; tempPassword: string }>('/team', body)).data,
+    onError: teamError,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: ['professionals'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};
+
+export const useUpdateTeamMember = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: { id: string; name?: string; email?: string; isActive?: boolean }) =>
+      (await api.patch<TeamMember>(`/team/${id}`, body)).data,
+    onError: teamError,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: ['professionals'] });
+    },
+  });
+};
+
+export const useResetTeamPassword = (options?: MutationOptions<{ tempPassword: string }, string>) =>
+  useMutation({
+    ...options,
+    mutationFn: async (id: string) => (await api.post<{ tempPassword: string }>(`/team/${id}/reset-password`)).data,
+    onError: teamError,
+  });
+
+export const useDeleteTeamMember = (options?: MutationOptions) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async (id: string) => {
+      await api.delete(`/team/${id}`);
+    },
+    onError: teamError,
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: ['professionals'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
+    },
+  });
+};

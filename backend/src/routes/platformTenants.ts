@@ -1,7 +1,6 @@
 import express from 'express';
 import { zodResponse } from '../lib/validation';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import prisma from '../prismaClient';
@@ -23,13 +22,7 @@ function slugify(input: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-/** Contraseña temporal legible (evita caracteres ambiguos como 0/O, 1/l/I). */
-function generateTempPassword(): string {
-  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
-  return Array.from(crypto.randomBytes(12))
-    .map((byte) => alphabet[byte % alphabet.length])
-    .join('');
-}
+import { generateTempPassword } from '../lib/tempPassword';
 
 const router = express.Router();
 

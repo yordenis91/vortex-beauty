@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   useProfessionals,
   useCreateProfessional,
@@ -39,8 +40,6 @@ const emptyForm = {
   acceptsOnlineBookings: true,
   schedule: [] as ScheduleBlock[],
   serviceIds: [] as string[],
-  accountEmail: '',
-  accountPassword: '',
 };
 
 function TimeOffPanel({ professionalId }: { professionalId: string }) {
@@ -140,8 +139,6 @@ const Professionals: React.FC = () => {
       acceptsOnlineBookings: p.acceptsOnlineBookings,
       schedule: (p.schedules ?? []).map(({ dayOfWeek, startTime, endTime }) => ({ dayOfWeek, startTime, endTime })),
       serviceIds: p.serviceIds ?? [],
-      accountEmail: '',
-      accountPassword: '',
     });
     setShowModal(true);
   };
@@ -167,9 +164,6 @@ const Professionals: React.FC = () => {
     acceptsOnlineBookings: formData.acceptsOnlineBookings,
     schedule: formData.schedule,
     serviceIds: formData.serviceIds,
-    ...(formData.accountEmail && formData.accountPassword
-      ? { account: { email: formData.accountEmail, password: formData.accountPassword } }
-      : {}),
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -364,16 +358,13 @@ const Professionals: React.FC = () => {
             </div>
 
             {isOwner && !editing?.user && (
-              <div className="rounded-lg border border-border p-3 space-y-2">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <KeyRound className="h-4 w-4" /> Acceso al panel (opcional)
-                </h4>
-                <p className="text-xs text-muted-foreground">Con una cuenta, {the('professional')} inicia sesión y ve solo su propia agenda.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input type="email" placeholder="Correo de acceso" className={inputClass} value={formData.accountEmail} onChange={(e) => setFormData({ ...formData, accountEmail: e.target.value })} />
-                  <input type="password" placeholder="Contraseña (mín. 8)" minLength={8} className={inputClass} value={formData.accountPassword} onChange={(e) => setFormData({ ...formData, accountPassword: e.target.value })} />
-                </div>
-              </div>
+              <p className="rounded-lg border border-border p-3 text-xs text-muted-foreground flex items-start gap-2">
+                <KeyRound className="h-4 w-4 shrink-0" />
+                <span>
+                  Para que {the('professional')} inicie sesión y vea su propia agenda, guarda su ficha y crea su acceso en{' '}
+                  <Link to="/admin/team" className="underline text-foreground">Equipo</Link>.
+                </span>
+              </p>
             )}
 
             {editing && <TimeOffPanel professionalId={editing.id} />}

@@ -20,6 +20,7 @@ import settingsRoutes from './routes/settings';
 import galleryRoutes from './routes/gallery';
 import closedDatesRoutes from './routes/closedDates';
 import professionalRoutes from './routes/professionals';
+import teamRoutes from './routes/team';
 import resourceRoutes from './routes/resources';
 import platformAuthRoutes from './routes/platformAuth';
 import platformTenantsRoutes from './routes/platformTenants';
@@ -125,6 +126,7 @@ app.use('/api/closed-dates', closedDatesRoutes);
 
 // Professionals routes
 app.use('/api/professionals', professionalRoutes);
+app.use('/api/team', teamRoutes);
 
 // Portal de plataforma (Super Admin): namespace separado de las rutas de
 // tenant de arriba, con su propio sistema de auth (ver middleware/platformAuth).
