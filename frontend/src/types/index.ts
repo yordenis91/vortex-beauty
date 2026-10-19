@@ -144,6 +144,23 @@ export interface Professional {
   updatedAt: string;
 }
 
+export interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: 'OWNER' | 'ADMIN' | 'STAFF';
+  isActive: boolean;
+  createdAt: string;
+  professional: { id: string; name: string } | null;
+}
+
+export interface CreateTeamMemberRequest {
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'STAFF';
+  professionalId?: string;
+}
+
 export interface CreateProfessionalRequest {
   name: string;
   email?: string;

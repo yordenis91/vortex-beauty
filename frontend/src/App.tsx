@@ -34,6 +34,7 @@ const Categories = lazy(() => import('./pages/Categories'));
 const Appointments = lazy(() => import('./pages/Appointments'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const MyProfile = lazy(() => import('./pages/MyProfile'));
+const Team = lazy(() => import('./pages/Team'));
 const DesignSystem = lazy(() => import('./pages/DesignSystem'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Billing = lazy(() => import('./pages/Billing'));
@@ -191,6 +192,7 @@ function App() {
               <Route path="gallery" element={<ManagerRoute><AdminGallery /></ManagerRoute>} />
               <Route path="notifications" element={<ManagerRoute><Notifications /></ManagerRoute>} />
               <Route path="profile" element={<MyProfile />} />
+              <Route path="team" element={<ManagerRoute ownerOnly><Team /></ManagerRoute>} />
               <Route path="billing" element={<ManagerRoute ownerOnly><Billing /></ManagerRoute>} />
               <Route path="settings" element={<ManagerRoute><Settings /></ManagerRoute>} />
             </Route>
