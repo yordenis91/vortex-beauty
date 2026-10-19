@@ -146,6 +146,7 @@ Cada salón usa su propio bot (token de @BotFather) que pega en Ajustes → Rese
 - El cliente enlaza su chat desde la confirmación de su reserva (botón «Recibir avisos por Telegram»); desde entonces los avisos le llegan por Telegram y, si bloquea el bot, vuelven al correo.
 - El dueño recibe los avisos del salón enviando `/vincular <código>` al bot (el código aparece en Ajustes y se renueva al usarse).
 - Comandos del bot para clientes: `/citas` (próximas citas), `/historial` (últimos 5 trabajos completados) y `/parar` (dejar de recibir avisos).
+- **Avisos al profesional:** cada profesional con cuenta enlaza su Telegram desde Mi perfil: abre el bot del salón y envía `/vincular <código>` (el código es de un solo uso). Desde entonces recibe solo el aviso de sus citas nuevas y canceladas; `/parar` o «Desvincular» en Mi perfil lo corta. Si el dueño es también el chat enlazado, no recibe el aviso duplicado. Desconectar el bot del salón desvincula a todos.
 
 ## Respaldos automáticos
 

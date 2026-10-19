@@ -80,3 +80,13 @@ export function ownerAlert(kind: 'created' | 'cancelled', ctx: MessageContext, s
     ...(kind === 'created' ? [`Origen: ${source}`] : []),
   ].join('\n');
 }
+
+/** Aviso corto para el profesional: solo lo que le toca a él. */
+export function professionalAlert(kind: 'created' | 'cancelled', ctx: MessageContext): string {
+  const when = formatLocalDateTime(ctx.timezone, ctx.startsAt);
+  return [
+    `${kind === 'created' ? `Nueva ${ctx.appointmentWord} para ti` : `${cap(ctx.appointmentWord)} cancelada`} · ${ctx.salonName}`,
+    `${ctx.customerName} — ${ctx.serviceName}`,
+    when,
+  ].join('\n');
+}

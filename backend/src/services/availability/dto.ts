@@ -1,6 +1,12 @@
 import { instantToLocal } from '../../lib/time';
 
-export const appointmentInclude = { client: true, service: true, professional: true, resource: true } as const;
+// El enlace de Telegram del profesional es privado: no viaja con las citas.
+export const appointmentInclude = {
+  client: true,
+  service: true,
+  professional: { omit: { telegramChatId: true, telegramLinkCode: true } },
+  resource: true,
+} as const;
 
 /**
  * Añade a la cita los campos de hora local que usa la interfaz (`date`,
