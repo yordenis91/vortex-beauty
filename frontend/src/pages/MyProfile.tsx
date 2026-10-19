@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, LogOut, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
+import MyTelegramCard from '../components/MyTelegramCard';
 import api from '../lib/api';
 import { setAccessToken } from '../lib/session';
 import { getErrorMessage, useBookingSettings, useUpdateClientProfile } from '../hooks/useQueries';
@@ -130,6 +131,8 @@ const MyProfile: React.FC = () => {
           </button>
         </form>
       </section>
+
+      <MyTelegramCard />
 
       <button onClick={handleLogout} className="inline-flex items-center px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground bg-card hover:bg-muted">
         <LogOut className="h-4 w-4 mr-2" /> Cerrar sesión

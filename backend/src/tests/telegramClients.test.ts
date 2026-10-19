@@ -90,7 +90,10 @@ describeIfDb('Telegram para clientes', () => {
       const category = await prisma.category.create({ data: { name: 'Cortes', tenantId } });
       const service = await prisma.service.create({ data: { name: 'Corte', price: 15, durationMinutes: 30, categoryId: category.id, userId: owner.id, tenantId } });
       serviceId = service.id;
-      const pro = await prisma.professional.create({ data: { name: 'Carlos', tenantId } });
+      const staffUser = await prisma.user.create({
+        data: { email: 'carlos@tg.com', password: await bcrypt.hash('clave-larga-1', 4), name: 'Carlos', role: 'STAFF', tenantId },
+      });
+      const pro = await prisma.professional.create({ data: { name: 'Carlos', tenantId, userId: staffUser.id } });
       await prisma.professionalService.create({ data: { tenantId, professionalId: pro.id, serviceId } });
       await prisma.businessHour.create({ data: { dayOfWeek: 1, startTime: '09:00', endTime: '18:00', tenantId } });
       await prisma.professionalSchedule.create({ data: { tenantId, professionalId: pro.id, dayOfWeek: 1, startTime: '09:00', endTime: '18:00' } });
@@ -246,6 +249,89 @@ describeIfDb('Telegram para clientes', () => {
     await hook('/historial', 4848);
     await settle();
     expect(sent[0].text).toContain('Aún no tienes trabajos');
+  });
+
+  describe('avisos al profesional', () => {
+    const asStaff = async () => {
+      const login = await request(app).post('/api/auth/login').set('X-Requested-With', 'XMLHttpRequest').send({ tenantSlug: slug, email: 'carlos@tg.com', password: 'clave-larga-1' });
+      return { Authorization: `Bearer ${login.body.token}` };
+    };
+    const link = async (headers: Record<string, string>) => (await request(app).get('/api/professionals/me/telegram').set(headers)).body as { hasProfessional: boolean; botUsername: string | null; linked: boolean; code: string | null };
+
+    it('el profesional ve su código, lo enlaza con /vincular y el código no se puede reutilizar', async () => {
+      const headers = await asStaff();
+      const before = await link(headers);
+      expect(before).toMatchObject({ hasProfessional: true, botUsername: 'barberia_test_bot', linked: false });
+      expect(before.code).toMatch(/^[0-9A-F]{8}$/);
+      expect((await link(headers)).code).toBe(before.code); // estable hasta que se use
+
+      await hook(`/vincular ${before.code!.toLowerCase()}`, 6001);
+      await settle();
+      expect(sent[0].text).toContain('Carlos');
+      expect(sent[0].text).toContain('avisos de tus citas');
+
+      expect(await link(headers)).toMatchObject({ linked: true, code: null });
+      sent.length = 0;
+      await hook(`/vincular ${before.code}`, 6002);
+      await settle();
+      expect(sent[0].text).toContain('Código inválido');
+    });
+
+    it('recibe solo el aviso de sus citas nuevas y canceladas, sin precios ni origen', async () => {
+      const booking = await book();
+      sent.length = 0;
+      await notifier.processConfirmed(tenantId, booking.id);
+      const created = sent.find((m) => m.chatId === '6001')!;
+      expect(created.text).toContain('Nueva cita para ti');
+      expect(created.text).toContain('Marta');
+      expect(created.text).not.toContain('Origen');
+
+      await ctx.runAsAdmin(() => prisma.appointment.update({ where: { id: booking.id }, data: { status: 'CANCELLED', cancelledBy: 'CUSTOMER', cancelledAt: new Date() } }));
+      sent.length = 0;
+      await notifier.processCancelled(tenantId, booking.id, 'CUSTOMER');
+      expect(sent.find((m) => m.chatId === '6001')!.text).toContain('cancelada');
+      // reintentar el mismo trabajo no repite el aviso
+      sent.length = 0;
+      await notifier.processCancelled(tenantId, booking.id, 'CUSTOMER');
+      expect(sent.filter((m) => m.chatId === '6001')).toHaveLength(0);
+    });
+
+    it('el enlace de Telegram no se filtra por la lista de profesionales ni por las citas', async () => {
+      const headers = await asStaff();
+      const pros = await request(app).get('/api/professionals').set('Authorization', `Bearer ${ownerToken}`);
+      expect(JSON.stringify(pros.body)).not.toMatch(/telegramChatId|telegramLinkCode|6001/);
+      const day = mondayAfter(0, 0);
+      const apts = await request(app).get('/api/appointments').query({ from: `${day}T00:00:00.000Z`, to: `${mondayAfter(0, 40)}T00:00:00.000Z` }).set(headers);
+      expect(apts.status).toBe(200);
+      expect(apts.body.length).toBeGreaterThan(0);
+      expect(apts.body[0].professional).toBeTruthy();
+      expect(JSON.stringify(apts.body)).not.toMatch(/telegramLinkCode|"telegramChatId":"6001"/);
+    });
+
+    it('/parar o desvincular desde Mi perfil corta los avisos', async () => {
+      const headers = await asStaff();
+      await hook('/parar', 6001);
+      await settle();
+      expect((await link(headers)).linked).toBe(false);
+
+      // vuelve a enlazar y desvincula desde la API
+      const { code } = await link(headers);
+      await hook(`/vincular ${code}`, 6001);
+      await settle();
+      expect((await link(headers)).linked).toBe(true);
+      expect((await request(app).delete('/api/professionals/me/telegram').set(headers)).status).toBe(200);
+      expect((await link(headers)).linked).toBe(false);
+
+      const booking = await book();
+      sent.length = 0;
+      await notifier.processConfirmed(tenantId, booking.id);
+      expect(sent.filter((m) => m.chatId === '6001')).toHaveLength(0);
+    });
+
+    it('un usuario sin ficha de profesional (el dueño) no tiene enlace propio', async () => {
+      const res = await request(app).get('/api/professionals/me/telegram').set('Authorization', `Bearer ${ownerToken}`);
+      expect(res.body).toMatchObject({ hasProfessional: false, linked: false, code: null });
+    });
   });
 
   it('el dueño enlaza su chat con /vincular <código>, que solo sirve una vez', async () => {

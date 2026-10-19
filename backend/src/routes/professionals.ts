@@ -10,6 +10,7 @@ import { validateBody } from '../middleware/validate';
 import { timeToMinutes } from '../lib/time';
 import { assertPlanAllows, PlanLimitError } from '../services/planLimits';
 import { revokeAllSessions } from '../services/sessions';
+import { newLinkCode } from '../services/telegramBot';
 
 const router = Router();
 
@@ -49,8 +50,9 @@ const professionalInclude = {
   user: { select: { id: true, email: true } },
 } satisfies Prisma.ProfessionalInclude;
 
-function present<T extends { services: Array<{ serviceId: string }> }>(professional: T) {
-  const { services, ...rest } = professional;
+function present<T extends { services: Array<{ serviceId: string }>; telegramChatId?: string | null; telegramLinkCode?: string | null }>(professional: T) {
+  // El enlace de Telegram es privado de cada profesional (ver /me/telegram).
+  const { services, telegramChatId: _chat, telegramLinkCode: _code, ...rest } = professional;
   return { ...rest, serviceIds: services.map((s) => s.serviceId) };
 }
 
@@ -80,6 +82,42 @@ router.get('/', requirePermission('appointments:own'), async (req, res) => {
   } catch (error) {
     console.error('Error fetching professionals:', error);
     res.status(500).json({ error: 'Failed to fetch professionals' });
+  }
+});
+
+// GET /api/professionals/me/telegram — estado del enlace de Telegram del profesional que inició sesión.
+// Debe ir antes de /:id. Con el bot activo y sin enlazar, devuelve (y crea si falta) su código de un solo uso.
+router.get('/me/telegram', requirePermission('appointments:own'), async (req, res) => {
+  try {
+    const { tenantId, userId } = req.user!;
+    const [professional, settings] = await Promise.all([
+      prisma.professional.findFirst({ where: { tenantId, userId }, select: { id: true, telegramChatId: true, telegramLinkCode: true } }),
+      prisma.tenantSettings.findUnique({ where: { tenantId }, select: { telegramBotToken: true, telegramBotUsername: true } }),
+    ]);
+    if (!professional) return res.json({ hasProfessional: false, botUsername: null, linked: false, code: null });
+    const botUsername = settings?.telegramBotToken ? settings.telegramBotUsername ?? null : null;
+    const linked = !!professional.telegramChatId;
+    let code: string | null = null;
+    if (botUsername && !linked) {
+      code = professional.telegramLinkCode ?? newLinkCode();
+      if (!professional.telegramLinkCode) await prisma.professional.update({ where: { id: professional.id }, data: { telegramLinkCode: code } });
+    }
+    res.json({ hasProfessional: true, botUsername, linked, code });
+  } catch (error) {
+    console.error('Error fetching professional telegram link:', error);
+    res.status(500).json({ error: 'Failed to fetch telegram link' });
+  }
+});
+
+// DELETE /api/professionals/me/telegram — desvincula el chat (y invalida cualquier código pendiente).
+router.delete('/me/telegram', requirePermission('appointments:own'), async (req, res) => {
+  try {
+    const { tenantId, userId } = req.user!;
+    await prisma.professional.updateMany({ where: { tenantId, userId }, data: { telegramChatId: null, telegramLinkCode: null } });
+    res.json({ message: 'Telegram desvinculado' });
+  } catch (error) {
+    console.error('Error unlinking professional telegram:', error);
+    res.status(500).json({ error: 'Failed to unlink telegram' });
   }
 });
 

@@ -792,3 +792,22 @@ export const useUpdateBookingSettings = (options?: MutationOptions) =>
     [['booking-settings']],
     options
   );
+
+// Avisos de Telegram del profesional que inició sesión
+export interface MyTelegramLink {
+  hasProfessional: boolean;
+  botUsername: string | null;
+  linked: boolean;
+  code: string | null;
+}
+
+export const useMyTelegramLink = () =>
+  useQuery({
+    queryKey: ['my-telegram-link'],
+    queryFn: async () => (await api.get<MyTelegramLink>('/professionals/me/telegram')).data,
+    // Mientras espera el enlace, se vuelve a consultar para pasar a «vinculado» sin recargar
+    refetchInterval: (query) => (query.state.data && query.state.data.code ? 5000 : false),
+  });
+
+export const useUnlinkMyTelegram = (options?: MutationOptions) =>
+  useResourceMutation(async () => (await api.delete('/professionals/me/telegram')).data, [['my-telegram-link']], options);

@@ -9,6 +9,7 @@ import {
   confirmedMessage,
   MessageContext,
   ownerAlert,
+  professionalAlert,
   reminderMessage,
 } from './templates';
 
@@ -132,6 +133,22 @@ async function alertOwner(tenantId: string, data: Loaded, kind: 'created' | 'can
   return outcomes.includes('retry') ? 'retry' : 'done';
 }
 
+/** Avisa por Telegram al profesional dueño de la cita, si enlazó su chat. Nunca se repite con el chat del dueño. */
+async function alertProfessional(tenantId: string, data: Loaded, kind: 'created' | 'cancelled', keyBase: string): Promise<'done' | 'retry'> {
+  const chat = data.appointment.professional?.telegramChatId;
+  const { telegramBotToken, telegramChatId: ownerChat } = data.settings;
+  if (!chat || !telegramBotToken || (data.settings.ownerAlerts && chat === ownerChat)) return 'done';
+  const text = professionalAlert(kind, data.ctx);
+  return deliver({
+    tenantId,
+    channel: 'TELEGRAM',
+    recipient: chat,
+    content: text,
+    dedupeKey: `${keyBase}:pro:telegram`,
+    send: () => sendTelegram(telegramBotToken, chat, text),
+  });
+}
+
 async function sendToCustomer(tenantId: string, data: Loaded, keyBase: string, message: { subject: string; text: string; html: string }): Promise<'done' | 'retry'> {
   const { client } = data.appointment;
   const { telegramBotToken } = data.settings;
@@ -180,7 +197,8 @@ export async function processConfirmed(tenantId: string, appointmentId: string):
     const key = `confirmed:${appointmentId}:${data.appointment.startsAt.getTime()}`;
     const customer = await sendToCustomer(tenantId, data, key, confirmedMessage(data.ctx));
     const owner = await alertOwner(tenantId, data, 'created', key, data.appointment.source);
-    return customer === 'retry' || owner === 'retry' ? 'retry' : 'done';
+    const pro = await alertProfessional(tenantId, data, 'created', key);
+    return [customer, owner, pro].includes('retry') ? 'retry' : 'done';
   });
 }
 
@@ -204,6 +222,7 @@ export async function processCancelled(tenantId: string, appointmentId: string, 
     // Si cancela el propio cliente, solo se avisa al dueño; si cancela el salón, también al cliente.
     const customer = by === 'CUSTOMER' ? 'done' : await sendToCustomer(tenantId, data, key, cancelledMessage(data.ctx, by));
     const owner = await alertOwner(tenantId, data, 'cancelled', key, data.appointment.source);
-    return customer === 'retry' || owner === 'retry' ? 'retry' : 'done';
+    const pro = await alertProfessional(tenantId, data, 'cancelled', key);
+    return [customer, owner, pro].includes('retry') ? 'retry' : 'done';
   });
 }

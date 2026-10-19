@@ -297,6 +297,11 @@ model Professional {
   userId String? @unique
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  // Avisos de sus propias citas por el bot del salón. Nunca se devuelven por la API:
+  // el profesional los gestiona en GET/DELETE /api/professionals/me/telegram.
+  telegramChatId   String?
+  telegramLinkCode String?
+
   appointments Appointment[]
   services     ProfessionalService[]
   schedules    ProfessionalSchedule[]

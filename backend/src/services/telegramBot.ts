@@ -11,6 +11,8 @@ import { formatLocalDateTime } from '../lib/time';
  *   su token secreto de la cita como parámetro de /start). El bot enlaza ese chat
  *   con su ficha de cliente y desde entonces los avisos salen por Telegram.
  * - Dueño: envía /vincular <código> al bot para recibir los avisos del salón.
+ * - Profesional: envía /vincular <su código> (lo ve en Mi perfil) para recibir los avisos
+ *   solo de sus propias citas.
  * Funciona con webhook: Telegram llama a /api/telegram/webhook/:tenantId con una
  * cabecera secreta distinta por salón.
  */
@@ -19,6 +21,7 @@ export const WEBHOOK_SECRET_HEADER = 'x-telegram-bot-api-secret-token';
 
 const newSecret = () => crypto.randomBytes(24).toString('hex');
 const newOwnerCode = () => crypto.randomBytes(4).toString('hex').toUpperCase();
+export const newLinkCode = newOwnerCode;
 
 export const safeEqual = (a: string, b: string) => {
   const x = Buffer.from(a);
@@ -65,6 +68,7 @@ export async function disconnectBot(tenantId: string, token: string | null): Pro
     data: { telegramBotToken: null, telegramBotUsername: null, telegramWebhookSecret: null, telegramOwnerCode: null, telegramChatId: null },
   });
   await prisma.client.updateMany({ where: { tenantId, telegramChatId: { not: null } }, data: { telegramChatId: null } });
+  await prisma.professional.updateMany({ where: { tenantId }, data: { telegramChatId: null, telegramLinkCode: null } });
 }
 
 /** Base pública del API: `API_PUBLIC_URL` si existe, si no la de la petición actual. */
@@ -99,12 +103,20 @@ export async function handleUpdate(tenantId: string, update: Update): Promise<vo
   const cmd = command.toLowerCase().replace(/@\w+$/, '');
 
   if (cmd === '/vincular') {
-    if (settings.telegramOwnerCode && arg && safeEqual(arg.toUpperCase(), settings.telegramOwnerCode)) {
+    const code = arg?.toUpperCase();
+    if (code && settings.telegramOwnerCode && safeEqual(code, settings.telegramOwnerCode)) {
       await prisma.tenantSettings.update({ where: { tenantId }, data: { telegramChatId: chat, telegramOwnerCode: newOwnerCode() } });
       await reply('✅ Listo: recibirás aquí los avisos de reservas de tu salón.');
-    } else {
-      await reply('Código inválido. Cópialo de Ajustes → Telegram en tu panel.');
+      return;
     }
+    // Código de un profesional (Mi perfil): enlaza este chat solo a sus citas. Es de un solo uso.
+    const professional = code ? await prisma.professional.findFirst({ where: { tenantId, telegramLinkCode: code }, select: { id: true, name: true } }) : null;
+    if (professional) {
+      await prisma.professional.update({ where: { id: professional.id }, data: { telegramChatId: chat, telegramLinkCode: null } });
+      await reply(`✅ Listo, ${professional.name}: recibirás aquí los avisos de tus citas (nuevas y canceladas). /parar para dejar de recibirlos.`);
+      return;
+    }
+    await reply('Código inválido. Cópialo de tu panel: el dueño en Ajustes → Telegram, un profesional en Mi perfil.');
     return;
   }
 
@@ -129,7 +141,8 @@ export async function handleUpdate(tenantId: string, update: Update): Promise<vo
 
   if (cmd === '/parar' || cmd === '/stop') {
     const { count } = await prisma.client.updateMany({ where: { tenantId, telegramChatId: chat }, data: { telegramChatId: null } });
-    await reply(count ? 'Listo, no te enviaremos más avisos por aquí.' : 'No tenías avisos activados.');
+    const pros = await prisma.professional.updateMany({ where: { tenantId, telegramChatId: chat }, data: { telegramChatId: null } });
+    await reply(count || pros.count ? 'Listo, no te enviaremos más avisos por aquí.' : 'No tenías avisos activados.');
     return;
   }
 
