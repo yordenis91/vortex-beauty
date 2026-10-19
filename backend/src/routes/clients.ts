@@ -7,13 +7,20 @@ import prisma from '../prismaClient';
 import { imageSchema } from '../lib/images';
 import { runInTransaction } from '../lib/db';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
-import { requirePermission } from '../middleware/can';
+import { appointmentScope, requirePermission } from '../middleware/can';
 
 const router = express.Router();
 
-// Lectura: cualquier usuario del panel (un STAFF necesita ver clientes para agendar).
-// Escritura: dueño y administradores.
+// Lectura: dueño y administradores ven todos los clientes; un STAFF solo los que
+// tienen o tuvieron citas con él (ver clientScope). Escritura: dueño y administradores.
 router.use(authenticateToken);
+
+/** Filtro de clientes visibles: sin filtro para quien ve toda la agenda; para un STAFF, los de sus citas. */
+async function clientScope(req: express.Request): Promise<Prisma.ClientWhereInput | null> {
+  const scope = await appointmentScope(req);
+  if (scope.none) return null;
+  return scope.professionalId ? { appointments: { some: { professionalId: scope.professionalId } } } : {};
+}
 
 const clientSchema = z.object({
   name: z.string().min(1),
@@ -41,9 +48,12 @@ const updateClientSchema = clientSchema.partial();
 router.get('/', requirePermission('customers:read'), async (req, res) => {
   try {
     const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 80) : '';
+    const visible = await clientScope(req);
+    if (!visible) return res.json([]);
     const clients = await prisma.client.findMany({
       where: {
         tenantId: req.user!.tenantId,
+        ...visible,
         ...(search
           ? { OR: [{ name: { contains: search, mode: 'insensitive' as const } }, { email: { contains: search, mode: 'insensitive' as const } }, { phone: { contains: search } }] }
           : {}),
@@ -60,8 +70,10 @@ router.get('/', requirePermission('customers:read'), async (req, res) => {
 // GET /api/clients/:id - Get single client
 router.get('/:id', requirePermission('customers:read'), async (req, res) => {
   try {
+    const visible = await clientScope(req);
+    if (!visible) return res.status(404).json({ error: 'Client not found' });
     const client = await prisma.client.findFirst({
-      where: { id: req.params.id as string, tenantId: req.user!.tenantId },
+      where: { id: req.params.id as string, tenantId: req.user!.tenantId, ...visible },
           });
 
     if (!client) {

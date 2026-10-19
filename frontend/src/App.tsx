@@ -189,7 +189,7 @@ function App() {
               <Route path="services" element={<ManagerRoute><Services /></ManagerRoute>} />
               <Route path="categories" element={<ManagerRoute><Categories /></ManagerRoute>} />
               <Route path="gallery" element={<ManagerRoute><AdminGallery /></ManagerRoute>} />
-              <Route path="notifications" element={<Notifications />} />
+              <Route path="notifications" element={<ManagerRoute><Notifications /></ManagerRoute>} />
               <Route path="profile" element={<MyProfile />} />
               <Route path="billing" element={<ManagerRoute ownerOnly><Billing /></ManagerRoute>} />
               <Route path="settings" element={<ManagerRoute><Settings /></ManagerRoute>} />

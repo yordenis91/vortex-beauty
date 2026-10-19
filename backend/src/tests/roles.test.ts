@@ -129,6 +129,22 @@ describeIfDb('roles, permisos y límites del plan', () => {
     expect((await request(app).delete(`/api/appointments/${forced.body.id}`).set(as('staff'))).status).toBe(403);
   });
 
+  it('el STAFF solo ve los clientes de sus citas; el dueño ve todos', async () => {
+    // tras la prueba anterior, "Cli" tiene una cita con el profesional del STAFF; "Sin citas" no
+    const other = await request(app).post('/api/clients').set(as('owner')).send({ name: 'Sin citas', email: 'sin@t.com' });
+    expect(other.status).toBe(201);
+
+    const staffList = await request(app).get('/api/clients').set(as('staff'));
+    expect(staffList.body.map((c: any) => c.email)).toEqual(['cli@t.com']);
+    const ownerList = await request(app).get('/api/clients').set(as('owner'));
+    expect(ownerList.body.map((c: any) => c.email).sort()).toEqual(['cli@t.com', 'sin@t.com']);
+
+    expect((await request(app).get(`/api/clients/${clientId}`).set(as('staff'))).status).toBe(200);
+    expect((await request(app).get(`/api/clients/${other.body.id}`).set(as('staff'))).status).toBe(404);
+    // buscar por teléfono o correo tampoco destapa a los demás
+    expect((await request(app).get('/api/clients').query({ search: 'sin@t' }).set(as('staff'))).body).toEqual([]);
+  });
+
   it('el plan limita las citas del mes (402)', async () => {
     // Ya hay 2 citas creadas este mes y el plan permite 2.
     const res = await request(app)

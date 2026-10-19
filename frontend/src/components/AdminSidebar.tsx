@@ -57,7 +57,7 @@ const buildNavigation = (label: (key: string, capitalize?: boolean) => string): 
   { name: 'Recursos', href: '/admin/resources', icon: DoorOpen, access: 'manager' },
   { name: 'Galería', href: '/admin/gallery', icon: Sparkles, access: 'manager' },
   { section: 'Operaciones', highlight: true },
-  { name: 'Notificaciones', href: '/admin/notifications', icon: Bell },
+  { name: 'Notificaciones', href: '/admin/notifications', icon: Bell, access: 'manager' },
   { name: 'Facturación', href: '/admin/billing', icon: CreditCard, access: 'owner' },
   { name: 'Configuraciones', href: '/admin/settings', icon: SettingsIcon, access: 'manager' },
 ];
