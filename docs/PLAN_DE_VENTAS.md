@@ -23,6 +23,8 @@ de borrarla.
 - [x] Staff ve solo su agenda y sus clientes
 - [x] Pantalla Equipo: el dueño crea, restablece, desactiva y elimina cuentas
 - [x] Demo limpia: `barberia-demo` y `manicura-demo` (2026-10-20)
+- [x] Reserva por cupos: profesionales que atienden una cantidad fija por día, a horas exactas (en rama, pendiente de desplegar)
+- [x] Primer salón piloto creado: Yumi Manicure (`yumi-manicure`)
 
 ## 3. Pendiente por tu parte
 - [ ] Ejecutar el checklist de pruebas con `@afilao_bot` (Telegram del dueño, del
@@ -62,3 +64,4 @@ de borrarla.
 |---|---|
 | 2026-10-20 | Documento creado a partir de lo hecho hasta la pantalla Equipo |
 | 2026-10-21 | Logo y color del salón en correos y cartel QR (imagen PNG o impresión) |
+| 2026-10-21 | Reserva por cupos: cada profesional reserva por hora o por cupos (horas exactas por día de la semana, un cliente por cupo). Salón piloto Yumi Manicure creado |

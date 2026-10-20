@@ -72,24 +72,25 @@ model Tenant {
   timezone String       @default("UTC")
   status   TenantStatus @default(ACTIVE)
 
-  users                 User[]
-  clients               Client[]
-  services              Service[]
-  categories            Category[]
-  professionals         Professional[]
-  professionalServices  ProfessionalService[]
-  professionalSchedules ProfessionalSchedule[]
-  timeOffs              TimeOff[]
-  resources             Resource[]
-  serviceResources      ServiceResource[]
-  locations             Location[]
-  settings              TenantSettings?
-  appointments          Appointment[]
-  businessHours         BusinessHour[]
-  closedDates           ClosedDate[]
-  scheduleOverrides     ScheduleOverride[]
-  notifications         Notification[]
-  galleryItems          GalleryItem[]
+  users                  User[]
+  clients                Client[]
+  services               Service[]
+  categories             Category[]
+  professionals          Professional[]
+  professionalServices   ProfessionalService[]
+  professionalSchedules  ProfessionalSchedule[]
+  professionalQuotaSlots ProfessionalQuotaSlot[]
+  timeOffs               TimeOff[]
+  resources              Resource[]
+  serviceResources       ServiceResource[]
+  locations              Location[]
+  settings               TenantSettings?
+  appointments           Appointment[]
+  businessHours          BusinessHour[]
+  closedDates            ClosedDate[]
+  scheduleOverrides      ScheduleOverride[]
+  notifications          Notification[]
+  galleryItems           GalleryItem[]
 
   // Suscripción de este salón a un Plan de la plataforma (lo que el SaaS le
   // cobra al salón), y sus facturas de plataforma.
@@ -289,6 +290,10 @@ model Professional {
   // Si es false, solo se le asignan citas desde el panel (no desde la reserva pública).
   acceptsOnlineBookings Boolean @default(true)
 
+  // TIMED: reserva por hora según su horario. QUOTA: atiende una cantidad fija de
+  // clientes por día, a las horas exactas de sus cupos (ProfessionalQuotaSlot).
+  bookingMode BookingMode @default(TIMED)
+
   // Salón al que pertenece este profesional.
   tenantId String
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -305,6 +310,7 @@ model Professional {
   appointments Appointment[]
   services     ProfessionalService[]
   schedules    ProfessionalSchedule[]
+  quotaSlots   ProfessionalQuotaSlot[]
   timeOffs     TimeOff[]
 
   createdAt DateTime @default(now())
@@ -342,6 +348,21 @@ model ProfessionalSchedule {
 
   @@index([tenantId])
   @@index([professionalId, dayOfWeek])
+}
+
+// Cupo de un profesional que reserva por cupos: una hora exacta de un día de la
+// semana en la que atiende a un solo cliente.
+model ProfessionalQuotaSlot {
+  id             String       @id @default(uuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  dayOfWeek      Int // 0 = Domingo ... 6 = Sábado
+  time           String // "HH:mm"
+
+  @@unique([professionalId, dayOfWeek, time])
+  @@index([tenantId])
 }
 
 // Ausencia de un profesional (vacaciones, enfermedad, descanso).
@@ -600,6 +621,11 @@ enum BillingCycle {
   QUARTERLY
   SEMI_ANNUAL
   YEARLY
+}
+
+enum BookingMode {
+  TIMED
+  QUOTA
 }
 
 enum ServiceStatus {

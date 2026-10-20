@@ -7,7 +7,8 @@ import { runInTransaction } from '../lib/db';
 import { authenticateToken } from '../middleware/auth';
 import { hasPermission, requirePermission } from '../middleware/can';
 import { validateBody } from '../middleware/validate';
-import { timeToMinutes } from '../lib/time';
+import { dayOfWeekFromDateString, instantToLocal, timeToMinutes } from '../lib/time';
+import { getTenantTimezone } from '../lib/tenantInfo';
 import { assertPlanAllows, PlanLimitError } from '../services/planLimits';
 import { revokeAllSessions } from '../services/sessions';
 import { newLinkCode } from '../services/telegramBot';
@@ -26,6 +27,11 @@ const scheduleItem = z
   })
   .refine((s) => timeToMinutes(s.startTime) < timeToMinutes(s.endTime), 'La hora de fin debe ser posterior a la de inicio');
 
+const quotaSlotItem = z.object({
+  dayOfWeek: z.number().int().min(0).max(6),
+  time: z.string().regex(timeRegex),
+});
+
 const professionalBody = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
   email: z.string().email().optional().or(z.literal('')),
@@ -33,6 +39,9 @@ const professionalBody = z.object({
   color: z.string().optional(),
   isActive: z.boolean().optional(),
   acceptsOnlineBookings: z.boolean().optional(),
+  // Por hora (según su horario) o por cupos (horas exactas por día de la semana).
+  bookingMode: z.enum(['TIMED', 'QUOTA']).optional(),
+  quotaSlots: z.array(quotaSlotItem).optional(),
   // Horario semanal. Si se omite al crear, copia el horario comercial del salón.
   schedule: z.array(scheduleItem).optional(),
   // Servicios que realiza. Si se omite al crear, realiza todos los servicios activos.
@@ -46,6 +55,7 @@ const updateProfessionalSchema = professionalBody.partial();
 
 const professionalInclude = {
   schedules: { orderBy: [{ dayOfWeek: 'asc' as const }, { startTime: 'asc' as const }] },
+  quotaSlots: { orderBy: [{ dayOfWeek: 'asc' as const }, { time: 'asc' as const }], select: { dayOfWeek: true, time: true } },
   services: { select: { serviceId: true } },
   user: { select: { id: true, email: true } },
 } satisfies Prisma.ProfessionalInclude;
@@ -70,6 +80,55 @@ async function replaceSchedule(tx: Prisma.TransactionClient, tenantId: string, p
   if (schedule.length) {
     await tx.professionalSchedule.createMany({ data: schedule.map((s) => ({ ...s, tenantId, professionalId })) });
   }
+}
+
+/**
+ * Reemplaza los cupos del profesional. No deja quitar un cupo que tiene una cita
+ * futura activa: esa cita quedaría en una hora que ya no existe.
+ */
+async function replaceQuotaSlots(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  professionalId: string,
+  quotaSlots: z.infer<typeof quotaSlotItem>[]
+) {
+  const key = (q: { dayOfWeek: number; time: string }) => `${q.dayOfWeek}|${q.time}`;
+  const wanted = new Set(quotaSlots.map(key));
+  if (wanted.size !== quotaSlots.length) throw new Error('DUPLICATE_QUOTA');
+
+  const current = await tx.professionalQuotaSlot.findMany({ where: { professionalId } });
+  const removed = current.filter((q) => !wanted.has(key(q)));
+  if (removed.length) {
+    const timezone = await getTenantTimezone(tenantId);
+    const upcoming = await tx.appointment.findMany({
+      where: { professionalId, tenantId, status: { in: ['SCHEDULED', 'PENDING'] }, startsAt: { gte: new Date() } },
+      select: { startsAt: true },
+    });
+    const removedKeys = new Set(removed.map(key));
+    for (const a of upcoming) {
+      const local = instantToLocal(timezone, a.startsAt);
+      if (removedKeys.has(key({ dayOfWeek: dayOfWeekFromDateString(local.dateStr), time: local.time }))) {
+        throw new Error(`QUOTA_IN_USE:${local.dateStr} ${local.time}`);
+      }
+    }
+  }
+  await tx.professionalQuotaSlot.deleteMany({ where: { professionalId } });
+  if (quotaSlots.length) {
+    await tx.professionalQuotaSlot.createMany({ data: quotaSlots.map((q) => ({ ...q, tenantId, professionalId })) });
+  }
+}
+
+/** Respuesta de error común de cupos; devuelve true si el error era de cupos. */
+function sendQuotaError(error: any, res: import('express').Response) {
+  if (error?.message === 'DUPLICATE_QUOTA') {
+    res.status(400).json({ error: 'Hay cupos repetidos el mismo día' });
+    return true;
+  }
+  if (typeof error?.message === 'string' && error.message.startsWith('QUOTA_IN_USE:')) {
+    res.status(409).json({ error: `No puedes quitar el cupo con una cita futura (${error.message.slice('QUOTA_IN_USE:'.length)}). Reprograma o cancela esa cita primero.` });
+    return true;
+  }
+  return false;
 }
 
 // GET /api/professionals
@@ -140,7 +199,7 @@ router.get('/:id', requirePermission('appointments:own'), async (req, res) => {
 router.post('/', requirePermission('catalog:manage'), validateBody(createProfessionalSchema), async (req, res) => {
   try {
     const { tenantId } = req.user!;
-    const { schedule, serviceIds, account, email, ...data } = req.body as z.infer<typeof createProfessionalSchema>;
+    const { schedule, quotaSlots, serviceIds, account, email, ...data } = req.body as z.infer<typeof createProfessionalSchema>;
 
     if (account && !hasPermission(req.user!.role, 'team:manage')) {
       return res.status(403).json({ error: 'Solo el dueño puede crear cuentas de acceso' });
@@ -173,6 +232,7 @@ router.post('/', requirePermission('catalog:manage'), validateBody(createProfess
           endTime: h.endTime,
         }));
       await replaceSchedule(tx, tenantId, created.id, hours);
+      if (quotaSlots?.length) await replaceQuotaSlots(tx, tenantId, created.id, quotaSlots);
 
       const ids = serviceIds ?? (await tx.service.findMany({ where: { tenantId, status: 'ACTIVE' }, select: { id: true } })).map((s) => s.id);
       if (ids.length) {
@@ -184,6 +244,7 @@ router.post('/', requirePermission('catalog:manage'), validateBody(createProfess
     res.status(201).json(present(professional));
   } catch (error: any) {
     if (error instanceof PlanLimitError) return res.status(402).json({ error: error.message });
+    if (sendQuotaError(error, res)) return;
     if (error?.message === 'INVALID_SERVICES') return res.status(400).json({ error: 'Servicio no válido' });
     if (error?.message === 'OVERLAPPING_SCHEDULE') return res.status(400).json({ error: 'Hay tramos de horario solapados el mismo día' });
     if (error?.message === 'EMAIL_TAKEN') return res.status(409).json({ error: 'Ya existe un usuario con ese correo en este salón' });
@@ -197,7 +258,7 @@ router.put('/:id', requirePermission('catalog:manage'), validateBody(updateProfe
   try {
     const { tenantId } = req.user!;
     const id = req.params.id as string;
-    const { schedule, serviceIds, account, email, ...data } = req.body as z.infer<typeof updateProfessionalSchema>;
+    const { schedule, quotaSlots, serviceIds, account, email, ...data } = req.body as z.infer<typeof updateProfessionalSchema>;
 
     const existing = await prisma.professional.findFirst({ where: { id, tenantId }, select: { id: true, userId: true } });
     if (!existing) return res.status(404).json({ error: 'Profesional no encontrado' });
@@ -230,6 +291,7 @@ router.put('/:id', requirePermission('catalog:manage'), validateBody(updateProfe
         await tx.user.update({ where: { id: existing.userId }, data: { isActive: data.isActive } });
       }
       if (schedule) await replaceSchedule(tx, tenantId, id, schedule);
+      if (quotaSlots) await replaceQuotaSlots(tx, tenantId, id, quotaSlots);
       if (serviceIds) {
         await tx.professionalService.deleteMany({ where: { professionalId: id } });
         await tx.professionalService.createMany({ data: serviceIds.map((serviceId) => ({ tenantId, professionalId: id, serviceId })) });
@@ -240,6 +302,7 @@ router.put('/:id', requirePermission('catalog:manage'), validateBody(updateProfe
     if (data.isActive === false && existing.userId) await revokeAllSessions(existing.userId);
     res.json(present(professional));
   } catch (error: any) {
+    if (sendQuotaError(error, res)) return;
     if (error?.message === 'INVALID_SERVICES') return res.status(400).json({ error: 'Servicio no válido' });
     if (error?.message === 'OVERLAPPING_SCHEDULE') return res.status(400).json({ error: 'Hay tramos de horario solapados el mismo día' });
     if (error?.message === 'EMAIL_TAKEN') return res.status(409).json({ error: 'Ya existe un usuario con ese correo en este salón' });

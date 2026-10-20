@@ -2,7 +2,7 @@ import { Prisma, AppointmentStatus, BookingSource } from '@prisma/client';
 import { runInTransaction } from '../../lib/db';
 import { getTenantTimezone } from '../../lib/tenantInfo';
 import { instantToLocal } from '../../lib/time';
-import { computeSlots, Slot } from './engine';
+import { blockFor, computeSlots, Slot } from './engine';
 import { AvailabilityError } from './errors';
 import { appointmentInclude, toAppointmentDto } from './dto';
 import { assertPlanAllows } from '../planLimits';
@@ -86,11 +86,9 @@ export async function createBooking(params: CreateBookingParams) {
         clientId,
         serviceId,
         professionalId,
-        resourceId: slot.resourceId,
+        ...blockFor(slot, professionalId),
         startsAt: slot.startsAt,
         endsAt: slot.endsAt,
-        blockStartsAt: slot.blockStartsAt,
-        blockEndsAt: slot.blockEndsAt,
         serviceName: service.name,
         priceAmount: service.price,
         currency: service.currency,
@@ -193,11 +191,9 @@ export async function updateBooking(params: UpdateBookingParams) {
 
       Object.assign(data, {
         professionalId,
-        resourceId: slot.resourceId,
+        ...blockFor(slot, professionalId),
         startsAt: slot.startsAt,
         endsAt: slot.endsAt,
-        blockStartsAt: slot.blockStartsAt,
-        blockEndsAt: slot.blockEndsAt,
       });
       if (serviceId !== existing.serviceId) {
         Object.assign(data, {
