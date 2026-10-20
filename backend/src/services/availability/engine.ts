@@ -47,6 +47,23 @@ export interface Slot {
   professionalIds: string[];
   /** Recurso libre asignable, si el servicio lo necesita. */
   resourceId: string | null;
+  /** Subconjunto de professionalIds que reserva por cupos en este hueco (ver blockFor). */
+  quotaProfessionalIds: string[];
+}
+
+/** Un cupo ocupa solo su hora exacta: el servicio no bloquea los cupos siguientes. */
+const QUOTA_BLOCK_MS = 60_000;
+
+/**
+ * Tiempos con los que se guarda la cita según el profesional elegido. Quien
+ * reserva por cupos bloquea solo el minuto del cupo (la restricción EXCLUDE de la
+ * base impide dos citas en el mismo cupo) y no usa recurso.
+ */
+export function blockFor(slot: Slot, professionalId: string) {
+  if (!slot.quotaProfessionalIds.includes(professionalId)) {
+    return { blockStartsAt: slot.blockStartsAt, blockEndsAt: slot.blockEndsAt, resourceId: slot.resourceId };
+  }
+  return { blockStartsAt: slot.startsAt, blockEndsAt: new Date(slot.startsAt.getTime() + QUOTA_BLOCK_MS), resourceId: null };
 }
 
 export interface SlotsResult {
@@ -83,7 +100,7 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
       where: { id: q.serviceId, tenantId: q.tenantId },
       include: {
         professionals: {
-          include: { professional: { include: { schedules: true } } },
+          include: { professional: { include: { schedules: true, quotaSlots: true } } },
         },
         resources: { include: { resource: true } },
       },
@@ -152,10 +169,10 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
     select: { professionalId: true, resourceId: true, blockStartsAt: true, blockEndsAt: true, startsAt: true },
   });
 
+  // El tope diario del salón solo limita a quienes reservan por hora: el tope de
+  // quien reserva por cupos es su propio número de cupos.
   const dayCount = busy.filter((a) => a.startsAt >= day.start && a.startsAt < day.end).length;
-  if (businessHour && businessHour.maxAppointments > 0 && dayCount >= businessHour.maxAppointments) {
-    return empty('No hay cupos disponibles para ese día');
-  }
+  const dayFull = !!businessHour && businessHour.maxAppointments > 0 && dayCount >= businessHour.maxAppointments;
 
   // ---- Profesionales elegibles ----
   const wanted = q.professionalId && q.professionalId !== 'any' ? q.professionalId : null;
@@ -176,15 +193,24 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
     },
   });
 
+  const timedPros = eligible.filter((p) => p.bookingMode === 'TIMED');
+  const quotaPros = eligible.filter((p) => p.bookingMode === 'QUOTA');
+  const timedOpen = timedPros.length > 0 && !dayFull;
+
   const resources = service.resources.map((sr) => sr.resource).filter((r) => r.isActive);
-  if (service.resources.length > 0 && resources.length === 0) {
+  if (timedOpen && service.resources.length > 0 && resources.length === 0 && quotaPros.length === 0) {
     return empty('No hay recursos disponibles para este servicio');
+  }
+  if (timedPros.length > 0 && dayFull && quotaPros.length === 0) {
+    return empty('No hay cupos disponibles para ese día');
   }
 
   // ---- Horas candidatas ----
   const duration = service.durationMinutes;
   const candidates: string[] = [];
-  if (useExplicit) {
+  if (!timedOpen) {
+    // Nadie reserva por hora este día: solo quedan los cupos.
+  } else if (useExplicit) {
     candidates.push(...explicitStarts);
   } else {
     const open = timeToMinutes(businessHour!.startTime);
@@ -215,7 +241,7 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
     const startMin = timeToMinutes(startTime);
     const endMin = startMin + duration;
 
-    const free = eligible.filter((p) => {
+    const free = timedPros.filter((p) => {
       const works = p.schedules.some((s) => s.dayOfWeek === dayOfWeek && timeToMinutes(s.startTime) <= startMin && timeToMinutes(s.endTime) >= endMin);
       if (!works) return false;
       if (timeOffs.some((t) => t.professionalId === p.id && overlaps(startsAt, endsAt, t.startsAt, t.endsAt))) return false;
@@ -241,7 +267,41 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
       blockEndsAt,
       professionalIds: free.map((p) => p.id),
       resourceId,
+      quotaProfessionalIds: [],
     });
+  }
+
+  // ---- Cupos: horas exactas definidas por cada profesional para ese día de la semana ----
+  for (const p of quotaPros) {
+    for (const quota of p.quotaSlots.filter((slot) => slot.dayOfWeek === dayOfWeek)) {
+      const startsAt = localToInstant(tz, q.dateStr, quota.time);
+      const endsAt = new Date(startsAt.getTime() + duration * 60000);
+      const blockEndsAt = new Date(startsAt.getTime() + QUOTA_BLOCK_MS);
+      if (q.enforceWindow && startsAt < earliest) continue;
+      if (timeOffs.some((t) => t.professionalId === p.id && overlaps(startsAt, endsAt, t.startsAt, t.endsAt))) continue;
+      if (busy.some((a) => a.professionalId === p.id && overlaps(startsAt, blockEndsAt, a.blockStartsAt, a.blockEndsAt))) continue;
+
+      const existing = slots.find((s) => s.startTime === quota.time);
+      if (existing) {
+        existing.professionalIds.push(p.id);
+        existing.quotaProfessionalIds.push(p.id);
+      } else {
+        slots.push({
+          startTime: quota.time,
+          startsAt,
+          endsAt,
+          blockStartsAt: startsAt,
+          blockEndsAt,
+          professionalIds: [p.id],
+          resourceId: null,
+          quotaProfessionalIds: [p.id],
+        });
+      }
+    }
+  }
+  slots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+  for (const s of slots) {
+    s.professionalIds.sort((a, b) => (loadByProfessional.get(a) ?? 0) - (loadByProfessional.get(b) ?? 0));
   }
 
   return {

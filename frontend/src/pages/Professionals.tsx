@@ -10,7 +10,7 @@ import {
   useCreateTimeOff,
   useDeleteTimeOff,
 } from '../hooks/useQueries';
-import type { Professional, ScheduleBlock } from '../types';
+import type { Professional, QuotaSlot, ScheduleBlock } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
@@ -38,9 +38,31 @@ const emptyForm = {
   color: '#3B82F6',
   isActive: true,
   acceptsOnlineBookings: true,
+  bookingMode: 'TIMED' as 'TIMED' | 'QUOTA',
+  quotaSlots: [] as QuotaSlot[],
   schedule: [] as ScheduleBlock[],
   serviceIds: [] as string[],
 };
+
+function QuotaTimeAdder({ dayLabel, onAdd }: { dayLabel: string; onAdd: (time: string) => void }) {
+  const [time, setTime] = useState('');
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input type="time" aria-label={`Nuevo cupo del ${dayLabel}`} className="px-2 py-1 border border-border rounded bg-card" value={time} onChange={(e) => setTime(e.target.value)} />
+      <button
+        type="button"
+        className="text-xs text-blue-600 disabled:opacity-40"
+        disabled={!time}
+        onClick={() => {
+          onAdd(time);
+          setTime('');
+        }}
+      >
+        + cupo
+      </button>
+    </span>
+  );
+}
 
 function TimeOffPanel({ professionalId }: { professionalId: string }) {
   const { data: timeOffs = [] } = useTimeOff(professionalId);
@@ -137,6 +159,8 @@ const Professionals: React.FC = () => {
       color: p.color ?? '#3B82F6',
       isActive: p.isActive,
       acceptsOnlineBookings: p.acceptsOnlineBookings,
+      bookingMode: p.bookingMode ?? 'TIMED',
+      quotaSlots: (p.quotaSlots ?? []).map(({ dayOfWeek, time }) => ({ dayOfWeek, time })),
       schedule: (p.schedules ?? []).map(({ dayOfWeek, startTime, endTime }) => ({ dayOfWeek, startTime, endTime })),
       serviceIds: p.serviceIds ?? [],
     });
@@ -155,6 +179,25 @@ const Professionals: React.FC = () => {
   const updateBlock = (index: number, patch: Partial<ScheduleBlock>) =>
     setFormData({ ...formData, schedule: formData.schedule.map((b, i) => (i === index ? { ...b, ...patch } : b)) });
 
+  const quotaTimesOf = (day: number) =>
+    formData.quotaSlots.filter((q) => q.dayOfWeek === day).map((q) => q.time).sort();
+
+  const addQuota = (day: number, time: string) => {
+    if (!time || quotaTimesOf(day).includes(time)) return;
+    setFormData({ ...formData, quotaSlots: [...formData.quotaSlots, { dayOfWeek: day, time }] });
+  };
+
+  const removeQuota = (day: number, time: string) =>
+    setFormData({ ...formData, quotaSlots: formData.quotaSlots.filter((q) => !(q.dayOfWeek === day && q.time === time)) });
+
+  const copyQuotaToAllDays = (day: number) => {
+    const times = quotaTimesOf(day);
+    setFormData({
+      ...formData,
+      quotaSlots: DAYS.flatMap((d) => times.map((time) => ({ dayOfWeek: d.value, time }))),
+    });
+  };
+
   const buildPayload = () => ({
     name: formData.name,
     email: formData.email,
@@ -162,6 +205,8 @@ const Professionals: React.FC = () => {
     color: formData.color,
     isActive: formData.isActive,
     acceptsOnlineBookings: formData.acceptsOnlineBookings,
+    bookingMode: formData.bookingMode,
+    quotaSlots: formData.quotaSlots,
     schedule: formData.schedule,
     serviceIds: formData.serviceIds,
   });
@@ -248,6 +293,7 @@ const Professionals: React.FC = () => {
                       {' · '}
                       {(p.serviceIds ?? []).length} servicios
                       {p.user ? ' · con acceso' : ''}
+                      {p.bookingMode === 'QUOTA' ? ` · por cupos (${(p.quotaSlots ?? []).length} a la semana)` : ''}
                       {!p.acceptsOnlineBookings ? ' · sin reserva en línea' : ''}
                     </div>
                   </div>
@@ -303,6 +349,59 @@ const Professionals: React.FC = () => {
             </div>
 
             <div>
+              <h4 className="text-sm font-semibold mb-2">Cómo recibe reservas</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {([
+                  ['TIMED', 'Por hora', 'Los clientes eligen entre las horas libres de su horario.'],
+                  ['QUOTA', 'Por cupos', 'Atiende una cantidad fija por día, a las horas exactas que definas.'],
+                ] as const).map(([mode, title, hint]) => (
+                  <label key={mode} className={`rounded-lg border p-3 cursor-pointer ${formData.bookingMode === mode ? 'border-blue-400 bg-blue-50' : 'border-border'}`}>
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <input type="radio" name="bookingMode" checked={formData.bookingMode === mode} onChange={() => setFormData({ ...formData, bookingMode: mode })} />
+                      {title}
+                    </span>
+                    <span className="block text-xs text-muted-foreground mt-1">{hint}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {formData.bookingMode === 'QUOTA' ? (
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Cupos por día</h4>
+                <p className="text-xs text-muted-foreground mb-2">Cada hora es un cupo para un solo cliente, sin importar cuánto dure el servicio. Un día sin cupos no se atiende.</p>
+                <div className="space-y-2">
+                  {DAYS.map((day) => {
+                    const times = quotaTimesOf(day.value);
+                    return (
+                      <div key={day.value} className="flex flex-wrap items-center gap-2">
+                        <span className="w-24 text-sm">{day.label}</span>
+                        {times.length === 0 && <span className="text-xs text-muted-foreground">Sin cupos</span>}
+                        {times.map((time) => (
+                          <span key={time} className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-sm px-2 py-0.5">
+                            {time}
+                            <button type="button" aria-label={`Quitar cupo de las ${time} del ${day.label}`} className="text-red-600 px-1" onClick={() => removeQuota(day.value, time)}>
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                        <QuotaTimeAdder dayLabel={day.label} onAdd={(time) => addQuota(day.value, time)} />
+                        <span className="text-xs text-muted-foreground">{times.length} {times.length === 1 ? 'cupo' : 'cupos'}</span>
+                        {times.length > 0 && (
+                          <button type="button" className="text-xs text-blue-600" onClick={() => copyQuotaToAllDays(day.value)}>
+                            Copiar a todos los días
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {editing && editing.bookingMode === 'TIMED' && (
+                  <p className="text-xs text-amber-700 mt-2">Las citas que ya tiene se mantienen en su hora.</p>
+                )}
+              </div>
+            ) : (
+            <div>
               <h4 className="text-sm font-semibold mb-2">Horario semanal</h4>
               <div className="space-y-2">
                 {DAYS.map((day) => (
@@ -330,6 +429,7 @@ const Professionals: React.FC = () => {
                 ))}
               </div>
             </div>
+            )}
 
             <div>
               <h4 className="text-sm font-semibold mb-2">Servicios que realiza</h4>

@@ -111,6 +111,8 @@ export const professional = (over: Record<string, unknown> = {}) => ({
   color: '#ec4899',
   isActive: true,
   acceptsOnlineBookings: true,
+  bookingMode: 'TIMED',
+  quotaSlots: [],
   userId: null,
   user: null,
   schedules: [],

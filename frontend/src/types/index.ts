@@ -128,6 +128,11 @@ export interface ScheduleBlock {
   endTime: string; // HH:mm
 }
 
+export interface QuotaSlot {
+  dayOfWeek: number; // 0 = domingo ... 6 = sábado
+  time: string; // HH:mm
+}
+
 export interface Professional {
   id: string;
   name: string;
@@ -136,6 +141,8 @@ export interface Professional {
   color?: string | null;
   isActive: boolean;
   acceptsOnlineBookings: boolean;
+  bookingMode: 'TIMED' | 'QUOTA';
+  quotaSlots?: QuotaSlot[];
   userId?: string | null;
   user?: { id: string; email: string } | null;
   schedules?: Array<ScheduleBlock & { id: string }>;
