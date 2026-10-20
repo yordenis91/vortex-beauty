@@ -58,6 +58,9 @@ async function load(tenantId: string, appointmentId: string): Promise<Loaded | n
     price: `${Number(appointment.priceAmount).toFixed(2)} ${appointment.currency}`,
     manageUrl: appointment.cancelToken ? `${config.appPublicUrl}/${tenant.slug}/mi-cita/${appointment.cancelToken}` : null,
     cancelWindowHrs: settings.cancelWindowHrs,
+    // Sin API_PUBLIC_URL no hay dónde apuntar la imagen: el correo sale sin logo.
+    logoUrl: settingsRow?.logoUrl && config.apiPublicUrl ? `${config.apiPublicUrl}/api/public/booking/${tenant.slug}/logo` : null,
+    brandColor: settingsRow?.brandColor ?? null,
   };
   return { appointment, tenant, settings, ctx };
 }

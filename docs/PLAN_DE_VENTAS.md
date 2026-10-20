@@ -4,7 +4,7 @@ Documento vivo. Al terminar o decidir algo, marca la casilla (`[x]`), añade la 
 y anota en el registro del final. Si una decisión cambia, tacha la anterior en lugar
 de borrarla.
 
-**Última actualización:** 2026-10-20
+**Última actualización:** 2026-10-21
 
 ## 1. Qué vendemos y a quién
 - **Producto:** Afilao, reservas con turnos para negocios de servicios (barberías,
@@ -33,7 +33,7 @@ de borrarla.
 - [ ] Conseguir 1 o 2 salones piloto y llevarles la demo
 
 ## 4. Pendiente de desarrollo (por orden de prioridad)
-1. [ ] Logo del salón en correos, mensajes de Telegram y un cartel con QR para imprimir
+1. [x] Logo y color del salón en los correos y en el cartel con QR (2026-10-20). Telegram solo envía texto: el logo del bot se pone en @BotFather → Edit Bot → Edit Botpic. Falta definir `API_PUBLIC_URL` en el backend para que los correos muestren el logo
 2. [ ] Obligar a cambiar la contraseña temporal en el primer acceso
 3. [ ] Página pública del salón (servicios, galería, botón de reservar) para
        compartir por WhatsApp e Instagram
@@ -61,3 +61,4 @@ de borrarla.
 | Fecha | Cambio |
 |---|---|
 | 2026-10-20 | Documento creado a partir de lo hecho hasta la pantalla Equipo |
+| 2026-10-21 | Logo y color del salón en correos y cartel QR (imagen PNG o impresión) |

@@ -116,6 +116,7 @@ Variables del API para los avisos:
 
 | Variable | Para qué |
 |---|---|
+| `API_PUBLIC_URL` | URL pública del API (`https://api.ejemplo.com`). Los correos al cliente la usan para mostrar el logo del salón; sin ella salen sin logo. También sirve a Telegram si un proxy cambia la URL |
 | `APP_PUBLIC_URL` | URL pública del frontend; se usa en los enlaces de los correos (`https://app.ejemplo.com`) |
 | `SMTP_URL` o `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS` | Envío de correos con cualquier proveedor SMTP (Resend, Brevo, Gmail...). Sin esto, los avisos quedan registrados como `FAILED` |
 | `MAIL_FROM` | Remitente, p. ej. `Mi Salón <reservas@misalon.com>` |

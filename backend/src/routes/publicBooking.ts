@@ -83,6 +83,20 @@ router.use('/:slug', loadTenant);
 
 // ---------- Catálogo ----------
 
+// GET /api/public/booking/:slug/logo — el logo como imagen, para los correos (no admiten data URLs).
+router.get('/:slug/logo', async (req, res) => {
+  try {
+    const settings = await prisma.tenantSettings.findUnique({ where: { tenantId: req.publicTenant!.id }, select: { logoUrl: true } });
+    const match = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(settings?.logoUrl ?? '');
+    if (!match) return res.status(404).json({ error: 'Sin logo' });
+    res.set({ 'Content-Type': match[1], 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'cross-origin' });
+    res.send(Buffer.from(match[2], 'base64'));
+  } catch (error) {
+    console.error('Error sirviendo el logo:', error);
+    res.status(500).json({ error: 'Failed to load logo' });
+  }
+});
+
 // GET /api/public/booking/:slug
 router.get('/:slug', async (req, res) => {
   try {

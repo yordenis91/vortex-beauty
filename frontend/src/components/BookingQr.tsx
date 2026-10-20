@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-
-const escapeHtml = (v: string) => v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+import { brand } from '../brand/brand';
+import { POSTER_HEIGHT, POSTER_WIDTH, posterSvg } from '../lib/poster';
 
 /**
- * Código QR del enlace de reserva: se ve en pantalla, se descarga (SVG o PNG)
- * y se imprime como cartel para el local. Se genera en el navegador.
+ * Código QR del enlace de reserva: se ve en pantalla, se descarga (SVG) y se
+ * convierte en un cartel con el logo y el color del salón, para imprimir o
+ * compartir como imagen. Se genera en el navegador.
  */
-const BookingQr: React.FC<{ url: string; salonName: string }> = ({ url, salonName }) => {
+const BookingQr: React.FC<{ url: string; salonName: string; logoUrl?: string | null; brandColor?: string | null }> = ({
+  url,
+  salonName,
+  logoUrl,
+  brandColor,
+}) => {
   const [svg, setSvg] = useState('');
 
   useEffect(() => {
@@ -33,36 +39,32 @@ const BookingQr: React.FC<{ url: string; salonName: string }> = ({ url, salonNam
 
   const downloadSvg = () => save(new Blob([svg], { type: 'image/svg+xml' }), 'qr-reservas.svg');
 
-  const downloadPng = () => {
+  const poster = () =>
+    posterSvg({ qrSvg: svg, salonName, url, logoUrl, brandColor, fallbackColor: brand.colors.ink, platformName: brand.name });
+
+  const downloadPoster = () => {
     const img = new Image();
     img.onload = () => {
-      const size = 1024;
       const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = size;
+      canvas.width = POSTER_WIDTH;
+      canvas.height = POSTER_HEIGHT;
       const ctx = canvas.getContext('2d');
       if (!ctx) return toast.error('Tu navegador no puede generar la imagen');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, 0, 0, size, size);
-      canvas.toBlob((blob) => (blob ? save(blob, 'qr-reservas.png') : toast.error('No se pudo crear la imagen')), 'image/png');
+      ctx.drawImage(img, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+      canvas.toBlob((blob) => (blob ? save(blob, 'cartel-reservas.png') : toast.error('No se pudo crear la imagen')), 'image/png');
     };
-    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    img.onerror = () => toast.error('No se pudo crear la imagen');
+    img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(poster())}`;
   };
 
   const printPoster = () => {
-    const w = window.open('', '_blank', 'width=800,height=1000');
+    const w = window.open('', '_blank', 'width=800,height=1100');
     if (!w) return toast.error('Permite las ventanas emergentes para imprimir el cartel');
     w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Cartel de reservas</title>
 <style>
-  body{font-family:system-ui,sans-serif;text-align:center;margin:0;padding:48px 32px;color:#111}
-  h1{font-size:44px;margin:0 0 8px} h2{font-size:30px;font-weight:600;margin:0 0 32px}
-  .qr{width:420px;height:420px;margin:0 auto} .qr svg{width:100%;height:100%}
-  p{font-size:20px;margin:24px 0 0;color:#444} .url{font-size:18px;word-break:break-all}
-  @page{margin:12mm}
-</style></head><body>
-<h1>${escapeHtml(salonName)}</h1><h2>Reserva tu cita escaneando el código</h2>
-<div class="qr">${svg}</div>
-<p>Abre la cámara de tu móvil y apunta al código.</p><p class="url">${escapeHtml(url)}</p>
+  html,body{margin:0;background:#fff} svg{display:block;width:100%;height:auto;max-height:100vh}
+  @page{margin:0}
+</style></head><body>${poster()}
 <script>window.onload=function(){window.print()}</script></body></html>`);
     w.document.close();
   };
@@ -76,16 +78,16 @@ const BookingQr: React.FC<{ url: string; salonName: string }> = ({ url, salonNam
         dangerouslySetInnerHTML={{ __html: svg }}
       />
       <div className="space-y-2 text-sm">
-        <p className="text-muted-foreground">Imprímelo y ponlo en el local o en tu estado: tus clientes reservan escaneándolo.</p>
+        <p className="text-muted-foreground">El cartel lleva tu logo y tu color. Imprímelo para el local o descárgalo como imagen para tu estado de WhatsApp o Instagram.</p>
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={printPoster} disabled={!svg} className="px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted">
             Imprimir cartel
           </button>
-          <button type="button" onClick={downloadPng} disabled={!svg} className="px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted">
-            Descargar PNG
+          <button type="button" onClick={downloadPoster} disabled={!svg} className="px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted">
+            Descargar cartel (PNG)
           </button>
           <button type="button" onClick={downloadSvg} disabled={!svg} className="px-3 py-1.5 rounded-md border border-border bg-card hover:bg-muted">
-            Descargar SVG
+            Descargar solo el QR
           </button>
         </div>
       </div>
