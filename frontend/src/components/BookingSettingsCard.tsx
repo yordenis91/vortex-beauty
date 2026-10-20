@@ -32,7 +32,7 @@ const TIMEZONES = [
 
 const inputClass = 'w-full px-3 py-2 border border-border rounded-lg bg-card focus:ring-2 focus:ring-blue-500 outline-none';
 
-const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }) => {
+const BookingSettingsForm: React.FC<{ initial: BookingSettings; logoUrl: string | null; brandColor: string | null }> = ({ initial, logoUrl, brandColor }) => {
   const [form, setForm] = useState<BookingSettings>(initial);
   const [telegramToken, setTelegramToken] = useState('');
   const [reminderText, setReminderText] = useState(initial.reminderHours.join(', '));
@@ -133,7 +133,7 @@ const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }
             </button>
           </div>
           <p className="text-xs text-muted-foreground">Compártelo en tu Instagram, WhatsApp o Google Maps: tus clientes reservan solos, sin cuenta.</p>
-          <BookingQr url={bookingLink} salonName={form.name} />
+          <BookingQr url={bookingLink} salonName={form.name} logoUrl={logoUrl} brandColor={brandColor} />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -228,7 +228,8 @@ const BookingSettingsForm: React.FC<{ initial: BookingSettings }> = ({ initial }
 // El borrador se inicializa una vez con lo que hay en el servidor.
 const BookingSettingsCard: React.FC = () => {
   const { data } = useBookingSettings();
-  return data ? <BookingSettingsForm initial={data} /> : null;
+  // El logo y el color se guardan en su propia tarjeta: se leen siempre frescos, no del borrador.
+  return data ? <BookingSettingsForm initial={data} logoUrl={data.logoUrl} brandColor={data.brandColor} /> : null;
 };
 
 export default BookingSettingsCard;

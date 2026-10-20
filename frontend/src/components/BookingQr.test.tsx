@@ -9,6 +9,6 @@ describe('BookingQr', () => {
     expect(printBtn).toBeDisabled()
     await waitFor(() => expect(printBtn).toBeEnabled())
     expect(screen.getByRole('img', { name: 'Código QR de reservas' }).querySelector('svg')).not.toBeNull()
-    expect(screen.getByRole('button', { name: 'Descargar PNG' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Descargar cartel (PNG)' })).toBeEnabled()
   })
 })

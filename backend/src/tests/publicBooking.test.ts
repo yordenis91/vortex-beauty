@@ -35,7 +35,7 @@ describeIfDb('reserva pública y avisos', () => {
   let serviceId: string;
   let proId: string;
   let privateServiceId: string;
-  const sentEmails: Array<{ to: string; subject: string; text: string }> = [];
+  const sentEmails: Array<{ to: string; subject: string; text: string; html?: string }> = [];
   const sentTelegram: Array<{ chatId: string; text: string }> = [];
   let weekOffset = 0;
 
@@ -186,6 +186,47 @@ describeIfDb('reserva pública y avisos', () => {
     const before = sentEmails.length + sentTelegram.length;
     await notifier.processConfirmed(t, appointmentId); // reintento del mismo trabajo
     expect(sentEmails.length + sentTelegram.length).toBe(before);
+  });
+
+  it('el correo al cliente lleva el logo y el color del salón, y el logo se sirve como imagen pública', async () => {
+    const { config } = await import('../config');
+    const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+    const setBrand = (data: { logoUrl: string | null; brandColor: string | null }) =>
+      ctx.runAsAdmin(() => prisma.tenantSettings.update({ where: { tenantId }, data }));
+
+    // sin logo configurado: 404
+    expect((await request(app).get(`/api/public/booking/${slug}/logo`)).status).toBe(404);
+
+    await setBrand({ logoUrl: `data:image/png;base64,${png}`, brandColor: '#2A9D8F' });
+    const image = await request(app).get(`/api/public/booking/${slug}/logo`);
+    expect(image.status).toBe(200);
+    expect(image.headers['content-type']).toBe('image/png');
+    expect(image.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect(Buffer.from(image.body).equals(Buffer.from(png, 'base64'))).toBe(true);
+
+    const previous = config.apiPublicUrl;
+    config.apiPublicUrl = 'https://api.test';
+    try {
+      const res = await book(validBody(nextMonday(), '15:00', { customer: { name: 'Rosa Paz', email: 'rosa@example.com' } }));
+      const { tenantId: t, appointmentId } = queue.getMemoryJobs().find((j) => j.name === 'booking.confirmed')!.data as { tenantId: string; appointmentId: string };
+      await notifier.processConfirmed(t, appointmentId);
+      const html = sentEmails.find((m) => m.to === 'rosa@example.com')!.html!;
+      expect(html).toContain(`src="https://api.test/api/public/booking/${slug}/logo"`);
+      expect(html).toContain('#2A9D8F');
+      expect(html).toContain(`/${slug}/mi-cita/${tokenOf(res.body.manageUrl)}`);
+
+      // sin API pública no hay a dónde apuntar la imagen: el correo sale igual, sin logo
+      config.apiPublicUrl = '';
+      queue.clearMemoryJobs();
+      sentEmails.length = 0;
+      await book(validBody(nextMonday(), '16:00', { customer: { name: 'Ana Gil', email: 'ana@example.com' } }));
+      const second = queue.getMemoryJobs().find((j) => j.name === 'booking.confirmed')!.data as { tenantId: string; appointmentId: string };
+      await notifier.processConfirmed(second.tenantId, second.appointmentId);
+      expect(sentEmails.find((m) => m.to === 'ana@example.com')!.html).not.toContain('<img');
+    } finally {
+      config.apiPublicUrl = previous;
+      await setBrand({ logoUrl: null, brandColor: null });
+    }
   });
 
   it('un recordatorio obsoleto (la cita se movió) no se envía', async () => {
