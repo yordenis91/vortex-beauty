@@ -21,8 +21,8 @@ export interface User {
 export interface Client {
   id: string;
   name: string;
-  email: string;
-  phone?: string;
+  email?: string | null; // opcional: quien reserva solo con teléfono no tiene correo
+  phone?: string | null;
   address?: string;
   city?: string;
   state?: string;
@@ -36,7 +36,7 @@ export interface Client {
 
 export interface CreateClientRequest {
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
   address?: string;
   imageUrl?: string;

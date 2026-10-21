@@ -6,16 +6,7 @@ import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLabels } from '@/hooks/useLabels';
-
-// Tipado rápido para el componente
-interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  address?: string;
-  imageUrl?: string;
-}
+import type { Client } from '../types';
 
 interface ClientFormData {
   name: string;
@@ -78,7 +69,7 @@ const Clients: React.FC = () => {
     setEditingClient(client);
     setFormData({
       name: client.name,
-      email: client.email,
+      email: client.email ?? '',
       phone: client.phone || '',
       address: client.address || '',
       imageUrl: client.imageUrl || '',
@@ -97,6 +88,11 @@ const Clients: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.email.trim() && !formData.phone.trim()) {
+      toast.error('Indica un teléfono o un correo');
+      return;
+    }
 
     const payload = {
       name: formData.name,
@@ -166,7 +162,7 @@ const Clients: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar por nombre, email o teléfono..."
+            placeholder="Buscar clientes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -277,10 +273,9 @@ const Clients: React.FC = () => {
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Email <span className="text-red-500">*</span>
+                    Correo
                   </label>
                   <input
-                    required
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}

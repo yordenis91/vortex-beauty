@@ -80,7 +80,7 @@ const Team: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Equipo</h2>
+          <h2 className="text-2xl font-bold text-foreground">Equipo</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Las personas que entran al panel. El gerente administra el salón; {the('professional')} solo ve su propia agenda.
           </p>

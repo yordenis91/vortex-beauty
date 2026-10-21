@@ -10,7 +10,7 @@ import { appointmentInclude, toAppointmentDto } from '../services/availability/d
 import { computeSlots } from '../services/availability/engine';
 import { runInTransaction } from '../lib/db';
 import { getTenantTimezone } from '../lib/tenantInfo';
-import { addDaysToDateString, dayOfWeekFromDateString, instantToLocal, isValidDateString, localDayRange } from '../lib/time';
+import { addDaysToDateString, dayOfWeekFromDateString, instantToLocal, isValidDateString, localDayRange, localToInstant } from '../lib/time';
 
 const router = Router();
 
@@ -118,22 +118,44 @@ router.get('/fully-booked-dates', async (req, res) => {
     });
     if (businessHours.length === 0) return res.json([]);
 
-    // Solo los días con tope diario configurado pueden llenarse "por cupo".
+    // Solo los días con tope diario configurado pueden llenarse. Se cuentan las mismas citas que
+    // el motor de reservas (agendadas y pendientes), no las ya completadas.
     const appointments = await prisma.appointment.findMany({
-      where: { tenantId, status: { in: ['SCHEDULED', 'PENDING', 'COMPLETED'] } },
-      select: { startsAt: true },
+      where: { tenantId, status: { in: ['SCHEDULED', 'PENDING'] } },
+      select: { startsAt: true, professionalId: true },
     });
     const counts = new Map<string, number>();
     for (const a of appointments) {
       const { dateStr } = instantToLocal(timezone, a.startsAt);
       counts.set(dateStr, (counts.get(dateStr) ?? 0) + 1);
     }
-    const fullyBooked: string[] = [];
+    const capped: string[] = [];
     for (const [dateStr, count] of counts) {
-      const dow = dayOfWeekFromDateString(dateStr);
-      const bh = businessHours.find((b) => b.dayOfWeek === dow);
-      if (bh && count >= bh.maxAppointments) fullyBooked.push(dateStr);
+      const bh = businessHours.find((b) => b.dayOfWeek === dayOfWeekFromDateString(dateStr));
+      if (bh && count >= bh.maxAppointments) capped.push(dateStr);
     }
+    if (capped.length === 0) return res.json([]);
+
+    // Quien reserva por cupos no se rige por el tope del salón: el día sigue abierto mientras
+    // alguno tenga un cupo libre (sin cita ni ausencia en esa hora).
+    const quotaPros = await prisma.professional.findMany({
+      where: { tenantId, isActive: true, bookingMode: 'QUOTA' },
+      include: { quotaSlots: true },
+    });
+    const timeOffs = quotaPros.length
+      ? await prisma.timeOff.findMany({ where: { tenantId, professionalId: { in: quotaPros.map((p) => p.id) }, endsAt: { gt: new Date() } } })
+      : [];
+    const taken = new Set(appointments.filter((a) => a.professionalId).map((a) => `${a.professionalId}|${a.startsAt.toISOString()}`));
+    const hasFreeCupo = (dateStr: string) =>
+      quotaPros.some((p) =>
+        p.quotaSlots
+          .filter((q) => q.dayOfWeek === dayOfWeekFromDateString(dateStr))
+          .some((q) => {
+            const at = localToInstant(timezone, dateStr, q.time);
+            return !taken.has(`${p.id}|${at.toISOString()}`) && !timeOffs.some((t) => t.professionalId === p.id && t.startsAt <= at && at < t.endsAt);
+          })
+      );
+    const fullyBooked = capped.filter((dateStr) => !hasFreeCupo(dateStr));
     res.json(fullyBooked);
   } catch (error) {
     console.error('Error fetching fully booked dates:', error);

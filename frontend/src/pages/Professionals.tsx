@@ -246,7 +246,7 @@ const Professionals: React.FC = () => {
     <div className="space-y-6">
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-foreground sm:text-3xl">{label('professionals', true)}</h2>
+          <h2 className="text-2xl font-bold leading-7 text-foreground">{label('professionals', true)}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Quién atiende, cuándo trabaja y qué servicios realiza. Cada {label('professional')} tiene su propia agenda.
           </p>
