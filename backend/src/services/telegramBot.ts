@@ -106,14 +106,14 @@ export async function handleUpdate(tenantId: string, update: Update): Promise<vo
     const code = arg?.toUpperCase();
     if (code && settings.telegramOwnerCode && safeEqual(code, settings.telegramOwnerCode)) {
       await prisma.tenantSettings.update({ where: { tenantId }, data: { telegramChatId: chat, telegramOwnerCode: newOwnerCode() } });
-      await reply('✅ Listo: recibirás aquí los avisos de reservas de tu salón.');
+      await reply('✅ Listo: recibirás aquí los avisos de reservas de tu salón. /citas para ver las próximas.');
       return;
     }
     // Código de un profesional (Mi perfil): enlaza este chat solo a sus citas. Es de un solo uso.
     const professional = code ? await prisma.professional.findFirst({ where: { tenantId, telegramLinkCode: code }, select: { id: true, name: true } }) : null;
     if (professional) {
       await prisma.professional.update({ where: { id: professional.id }, data: { telegramChatId: chat, telegramLinkCode: null } });
-      await reply(`✅ Listo, ${professional.name}: recibirás aquí los avisos de tus citas (nuevas y canceladas). /parar para dejar de recibirlos.`);
+      await reply(`✅ Listo, ${professional.name}: recibirás aquí los avisos de tus citas (nuevas y canceladas). /citas para ver las próximas, /parar para dejar de recibirlos.`);
       return;
     }
     await reply('Código inválido. Cópialo de tu panel: el dueño en Ajustes → Telegram, un profesional en Mi perfil.');
@@ -147,24 +147,69 @@ export async function handleUpdate(tenantId: string, update: Update): Promise<vo
   }
 
   if (cmd === '/citas') {
-    const clients = await prisma.client.findMany({ where: { tenantId, telegramChatId: chat }, select: { id: true } });
     const tenant = await prisma.tenant.findUniqueOrThrow({ where: { id: tenantId }, select: { slug: true, timezone: true } });
-    const upcoming = clients.length
-      ? await prisma.appointment.findMany({
-          where: { tenantId, clientId: { in: clients.map((c) => c.id) }, status: { in: ['SCHEDULED', 'PENDING'] }, startsAt: { gt: new Date() } },
-          orderBy: { startsAt: 'asc' },
-          take: 5,
-        })
-      : [];
-    if (!upcoming.length) {
+    const upcomingWhere = { tenantId, status: { in: ['SCHEDULED', 'PENDING'] as Array<'SCHEDULED' | 'PENDING'> }, startsAt: { gt: new Date() } };
+    const sections: string[] = [];
+
+    // Dueño: las próximas citas de todo el salón.
+    if (settings.telegramChatId === chat) {
+      const salon = await prisma.appointment.findMany({
+        where: upcomingWhere,
+        include: { client: { select: { name: true } }, professional: { select: { name: true } } },
+        orderBy: { startsAt: 'asc' },
+        take: 10,
+      });
+      sections.push(
+        salon.length
+          ? 'Próximas citas del salón:\n' +
+              salon
+                .map((a) => `• ${formatLocalDateTime(tenant.timezone, a.startsAt)} — ${a.serviceName} · ${a.client.name}${a.professional ? ` (con ${a.professional.name})` : ''}`)
+                .join('\n')
+          : 'El salón no tiene citas próximas.'
+      );
+    }
+
+    // Profesional: solo las suyas.
+    const professionals = await prisma.professional.findMany({ where: { tenantId, telegramChatId: chat }, select: { id: true } });
+    if (professionals.length) {
+      const mine = await prisma.appointment.findMany({
+        where: { ...upcomingWhere, professionalId: { in: professionals.map((p) => p.id) } },
+        include: { client: { select: { name: true } } },
+        orderBy: { startsAt: 'asc' },
+        take: 10,
+      });
+      sections.push(
+        mine.length
+          ? 'Tus próximas citas:\n' + mine.map((a) => `• ${formatLocalDateTime(tenant.timezone, a.startsAt)} — ${a.serviceName} · ${a.client.name}`).join('\n')
+          : 'No tienes citas próximas con clientes.'
+      );
+    }
+
+    // Cliente: sus citas, con el enlace para gestionarlas.
+    const clients = await prisma.client.findMany({ where: { tenantId, telegramChatId: chat }, select: { id: true } });
+    if (clients.length) {
+      const own = await prisma.appointment.findMany({
+        where: { ...upcomingWhere, clientId: { in: clients.map((c) => c.id) } },
+        orderBy: { startsAt: 'asc' },
+        take: 5,
+      });
+      sections.push(
+        own.length
+          ? (sections.length ? 'Tus citas como cliente:\n' : '') +
+              own
+                .map((a) => `• ${formatLocalDateTime(tenant.timezone, a.startsAt)} — ${a.serviceName}${a.cancelToken ? `\n  ${config.appPublicUrl}/${tenant.slug}/mi-cita/${a.cancelToken}` : ''}`)
+                .join('\n')
+          : sections.length
+            ? ''
+            : 'No tienes citas próximas.'
+      );
+    }
+
+    if (!sections.length) {
       await reply('No tienes citas próximas.');
       return;
     }
-    await reply(
-      upcoming
-        .map((a) => `• ${formatLocalDateTime(tenant.timezone, a.startsAt)} — ${a.serviceName}${a.cancelToken ? `\n  ${config.appPublicUrl}/${tenant.slug}/mi-cita/${a.cancelToken}` : ''}`)
-        .join('\n')
-    );
+    await reply(sections.filter(Boolean).join('\n\n'));
     return;
   }
 

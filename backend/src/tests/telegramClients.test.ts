@@ -296,6 +296,16 @@ describeIfDb('Telegram para clientes', () => {
       expect(sent.filter((m) => m.chatId === '6001')).toHaveLength(0);
     });
 
+    it('/citas del profesional lista sus próximas citas con el nombre del cliente', async () => {
+      await book({ name: 'Rosa Pérez', phone: '+53 5 555 7777', email: 'rosa@example.com' });
+      sent.length = 0;
+      await hook('/citas', 6001);
+      await settle();
+      expect(sent[0].text).toContain('Tus próximas citas');
+      expect(sent[0].text).toContain('Rosa Pérez');
+      expect(sent[0].text).not.toContain('mi-cita'); // enlaces secretos solo para el cliente
+    });
+
     it('el enlace de Telegram no se filtra por la lista de profesionales ni por las citas', async () => {
       const headers = await asStaff();
       const pros = await request(app).get('/api/professionals').set('Authorization', `Bearer ${ownerToken}`);
@@ -344,6 +354,20 @@ describeIfDb('Telegram para clientes', () => {
     const after = (await request(app).get('/api/settings/booking').set('Authorization', `Bearer ${ownerToken}`)).body;
     expect(after.telegramChatId).toBe('9001');
     expect(after.telegramOwnerCode).not.toBe(before);
+
+    // /citas del dueño: las próximas de todo el salón, con cliente y profesional.
+    sent.length = 0;
+    await hook('/citas', 9001);
+    await settle();
+    expect(sent[0].text).toContain('Próximas citas del salón');
+    expect(sent[0].text).toContain('Rosa Pérez');
+    expect(sent[0].text).toContain('Carlos');
+    // Un chat desconocido no ve nada del salón.
+    sent.length = 0;
+    await hook('/citas', 9555);
+    await settle();
+    expect(sent[0].text).toBe('No tienes citas próximas.');
+
     sent.length = 0;
     await hook(`/vincular ${before}`, 9002);
     await settle();
