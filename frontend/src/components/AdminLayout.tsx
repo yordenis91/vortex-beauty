@@ -26,7 +26,7 @@ const AdminLayout: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-muted">
+      <div className="flex min-h-screen min-w-0 flex-1 bg-muted">
         <AdminSidebar />
 
         <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
