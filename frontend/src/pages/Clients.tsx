@@ -1,7 +1,7 @@
 import { compressImage } from '../lib/image';
 import React, { useState } from 'react';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
-import { Users, Plus, Edit, Trash2, Search, Mail, Phone, Camera, Eye, EyeOff } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Search, Mail, Phone, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,10 +23,6 @@ interface ClientFormData {
   phone: string;
   address: string;
   imageUrl: string;
-  username: string;
-  password: string;
-  confirmPassword: string;
-  sendWelcomeEmail: boolean;
 }
 
 const Clients: React.FC = () => {
@@ -35,8 +31,6 @@ const Clients: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -44,10 +38,6 @@ const Clients: React.FC = () => {
     phone: '',
     address: '',
     imageUrl: '',
-    username: '',
-    password: '',
-    confirmPassword: '',
-    sendWelcomeEmail: false,
   });
 
   // Usar hooks centralizados
@@ -75,13 +65,7 @@ const Clients: React.FC = () => {
       phone: '',
       address: '',
       imageUrl: '',
-      username: '',
-      password: '',
-      confirmPassword: '',
-      sendWelcomeEmail: false,
     });
-    setShowPassword(false);
-    setShowConfirmPassword(false);
   };
 
   const closeModal = () => {
@@ -98,10 +82,6 @@ const Clients: React.FC = () => {
       phone: client.phone || '',
       address: client.address || '',
       imageUrl: client.imageUrl || '',
-      username: '',
-      password: '',
-      confirmPassword: '',
-      sendWelcomeEmail: false,
     });
     setShowModal(true);
   };
@@ -118,14 +98,6 @@ const Clients: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validación básica para contraseña (solo crea, no edit)
-    if (!editingClient && formData.password) {
-      if (formData.password !== formData.confirmPassword) {
-        toast.error('La contraseña y la confirmación de la contraseña deben coincidir');
-        return;
-      }
-    }
-
     const payload = {
       name: formData.name,
       email: formData.email,
@@ -137,12 +109,7 @@ const Clients: React.FC = () => {
     if (editingClient) {
       updateMutation.mutate({ id: editingClient.id, clientData: payload });
     } else {
-      createMutation.mutate({
-        ...payload,
-        username: formData.username || undefined,
-        password: formData.password || undefined,
-        sendWelcomeEmail: formData.sendWelcomeEmail,
-      });
+      createMutation.mutate(payload);
     }
 
     closeModal();
@@ -351,99 +318,6 @@ const Clients: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Seguridad Section */}
-            {!editingClient && (
-              <div>
-                <h4 className="text-sm font-semibold text-foreground mb-4 pb-3 border-b border-border">
-                  Credenciales de Acceso
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  {/* Username */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Usuario
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                      className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                      placeholder="nombre_usuario"
-                    />
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Contraseña
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-muted-foreground"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Confirmar Contraseña
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        value={formData.confirmPassword}
-                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                        className="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-muted-foreground"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5" />
-                        ) : (
-                          <Eye className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Welcome Email Checkbox */}
-                <div className="flex items-center space-x-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg p-4 border border-blue-100 dark:border-blue-900">
-                  <input
-                    id="sendWelcomeEmail"
-                    type="checkbox"
-                    checked={formData.sendWelcomeEmail}
-                    onChange={(e) => setFormData({ ...formData, sendWelcomeEmail: e.target.checked })}
-                    className="h-4 w-4 text-blue-600 border-border rounded cursor-pointer"
-                  />
-                  <label htmlFor="sendWelcomeEmail" className="text-sm text-foreground cursor-pointer">
-                    <span className="font-medium">Enviar correo de bienvenida</span>
-                    <p className="text-xs text-muted-foreground">{label('customer', true)} recibirá sus credenciales por email</p>
-                  </label>
-                </div>
-              </div>
-            )}
 
             {/* Action Buttons */}
             <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-popover px-6 py-3">

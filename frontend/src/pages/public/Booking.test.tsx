@@ -159,6 +159,72 @@ describe('Reserva pública', () => {
     expect(await screen.findByText('Elige el día')).toBeInTheDocument()
   })
 
+  it('muestra el paso en el que vas y el servicio elegido mientras eliges día y hora', async () => {
+    mockBooking()
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: /Corte de cabello/ }))
+
+    expect(await screen.findByText('Paso 2 de 4')).toBeInTheDocument() // un solo profesional: no hay paso para elegirlo
+    expect(screen.getByText('Corte de cabello')).toBeInTheDocument() // el resumen del servicio
+
+    await user.click(await firstEnabledDay())
+    expect(await screen.findByText('Paso 3 de 4')).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: '09:30' }))
+    expect(await screen.findByText('Paso 4 de 4')).toBeInTheDocument()
+  })
+
+  it('con varios profesionales cuenta un paso más y muestra con quién se reserva', async () => {
+    mockBooking({
+      catalog: catalog({
+        professionals: [
+          { id: 'p-yoel', name: 'Yoel', color: null, serviceIds: ['s-corte'] },
+          { id: 'p-raul', name: 'Raúl', color: null, serviceIds: ['s-corte'] },
+        ],
+      }),
+    })
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: /Corte de cabello/ }))
+    expect(await screen.findByText('Paso 2 de 5')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Raúl/ }))
+    expect(await screen.findByText('Paso 3 de 5')).toBeInTheDocument()
+    expect(screen.getByText(/· Raúl/)).toBeInTheDocument()
+  })
+
+  it('cada paso empieza arriba de la página', async () => {
+    mockBooking()
+    const scrolled: unknown[] = []
+    const original = window.scrollTo
+    window.scrollTo = ((arg: unknown) => { scrolled.push(arg) }) as typeof window.scrollTo
+    try {
+      const user = userEvent.setup()
+      open()
+      await user.click(await screen.findByRole('button', { name: /Corte de cabello/ }))
+      await screen.findByText('Elige el día')
+      expect(scrolled.length).toBeGreaterThan(1)
+      expect(scrolled.at(-1)).toEqual({ top: 0 })
+    } finally {
+      window.scrollTo = original
+    }
+  })
+
+  it('al confirmar se puede copiar el enlace para gestionar la cita', async () => {
+    mockBooking()
+    const user = userEvent.setup()
+    const copied: string[] = []
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (t: string) => { copied.push(t) } }, configurable: true })
+    open()
+    await user.click(await screen.findByRole('button', { name: /Corte de cabello/ }))
+    await user.click(await firstEnabledDay())
+    await user.click(await screen.findByRole('button', { name: '09:30' }))
+    await user.type(screen.getByLabelText(/Nombre/), 'Marta Pérez')
+    await user.type(screen.getByLabelText('Teléfono'), '+53 5 555 1234')
+    await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
+    await user.click(await screen.findByRole('button', { name: /Copiar enlace de mi turno/ }))
+    await waitFor(() => expect(copied).toEqual([`${window.location.origin}/barberia-demo/mi-cita/tok123`]))
+  })
+
   it('al confirmar ofrece activar los avisos por Telegram si el salón tiene bot', async () => {
     mockBooking({
       postBody: {

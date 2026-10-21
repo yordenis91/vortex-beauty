@@ -40,9 +40,6 @@ export interface CreateClientRequest {
   phone?: string;
   address?: string;
   imageUrl?: string;
-  username?: string;
-  password?: string;
-  sendWelcomeEmail?: boolean;
 }
 
 // Auth types
