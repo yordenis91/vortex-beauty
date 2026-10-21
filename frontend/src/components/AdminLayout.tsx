@@ -29,7 +29,7 @@ const AdminLayout: React.FC = () => {
       <div className="flex min-h-screen min-w-0 flex-1 bg-muted">
         <AdminSidebar />
 
-        <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-x-clip">
           {isImpersonating() && (
             <div role="status" className="bg-amber-500 text-black text-center text-sm font-medium px-4 py-1.5">
               Estás viendo este salón como soporte de la plataforma. La sesión dura 1 hora y queda registrada.
@@ -102,7 +102,7 @@ const AdminLayout: React.FC = () => {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 bg-muted">
+          <main className="flex-1 overflow-x-clip p-4 sm:p-6 lg:p-8 bg-muted">
             <div className="mx-auto w-full max-w-7xl space-y-6">
               <Outlet />
             </div>

@@ -1,7 +1,7 @@
 import { compressImage } from '../lib/image';
 import React, { useState } from 'react';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
-import { Users, Plus, Edit, Trash2, Search, Mail, Camera, Eye, EyeOff } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Search, Mail, Phone, Camera, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -63,10 +63,10 @@ const Clients: React.FC = () => {
   });
 
   // Funciones de UI
-  const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    c.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredClients = clients.filter((c) => {
+    const term = searchTerm.toLowerCase();
+    return c.name.toLowerCase().includes(term) || (c.email ?? '').toLowerCase().includes(term) || (c.phone ?? '').includes(searchTerm);
+  });
 
   const resetForm = () => {
     setFormData({
@@ -199,7 +199,7 @@ const Clients: React.FC = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Buscar por nombre o email..."
+            placeholder="Buscar por nombre, email o teléfono..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
@@ -208,7 +208,7 @@ const Clients: React.FC = () => {
       </div>
 
       {/* Grid de Clientes */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {filteredClients.length === 0 ? (
           <div className="col-span-full bg-card rounded-lg shadow-sm border border-border px-4 py-12 text-center text-muted-foreground">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
@@ -216,30 +216,36 @@ const Clients: React.FC = () => {
           </div>
         ) : (
           filteredClients.map((client) => (
-            <div key={client.id} className="bg-card rounded-xl shadow-sm border border-border p-6 flex flex-col transition hover:shadow-md">
-              <div className="flex justify-between items-start mb-4">
-                <div className="h-12 w-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
-                  {client.name.charAt(0).toUpperCase()}
-                </div>
-                <div className="flex space-x-1 shrink-0">
-                  <button onClick={() => openEdit(client)} className="p-2 text-muted-foreground hover:text-blue-600 rounded-full hover:bg-blue-50 transition">
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => handleDelete(client.id)} className="p-2 text-muted-foreground hover:text-red-600 rounded-full hover:bg-red-50 transition">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+            <div key={client.id} className="bg-card rounded-xl shadow-sm border border-border p-4 flex items-start gap-3 transition hover:shadow-md">
+              <div className="h-11 w-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg shrink-0">
+                {client.name.charAt(0).toUpperCase()}
               </div>
 
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-bold text-foreground truncate">{client.name}</h3>
-                <div className="mt-2 space-y-2">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Mail className="h-4 w-4 shrink-0 mr-2 text-muted-foreground" />
-                    <span className="truncate">{client.email}</span>
-                  </div>
-                  {/* Puedes agregar aquí el teléfono si lo deseas, siguiendo el mismo patrón del Mail */}
+                <h3 className="text-base font-semibold text-foreground line-clamp-2 break-words">{client.name}</h3>
+                <div className="mt-1 space-y-1">
+                  {client.email && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Mail className="h-4 w-4 shrink-0 mr-2" />
+                      <span className="truncate">{client.email}</span>
+                    </div>
+                  )}
+                  {client.phone && (
+                    <div className="flex items-center text-sm text-muted-foreground">
+                      <Phone className="h-4 w-4 shrink-0 mr-2" />
+                      <span className="truncate">{client.phone}</span>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              <div className="flex shrink-0">
+                <button onClick={() => openEdit(client)} aria-label="Editar" className="p-2 text-muted-foreground hover:text-blue-600 rounded-full hover:bg-blue-50 transition">
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button onClick={() => handleDelete(client.id)} aria-label="Eliminar" className="p-2 text-muted-foreground hover:text-red-600 rounded-full hover:bg-red-50 transition">
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
           ))
@@ -248,7 +254,7 @@ const Clients: React.FC = () => {
 
       {/* Modal Premium SaaS */}
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); }}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{editingClient ? `Editar ${label('customer')}` : `Crear ${agree('nuev', 'customer')} ${label('customer')}`}</DialogTitle>
           </DialogHeader>
@@ -440,7 +446,7 @@ const Clients: React.FC = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-end gap-3 pt-6 border-t border-border">
+            <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-popover px-6 py-3">
               <button
                 type="button"
                 onClick={closeModal}

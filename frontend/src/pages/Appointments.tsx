@@ -636,7 +636,7 @@ const Appointments: React.FC = () => {
               <h3 className="text-xl font-bold text-foreground">
                 Agenda del {format(currentDate, "EEEE d 'de' MMMM", { locale: es })}
               </h3>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <Badge
                   variant="outline"
                   className={
@@ -656,7 +656,7 @@ const Appointments: React.FC = () => {
                     aria-label={`Filtrar por ${label('professional')}`}
                     value={agendaProfessionalId}
                     onChange={(e) => setAgendaProfessionalId(e.target.value)}
-                    className="px-3 py-1 border border-border rounded-full bg-card text-sm"
+                    className="min-w-0 max-w-full px-3 py-1 border border-border rounded-full bg-card text-sm"
                   >
                     <option value="">Todo el equipo</option>
                     {professionalList.map((member) => (
@@ -777,7 +777,7 @@ const Appointments: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
                 {dailyAppointments.map((appointment) => (
                   <Card
                     key={appointment.id}
@@ -787,10 +787,10 @@ const Appointments: React.FC = () => {
                     }}
                   >
                     <div className="p-5">
-                      <div className="flex justify-between items-start mb-3">
+                      <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
                         <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-bold text-foreground">
+                          <span className="whitespace-nowrap font-bold text-foreground">
                             {appointment.startTime} - {appointment.endTime}
                           </span>
                         </div>
@@ -869,7 +869,7 @@ const Appointments: React.FC = () => {
 
       {/* Modal - Crear/Editar Cita */}
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); }}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>{editingAppointment ? `Editar ${label('appointment')}` : `Crear ${label('appointment')}`} {selectedDate ? ` • ${format(new Date(selectedDate), 'dd/MM/yyyy', { locale: es })}` : ''}</DialogTitle>
           </DialogHeader>
@@ -1038,7 +1038,7 @@ const Appointments: React.FC = () => {
                   </select>
                 </div>
 
-                <div className="flex justify-between gap-3 pt-6 border-t border-border">
+                <div className="sticky bottom-0 -mx-6 -mb-6 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-popover px-6 py-3">
                   {editingAppointment ? (
                     <button
                       type="button"
@@ -1051,7 +1051,7 @@ const Appointments: React.FC = () => {
                     <div />
                   )}
 
-                  <div className="flex flex-wrap justify-end gap-3">
+                  <div className="ml-auto flex flex-wrap justify-end gap-3">
                     <button
                       type="button"
                       onClick={closeModal}

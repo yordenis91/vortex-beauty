@@ -53,7 +53,7 @@ describe('Clientes', () => {
     const user = userEvent.setup()
     renderWithProviders(<Clients />)
     await screen.findByText('Carlos Méndez')
-    await user.type(screen.getByPlaceholderText('Buscar por nombre o email...'), 'luis@')
+    await user.type(screen.getByPlaceholderText('Buscar por nombre, email o teléfono...'), 'luis@')
     expect(screen.queryByText('Carlos Méndez')).not.toBeInTheDocument()
     expect(screen.getByText('Luis Pérez')).toBeInTheDocument()
   })

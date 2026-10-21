@@ -313,7 +313,7 @@ const Professionals: React.FC = () => {
       </div>
 
       <Dialog open={showModal} onOpenChange={(open) => !open && closeModal()}>
-        <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[640px]">
           <DialogHeader>
             <DialogTitle>{editing ? `Editar ${label('professional')}` : `${agree('Nuev', 'professional')} ${label('professional')}`}</DialogTitle>
           </DialogHeader>
@@ -474,7 +474,7 @@ const Professionals: React.FC = () => {
 
             {editing && <TimeOffPanel professionalId={editing.id} />}
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-popover px-6 py-3">
               <button type="button" onClick={closeModal} className="px-4 py-2 border border-border rounded-md">Cancelar</button>
               <button type="submit" className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700">Guardar</button>
             </div>

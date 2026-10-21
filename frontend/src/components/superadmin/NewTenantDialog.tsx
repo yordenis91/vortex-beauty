@@ -214,7 +214,7 @@ const NewTenantDialog: React.FC<NewTenantDialogProps> = ({ open, onOpenChange })
 
     return (
       <Dialog open={open} onOpenChange={(next) => { if (!next) close(); else onOpenChange(next); }}>
-        <DialogContent className="sm:max-w-[600px] max-h-[88vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-emerald-500" />
@@ -267,7 +267,7 @@ const NewTenantDialog: React.FC<NewTenantDialogProps> = ({ open, onOpenChange })
   // ---------- Asistente ----------
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) close(); else onOpenChange(next); }}>
-      <DialogContent className="sm:max-w-[640px] max-h-[88vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[640px]">
         <DialogHeader>
           <DialogTitle>Nuevo salón</DialogTitle>
         </DialogHeader>

@@ -95,7 +95,7 @@ const AdminGallery: React.FC = () => {
 
   if (servicesLoading || galleryLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
       </div>
     );
@@ -104,15 +104,12 @@ const AdminGallery: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Galería de Inspiración (Admin)</h2>
+        <h2 className="text-2xl font-bold">Galería de inspiración</h2>
         <p className="text-sm text-muted-foreground">Gestión de diseños para la página de clientes.</p>
       </div>
 
-      <form onSubmit={handleCreate} className="bg-card rounded-2xl shadow-lg p-8 space-y-8">
-        <div className="flex items-center justify-between">
-          <h3 className="text-2xl font-bold text-foreground">Agregar nuevo diseño</h3>
-          <span className="text-sm text-muted-foreground">Admin Gallery</span>
-        </div>
+      <form onSubmit={handleCreate} className="bg-card rounded-2xl shadow-lg p-4 sm:p-8 space-y-6 sm:space-y-8">
+        <h3 className="text-xl font-bold text-foreground">Agregar nuevo diseño</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>

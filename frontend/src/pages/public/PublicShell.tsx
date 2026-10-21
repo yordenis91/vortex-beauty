@@ -27,7 +27,7 @@ const PublicShell: React.FC<{ title: string; subtitle?: string; salon?: SalonBra
           <img src={salon.logoUrl} alt={salon.name ?? title} className="h-12 w-12 rounded-xl object-contain bg-white border border-border shrink-0" />
         )}
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-foreground truncate">{title}</h1>
+          <h1 className="text-xl font-bold leading-tight text-foreground line-clamp-2 break-words">{title}</h1>
           {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
         </div>
       </div>
