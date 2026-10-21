@@ -95,7 +95,7 @@ const AdminSidebar: React.FC = () => {
     <Sidebar className="bg-white border-r border-gray-200" collapsible="icon">
       <div className="flex h-16 items-center gap-3 px-4 border-b border-gray-200">
         <LogoMark size={40} />
-        <span className="text-base font-semibold text-black group-data-[collapsible=icon]:hidden">
+        <span className="min-w-0 line-clamp-2 break-words text-sm font-semibold leading-tight text-black group-data-[collapsible=icon]:hidden">
           {salonName ?? brand.name}
         </span>
       </div>

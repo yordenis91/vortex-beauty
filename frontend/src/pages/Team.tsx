@@ -174,7 +174,7 @@ const Team: React.FC = () => {
               <label htmlFor="team-email" className="block text-sm font-medium mb-1">Correo</label>
               <input id="team-email" type="email" required className={inputClass} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-popover px-6 py-3">
               <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-md">Cancelar</button>
               <button type="submit" disabled={create.isPending || (form.role === 'STAFF' && !form.professionalId)} className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50">
                 Crear usuario

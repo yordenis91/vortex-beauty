@@ -225,8 +225,8 @@ const Services: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card shadow rounded-lg px-4 py-5 sm:p-6 flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="bg-card shadow rounded-lg px-4 py-5 sm:p-6 flex flex-col lg:flex-row gap-4">
+        <div className="relative min-w-0 lg:flex-1">
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
           <input
             type="text"
@@ -366,7 +366,7 @@ const Services: React.FC = () => {
                 onChange={(resourceIds) => setFormData({ ...formData, resourceIds })}
               />
             )}
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-popover px-6 py-3">
               <button type="button" onClick={closeModal} className="px-4 py-2 border border-border rounded-md">Cancelar</button>
               <button type="submit" className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700">Guardar</button>
             </div>

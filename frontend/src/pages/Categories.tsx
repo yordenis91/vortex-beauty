@@ -235,7 +235,7 @@ const Categories: React.FC = () => {
           }
         }}
       >
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {editingCategory ? 'Editar Categoría' : 'Agregar Nueva Categoría'}
@@ -313,7 +313,7 @@ const Categories: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-6 border-t border-border">
+              <div className="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-popover px-6 py-3">
                 <button
                   type="button"
                   onClick={() => {

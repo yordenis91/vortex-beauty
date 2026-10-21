@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api } from '../lib/api';
 import { useClosedDates, useCreateClosedDate, useDeleteClosedDate, getErrorMessage } from '../hooks/useQueries';
+import { useSearchParams } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
-import BookingSettingsCard from '../components/BookingSettingsCard';
+import BookingSettingsCard, { type SettingsTab } from '../components/BookingSettingsCard';
 import SalonBrandCard from '../components/SalonBrandCard';
 
 interface BusinessHour {
@@ -18,6 +19,16 @@ interface BusinessHour {
   createdAt: string;
   updatedAt: string;
 }
+
+// Cada ficha agrupa una parte de la configuración para no tener que recorrer una página enorme.
+const TABS: Array<{ id: SettingsTab; label: string }> = [
+  { id: 'negocio', label: 'Negocio' },
+  { id: 'marca', label: 'Marca' },
+  { id: 'horarios', label: 'Horarios' },
+  { id: 'cierres', label: 'Cierres' },
+  { id: 'reservas', label: 'Reservas' },
+  { id: 'avisos', label: 'Avisos' },
+];
 
 const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
@@ -52,9 +63,13 @@ const useUpdateBusinessHour = () => {
 };
 
 const Settings: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requested = searchParams.get('ficha');
+  const tab: SettingsTab = TABS.some((t) => t.id === requested) ? (requested as SettingsTab) : 'negocio';
   const { data: businessHours = [], isLoading } = useBusinessHours();
   const updateMutation = useUpdateBusinessHour();
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [expandedDay, setExpandedDay] = useState<number | null>(null);
   const [formData, setFormData] = useState<{ [key: number]: BusinessHour }>({});
   const [newSlotInput, setNewSlotInput] = useState<{ [key: number]: string }>({});
 
@@ -238,7 +253,7 @@ const Settings: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -256,12 +271,38 @@ const Settings: React.FC = () => {
         </p>
       </div>
 
-      <BookingSettingsCard />
+      <div
+        role="tablist"
+        aria-label="Secciones de configuración"
+        className="-mx-4 grid grid-cols-3 gap-1 bg-muted px-4 py-2 sm:sticky sm:top-16 sm:z-10 sm:-mx-6 sm:grid-cols-6 sm:px-6 lg:-mx-8 lg:px-8"
+      >
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`ficha-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            onClick={() => setSearchParams({ ficha: t.id }, { replace: true })}
+            className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${
+              tab === t.id ? 'bg-blue-600 text-white shadow-sm' : 'bg-card text-muted-foreground shadow-sm hover:text-foreground'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      <SalonBrandCard />
+      {/* Negocio, Reservas y Avisos comparten un formulario y un solo botón de guardado. */}
+      <BookingSettingsCard tab={tab} />
+
+      <div role="tabpanel" id="panel-marca" aria-labelledby="ficha-marca" hidden={tab !== 'marca'}>
+        <SalonBrandCard />
+      </div>
 
       {/* Business Hours Card */}
-      <div className="bg-card rounded-lg shadow overflow-hidden">
+      <div role="tabpanel" id="panel-horarios" aria-labelledby="ficha-horarios" hidden={tab !== 'horarios'} className="bg-card rounded-lg shadow overflow-hidden">
         <div className="px-4 py-5 sm:px-6 border-b border-border">
           <h3 className="text-lg leading-6 font-medium text-foreground">
             Horarios Comerciales
@@ -277,12 +318,28 @@ const Settings: React.FC = () => {
             if (!dayData) return null;
 
             const isBeingEdited = editingDay === dayOfWeek;
+            // Un día se muestra resumido; se despliega para editarlo (o mientras tiene cambios sin guardar).
+            const expanded = expandedDay === dayOfWeek || isBeingEdited;
+            const exactSlots = (dayData.timeSlots || []).length;
 
             return (
-              <div key={dayOfWeek} className="px-4 py-6 sm:px-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex-1">
+              <div key={dayOfWeek} className="px-4 py-4 sm:px-6">
+                <div className={`flex items-center justify-between gap-3 ${dayData.isOpen && expanded ? 'mb-4' : ''}`}>
+                  <div className="min-w-0 flex-1">
                     <h4 className="text-base font-medium text-foreground">{dayName}</h4>
+                    {dayData.isOpen && (
+                      <p className="text-xs text-muted-foreground">
+                        {dayData.startTime} – {dayData.endTime}
+                        {exactSlots > 0 ? ` · ${exactSlots} horarios exactos` : ''}
+                        {dayData.maxAppointments > 0 ? ` · máx. ${dayData.maxAppointments} citas` : ''}
+                        {isBeingEdited ? ' · cambios sin guardar' : ''}
+                      </p>
+                    )}
+                    {dayData.isOpen && !isBeingEdited && (
+                      <button type="button" className="mt-1 text-xs font-medium text-blue-600" onClick={() => setExpandedDay(expanded ? null : dayOfWeek)}>
+                        {expanded ? 'Ocultar' : 'Editar horario'}
+                      </button>
+                    )}
                   </div>
 
                   {/* Toggle Switch */}
@@ -306,7 +363,7 @@ const Settings: React.FC = () => {
                 </div>
 
                 {/* Time Inputs */}
-                {dayData.isOpen && (
+                {dayData.isOpen && expanded && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -440,7 +497,7 @@ const Settings: React.FC = () => {
       </div>
 
       {/* Closed Dates Card */}
-      <div className="bg-card rounded-lg shadow overflow-hidden mt-8">
+      <div role="tabpanel" id="panel-cierres" aria-labelledby="ficha-cierres" hidden={tab !== 'cierres'} className="bg-card rounded-lg shadow overflow-hidden">
         <div className="px-4 py-5 sm:px-6 border-b border-border">
           <h3 className="text-lg leading-6 font-medium text-foreground">
             Días de Cierre Específicos (Vacaciones/Feriados)
