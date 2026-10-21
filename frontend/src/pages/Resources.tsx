@@ -15,7 +15,7 @@ const Resources: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-foreground sm:text-3xl">Recursos</h2>
+        <h2 className="text-2xl font-bold text-foreground">Recursos</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Sillas, cabinas, camillas o salas. Un servicio que necesita recurso solo admite tantas citas a la vez como recursos libres haya.
           Asigna recursos a cada servicio desde la pantalla de Servicios.

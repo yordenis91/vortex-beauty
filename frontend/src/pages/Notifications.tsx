@@ -75,7 +75,7 @@ const Notifications: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate sm:text-3xl sm:tracking-tight">
+        <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate">
           Centro de Notificaciones
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -160,7 +160,7 @@ const Notifications: React.FC = () => {
                       {notification.client ? (
                         <div>
                           <p className="font-medium text-foreground">{notification.client.name}</p>
-                          <p className="text-xs text-muted-foreground">{notification.client.email}</p>
+                          {notification.client.email && <p className="text-xs text-muted-foreground">{notification.client.email}</p>}
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>

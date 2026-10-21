@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { imageSchema } from '../lib/images';
+import { phoneKey } from '../lib/phone';
 import { runInTransaction } from '../lib/db';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { appointmentScope, requirePermission } from '../middleware/can';
@@ -23,7 +24,8 @@ async function clientScope(req: express.Request): Promise<Prisma.ClientWhereInpu
 
 const clientSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  // Opcional: quien reserva solo con teléfono no tiene correo. '' = sin correo.
+  email: z.string().email().optional().or(z.literal('')),
   code: z.string().optional(),
   displayName: z.string().optional(),
   phone: z.string().optional(),
@@ -35,8 +37,31 @@ const clientSchema = z.object({
   imageUrl: imageSchema.optional(),
 });
 
-// Los clientes no tienen portal ni cuenta de acceso: solo la ficha.
-const createClientSchema = clientSchema;
+// Los clientes no tienen portal ni cuenta de acceso: solo la ficha. Hace falta al menos
+// un teléfono o un correo para reconocerlos (igual que en la reserva pública).
+const createClientSchema = clientSchema.refine((b) => !!b.email || !!phoneKey(b.phone), {
+  message: 'Indica un teléfono o un correo',
+  path: ['email'],
+});
+
+/** Vacíos a null y teléfono normalizado (phoneKey), para que la reserva pública reconozca al mismo cliente. */
+function normalizeContact<T extends { email?: string; phone?: string }>(data: T) {
+  const out: Record<string, unknown> = { ...data };
+  if ('email' in data) out.email = data.email || null;
+  if ('phone' in data) {
+    out.phone = data.phone || null;
+    out.phoneKey = phoneKey(data.phone);
+  }
+  return out;
+}
+
+/** 409 legible cuando el correo o el teléfono ya pertenecen a otra ficha del salón. */
+function duplicateContact(error: unknown): string | null {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') return null;
+  // Con el adaptador de Postgres el campo viene en el nombre de la restricción (Client_tenantId_phoneKey_key).
+  const detail = JSON.stringify(error.meta ?? {});
+  return detail.includes('phoneKey') ? 'Ya existe un cliente con ese teléfono' : 'Ya existe un cliente con ese correo';
+}
 
 const updateClientSchema = clientSchema.partial();
 
@@ -92,7 +117,8 @@ router.post('/', requireAdmin, async (req, res) => {
     const newClient = await runInTransaction((tx) =>
       tx.client.create({
         data: {
-          ...clientData,
+          ...normalizeContact(clientData),
+          name: clientData.name,
           userId: req.userId!,
           tenantId,
         },
@@ -105,7 +131,9 @@ router.post('/', requireAdmin, async (req, res) => {
     if (error?.name === 'ZodError') {
       return res.status(400).json(zodResponse(error));
     }
-    
+    const duplicate = duplicateContact(error);
+    if (duplicate) return res.status(409).json({ error: duplicate });
+
     console.error(error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }
@@ -118,9 +146,7 @@ router.put('/:id', requireAdmin, async (req, res) => {
 
     const client = await prisma.client.updateMany({
       where: { id: req.params.id as string, tenantId: req.user!.tenantId },
-      data: {
-        ...data,
-      },
+      data: normalizeContact(data),
     });
 
     if (client.count === 0) {
@@ -137,7 +163,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
     if (error?.name === 'ZodError') {
       return res.status(400).json(zodResponse(error));
     }
-    
+    const duplicate = duplicateContact(error);
+    if (duplicate) return res.status(409).json({ error: duplicate });
+
     console.error(error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }

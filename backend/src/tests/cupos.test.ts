@@ -108,6 +108,13 @@ describeIfDb('reserva por cupos', () => {
     expect(await times(svcShort, MONDAY, quotaPro)).toEqual(['14:00']);
   });
 
+  it('el aviso «completo» del calendario no marca un día con cupos libres aunque se alcance el tope del salón', async () => {
+    // El lunes tiene tope 1 y ya hay 2 citas (09:00 y 11:00), pero queda libre el cupo de las 14:00.
+    const res = await request(app).get('/api/appointments/fully-booked-dates').set('Authorization', `Bearer ${token}`)
+    expect(res.status).toBe(200)
+    expect(res.body).not.toContain(MONDAY)
+  })
+
   it('el cupo ocupado no se puede reservar de nuevo', async () => {
     await expect(book(svcShort, '09:00', quotaPro)).rejects.toThrow(/no está disponible/);
   });
@@ -123,6 +130,11 @@ describeIfDb('reserva por cupos', () => {
     const results = await Promise.allSettled(Array.from({ length: 10 }, () => book(svcShort, '14:00', quotaPro)));
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
   });
+
+  it('con todos los cupos ocupados y el tope alcanzado, el día sí aparece como completo', async () => {
+    const res = await request(app).get('/api/appointments/fully-booked-dates').set('Authorization', `Bearer ${token}`)
+    expect(res.body).toContain(MONDAY)
+  })
 
   it('el tope diario del salón (1) corta a quien reserva por hora, no a quien reserva por cupos', async () => {
     // El lunes ya tiene varias citas y el salón admite 1: el profesional por hora no tiene huecos.

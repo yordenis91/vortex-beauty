@@ -53,7 +53,7 @@ describe('Clientes', () => {
     const user = userEvent.setup()
     renderWithProviders(<Clients />)
     await screen.findByText('Carlos Méndez')
-    await user.type(screen.getByPlaceholderText('Buscar por nombre, email o teléfono...'), 'luis@')
+    await user.type(screen.getByPlaceholderText('Buscar clientes...'), 'luis@')
     expect(screen.queryByText('Carlos Méndez')).not.toBeInTheDocument()
     expect(screen.getByText('Luis Pérez')).toBeInTheDocument()
   })
@@ -73,6 +73,35 @@ describe('Clientes', () => {
     expect(calls[0].body).toMatchObject({ name: 'Raúl Gómez', email: 'raul@example.com', phone: '+53 5 555 7777' })
     expect(Object.keys(calls[0].body!)).not.toEqual(expect.arrayContaining(['username']))
     expect(calls[0].body).not.toHaveProperty('password')
+  })
+
+  it('permite crear un cliente solo con teléfono: el correo es opcional', async () => {
+    const calls = mock([client()])
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: /Nuevo cliente/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByPlaceholderText('maria@example.com')).not.toBeRequired()
+    await user.type(within(dialog).getByPlaceholderText('Ej: María García'), 'Marta Solo Teléfono')
+    await user.type(within(dialog).getByPlaceholderText('+53 5 555 1234'), '+53 5 555 0000')
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await waitFor(() => expect(calls).toHaveLength(1))
+    expect(calls[0].body).toMatchObject({ name: 'Marta Solo Teléfono', email: '', phone: '+53 5 555 0000' })
+  })
+
+  it('sin teléfono ni correo no se envía el formulario', async () => {
+    const calls = mock([client()])
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: /Nuevo cliente/ }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByPlaceholderText('Ej: María García'), 'Sin contacto')
+    await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
+    await new Promise((r) => setTimeout(r, 150))
+    expect(calls).toHaveLength(0)
+    expect(screen.getByRole('dialog')).toBeInTheDocument() // el formulario sigue abierto
   })
 
   it('el formulario de nuevo cliente no ofrece credenciales de acceso (los clientes no tienen portal)', async () => {
