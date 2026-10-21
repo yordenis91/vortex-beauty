@@ -374,24 +374,29 @@ const Professionals: React.FC = () => {
                   {DAYS.map((day) => {
                     const times = quotaTimesOf(day.value);
                     return (
-                      <div key={day.value} className="flex flex-wrap items-center gap-2">
-                        <span className="w-24 text-sm">{day.label}</span>
-                        {times.length === 0 && <span className="text-xs text-muted-foreground">Sin cupos</span>}
-                        {times.map((time) => (
-                          <span key={time} className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-sm px-2 py-0.5">
-                            {time}
-                            <button type="button" aria-label={`Quitar cupo de las ${time} del ${day.label}`} className="text-red-600 px-1" onClick={() => removeQuota(day.value, time)}>
-                              ×
+                      <div key={day.value} className="rounded-lg border border-border p-3 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{day.label}</span>
+                          <span className="text-xs text-muted-foreground">{times.length === 0 ? 'Sin cupos' : `${times.length} ${times.length === 1 ? 'cupo' : 'cupos'}`}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {times.map((time) => (
+                            <span key={time} className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-sm px-2 py-0.5">
+                              {time}
+                              <button type="button" aria-label={`Quitar cupo de las ${time} del ${day.label}`} className="text-red-600 px-1" onClick={() => removeQuota(day.value, time)}>
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <QuotaTimeAdder dayLabel={day.label} onAdd={(time) => addQuota(day.value, time)} />
+                          {times.length > 0 && (
+                            <button type="button" className="text-xs text-blue-600" onClick={() => copyQuotaToAllDays(day.value)}>
+                              Copiar a todos los días
                             </button>
-                          </span>
-                        ))}
-                        <QuotaTimeAdder dayLabel={day.label} onAdd={(time) => addQuota(day.value, time)} />
-                        <span className="text-xs text-muted-foreground">{times.length} {times.length === 1 ? 'cupo' : 'cupos'}</span>
-                        {times.length > 0 && (
-                          <button type="button" className="text-xs text-blue-600" onClick={() => copyQuotaToAllDays(day.value)}>
-                            Copiar a todos los días
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })}
