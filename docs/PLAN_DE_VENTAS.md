@@ -30,6 +30,7 @@ de borrarla.
 - [x] Configuración por fichas (Negocio, Marca, Horarios, Cierres, Reservas, Avisos) en lugar de una página larguísima
 - [x] Reserva pública más clara en móvil: «Paso X de N», resumen del servicio elegido, botón para copiar el enlace de la cita
 - [x] Clientes sin credenciales de acceso (no hay portal): el formulario solo pide la ficha
+- [x] Manual de usuario (`docs/manual/`): 20 capítulos, 43 capturas reales anotadas y mockups; versión web privada para compartir (2026-10-21)
 
 ## 3. Pendiente por tu parte
 - [ ] **Yumi Manicure:** que entre con su correo y cambie la contraseña temporal en Mi perfil;
@@ -86,3 +87,4 @@ de borrarla.
 | 2026-10-21 | `/citas` del bot para dueño y profesionales (antes solo respondía a clientes) |
 | 2026-10-21 | Auditoría de interfaces en móvil y PC: diálogos, desbordes, títulos, Configuración por fichas |
 | 2026-10-21 | Reserva pública con pasos y resumen; clientes sin credenciales de acceso |
+| 2026-10-21 | Manual de usuario de Afilao: capítulos, capturas anotadas, mockups y versión web |

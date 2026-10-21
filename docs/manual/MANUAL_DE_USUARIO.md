@@ -100,8 +100,8 @@ Afilao es una agenda de citas por internet para tu negocio. Sirve para barbería
 
 - **Tus clientes reservan solos.** Lo hacen desde su celular, a cualquier hora, sin crear una cuenta.
 - **Ves toda tu agenda en un solo lugar.** Sabes quién viene, cuándo y con qué profesional.
-- **Tienes menos llamadas y menos citas olvidadas.** Afilao avisa a tus clientes por correo y por Telegram.
-- **Compartes un solo enlace.** Lo pones en tu Instagram o WhatsApp. También puedes imprimir un cartel con un código QR.
+- **Tienes menos llamadas y menos citas olvidadas.** Afilao avisa a tus clientes por correo y por Telegram, una aplicación de mensajes como WhatsApp.
+- **Compartes un solo enlace.** Lo pones en tu Instagram o WhatsApp. También puedes imprimir un cartel con un código QR. Es un cuadro con puntos que el celular lee con la cámara.
 - **Cada profesional ve solo lo suyo.** Su agenda y sus clientes. Nada más.
 - **No instalas nada.** Funciona en el celular, la tableta y el computador.
 
@@ -128,7 +128,7 @@ Reciben un enlace secreto para cambiar o cancelar su cita. Lo explicamos en el [
 ## Lo que necesitas
 
 - Un celular, una tableta o un computador con internet.
-- Un navegador actualizado: Chrome, Edge, Safari o Firefox.
+- Un navegador actualizado. Es el programa con el que abres internet: Chrome, Edge, Safari o Firefox.
 - Tu **correo** y tu **contraseña temporal**.
 - El **enlace de tu salón**.
 
@@ -185,7 +185,7 @@ Hazlo la primera vez que entras. Así nadie más usa tu contraseña.
 
 ✅ **Resultado esperado:** Ves el aviso *Contraseña cambiada. Las demás sesiones se cerraron.*
 
-> ❓ **Nota:** "Las demás sesiones se cerraron" significa que, si estabas dentro en otro celular o computador, ahí tendrás que entrar de nuevo con la contraseña nueva.
+> ❓ **Nota:** *Las demás sesiones se cerraron* significa que te sacamos de los otros dispositivos. Si estabas dentro en otro celular o computador, entra de nuevo con la contraseña nueva.
 
 💡 **Consejo:** Elige una contraseña que recuerdes, pero que otros no adivinen. No uses tu fecha de nacimiento.
 
@@ -216,12 +216,14 @@ Aquí conoces la pantalla principal y el menú. En cinco minutos sabrás dónde 
 
 Es lo primero que ves al entrar. Te da un resumen de tu día.
 
+👉 Mira la **Captura 3**.
+
 ![Captura 3 — Panel de control en el celular](capturas/03_panel_movil.png)
 
 > 📸 **Captura 3** — Pantalla **Panel de control** en el móvil. Elementos a resaltar: 1) botón de menú, 2) las cuatro tarjetas de resumen, 3) lista **Próximas citas**, 4) enlace **Ver agenda**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `03_panel_movil.png`
 
-1. **Botón de menú** (número 1). Es un cuadro con una barra a la izquierda. Abre el menú.
-2. **Tarjetas de resumen** (número 2). Muestran números de tu negocio:
+1. Botón de menú (número 1). Es un cuadro con una barra a la izquierda. Abre el menú.
+2. Tarjetas de resumen (número 2). Muestran números de tu negocio:
    - **Citas de hoy**: cuántas citas tienes hoy.
    - **Citas programadas**: cuántas citas tienes por delante.
    - **Citas completadas**: cuántas ya terminaste.
@@ -234,6 +236,8 @@ Es lo primero que ves al entrar. Te da un resumen de tu día.
 ## El menú
 
 El menú tiene todo lo que puedes hacer. Ábrelo con el botón de menú.
+
+👉 Mira la **Captura 4**.
 
 ![Captura 4 — Menú abierto en el celular](capturas/04_menu_movil.png)
 
@@ -262,18 +266,22 @@ Para cerrar el menú, toca fuera de él.
 
 En una pantalla grande el menú está siempre visible a la izquierda. No tienes que abrirlo.
 
+👉 Mira la **Captura 5**.
+
 ![Captura 5 — Panel de control en el computador](capturas/05_panel_pc.png)
 
 > 📸 **Captura 5** — Pantalla **Panel de control** en el computador. Elementos a resaltar: 1) menú lateral, 2) barra superior, 3) tarjetas de resumen, 4) **Próximas citas**. Encuadre: pantalla completa. Nombre de archivo sugerido: `05_panel_pc.png`
 
-1. **Menú lateral** (número 1): siempre visible.
-2. **Barra superior** (número 2): tiene el botón del modo oscuro y tu menú de usuario.
-3. **Tarjetas de resumen** (número 3).
+1. Menú lateral (número 1): siempre visible.
+2. Barra superior (número 2): tiene el botón del modo oscuro y tu menú de usuario.
+3. Tarjetas de resumen (número 3).
 4. **Próximas citas** (número 4).
 
 ## Si eres profesional
 
 El profesional ve un menú más corto. Solo tiene **Panel de Control** y **Citas**.
+
+👉 Mira la **Captura 6**.
 
 ![Captura 6 — Menú de un profesional](capturas/06_panel_profesional.png)
 
@@ -306,6 +314,8 @@ En **Citas** ves tu agenda. Creas citas nuevas. Cambias, confirmas, completas o 
 
 ## Conoce la pantalla
 
+👉 Mira la **Captura 7**.
+
 ![Captura 7 — Agenda de citas con el calendario](capturas/07_agenda_calendario.png)
 
 > 📸 **Captura 7** — Pantalla **Agenda de Citas** en el móvil. Elementos a resaltar: 1) botón **Día**, 2) botón **Semana**, 3) botón **Nueva cita**, 4) calendario del mes. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `07_agenda_calendario.png`
@@ -313,7 +323,7 @@ En **Citas** ves tu agenda. Creas citas nuevas. Cambias, confirmas, completas o 
 1. **Día** (número 1): muestra la lista de citas de un solo día.
 2. **Semana** (número 2): muestra la semana entera en una cuadrícula. Úsala en el computador.
 3. **Nueva cita** (número 3): abre el formulario para crear una cita.
-4. **Calendario** (número 4): toca un día para ver su agenda. El día elegido sale en rojo.
+4. Calendario (número 4): toca un día para ver su agenda. El día elegido sale en rojo.
 
 Debajo del calendario hay una leyenda de colores:
 
@@ -343,6 +353,8 @@ Hay dos formas. Elige la que te resulte más cómoda.
 
 Es la más rápida.
 
+👉 Mira la **Captura 8**.
+
 ![Captura 8 — Filtros y horarios disponibles](capturas/08_agenda_horarios.png)
 
 > 📸 **Captura 8** — Sección **Horarios disponibles** de la agenda. Elementos a resaltar: 1) filtro **Todo el equipo**, 2) lista de servicios, 3) lista de profesionales, 4) un horario libre. Encuadre: recorte de la zona de horarios. Nombre de archivo sugerido: `08_agenda_horarios.png`
@@ -360,6 +372,8 @@ Es la más rápida.
 2. Completa el formulario que se abre.
 
 ### Completa el formulario de la cita
+
+👉 Mira la **Captura 9**.
 
 ![Captura 9 — Formulario para crear una cita](capturas/09_formulario_cita.png)
 
@@ -391,6 +405,8 @@ Es la más rápida.
 ## Cambiar el estado de una cita
 
 Cada cita tiene una tarjeta con botones. Los botones cambian según el estado de la cita.
+
+👉 Mira la **Captura 10**.
 
 ![Captura 10 — Tarjeta de una cita con sus botones](capturas/10_tarjeta_cita.png)
 
@@ -428,6 +444,8 @@ Los estados que verás son: **Pendiente**, **Agendada**, **Completada**, **Cance
 ### Arrastrar una cita en el computador
 
 En la vista **Semana** puedes mover una cita con el ratón.
+
+👉 Mira la **Captura 11**.
 
 ![Captura 11 — Vista Semana en el computador](capturas/11_agenda_semana.png)
 
@@ -487,17 +505,21 @@ En **Clientes** guardas los datos de las personas que te visitan. Los buscas, lo
 
 ## Conoce la pantalla
 
+👉 Mira la **Captura 12**.
+
 ![Captura 12 — Lista de clientes](capturas/12_clientes_lista.png)
 
 > 📸 **Captura 12** — Pantalla **Clientes**. Elementos a resaltar: 1) botón **Nuevo cliente**, 2) buscador, 3) tarjeta de un cliente, 4) icono de lápiz, 5) icono de papelera. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `12_clientes_lista.png`
 
 1. **Nuevo cliente** (número 1): crea una ficha.
-2. **Buscador** (número 2): escribe un nombre, un correo o un teléfono.
-3. **Tarjeta** (número 3): muestra el nombre, el correo y el teléfono.
-4. **Lápiz** (número 4): edita la ficha.
-5. **Papelera** (número 5): borra la ficha.
+2. Buscador (número 2): escribe un nombre, un correo o un teléfono.
+3. Tarjeta (número 3): muestra el nombre, el correo y el teléfono.
+4. Lápiz (número 4): edita la ficha.
+5. Papelera (número 5): borra la ficha.
 
 ## Dar de alta a un cliente
+
+👉 Mira la **Captura 13**.
 
 ![Captura 13 — Formulario de nuevo cliente](capturas/13_cliente_formulario.png)
 
@@ -564,6 +586,8 @@ Tus clientes reservan solos en una página web tuya. Aquí sacas el enlace, impr
 
 ## Saca tu enlace y tu código QR
 
+👉 Mira la **Captura 14**.
+
 ![Captura 14 — Ficha Reservas con el enlace y el código QR](capturas/14_reservas_enlace_qr.png)
 
 > 📸 **Captura 14** — Ficha **Reservas** de **Configuraciones**. Elementos a resaltar: 1) **Aceptar reservas en línea**, 2) enlace, 3) botón **Copiar**, 4) código QR, 5) **Imprimir cartel**, 6) **Descargar cartel (PNG)**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `14_reservas_enlace_qr.png`
@@ -583,6 +607,8 @@ Ahora pega el enlace donde quieras: tu Instagram, tu WhatsApp o tu ubicación en
 ## Imprime tu cartel
 
 El cartel lleva tu logo, tu color y el código QR. Tus clientes lo escanean con la cámara del celular.
+
+👉 Mira la **Captura 15**.
 
 ![Captura 15 — Cartel con el código QR](capturas/15_cartel_qr.png)
 
@@ -630,6 +656,8 @@ Esto es lo que verá tu cliente cuando abra tu enlace. Conócelo para ayudarle s
 
 ### Paso 1: elige el servicio
 
+👉 Mira la **Captura 16**.
+
 ![Captura 16 — Reserva: elegir el servicio](capturas/16_reserva_servicios.png)
 
 > 📸 **Captura 16** — Página de reserva, primer paso. Elementos a resaltar: 1) nombre del salón, 2) un servicio con su precio y duración. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `16_reserva_servicios.png`
@@ -637,6 +665,8 @@ Esto es lo que verá tu cliente cuando abra tu enlace. Conócelo para ayudarle s
 El cliente ve la pregunta **¿Qué servicio quieres?** con tus servicios agrupados por categoría. Toca el que quiere.
 
 ### Paso 2: elige con quién (si hay varios profesionales)
+
+👉 Mira la **Captura 17**.
 
 ![Captura 17 — Reserva: elegir el profesional](capturas/17_reserva_profesional.png)
 
@@ -646,6 +676,8 @@ Si ofreces el servicio con varias personas, el cliente elige una o toca **Cualqu
 
 ### Paso 3: elige el día
 
+👉 Mira la **Captura 18**.
+
 ![Captura 18 — Reserva: elegir el día](capturas/18_reserva_dia.png)
 
 > 📸 **Captura 18** — Página de reserva, paso **Elige el día**. Elementos a resaltar: 1) botón **Atrás**, 2) indicador de paso, 3) un día disponible. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `18_reserva_dia.png`
@@ -653,6 +685,8 @@ Si ofreces el servicio con varias personas, el cliente elige una o toca **Cualqu
 Los días que no se pueden elegir salen en gris. El botón **Atrás** vuelve al paso anterior.
 
 ### Paso 4: elige la hora
+
+👉 Mira la **Captura 19**.
 
 ![Captura 19 — Reserva: elegir la hora](capturas/19_reserva_hora.png)
 
@@ -662,6 +696,8 @@ El cliente toca la hora que le sirve. Solo ve horas libres.
 
 ### Paso 5: escribe sus datos
 
+👉 Mira la **Captura 20**.
+
 ![Captura 20 — Reserva: datos del cliente](capturas/20_reserva_datos.png)
 
 > 📸 **Captura 20** — Página de reserva, paso **Tus datos**. Elementos a resaltar: 1) **Nombre**, 2) **Teléfono**, 3) **Correo**, 4) botón **Confirmar cita**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `20_reserva_datos.png`
@@ -670,15 +706,19 @@ El cliente escribe su nombre y un teléfono o un correo. Luego toca **Confirmar 
 
 ### Listo: la reserva está hecha
 
+👉 Mira la **Captura 21**.
+
 ![Captura 21 — Reserva confirmada](capturas/21_reserva_listo.png)
 
 > 📸 **Captura 21** — Página de reserva confirmada. Elementos a resaltar: 1) mensaje **¡Listo! Ya tienes tu cita**, 2) enlace **Cambiar o cancelar mi cita**, 3) botón **Copiar enlace de mi cita**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `21_reserva_listo.png`
 
-El cliente ve **¡Listo! Ya tienes tu cita** con el resumen. Si tu negocio tiene el bot de Telegram, ve también el botón **Recibir avisos por Telegram**.
+El cliente ve **¡Listo! Ya tienes tu cita** con el resumen. Si tu negocio tiene el bot de Telegram (un asistente automático que manda avisos; lo explicamos en el [capítulo 10](#10-el-bot-de-telegram)), ve también el botón **Recibir avisos por Telegram**.
 
 > ⚠️ **Atención:** Dile a tus clientes que guarden el enlace **Cambiar o cancelar mi cita**. Es la única forma de gestionar su cita sin cuenta. Para eso sirve **Copiar enlace de mi cita**.
 
 ### Cambiar o cancelar su cita
+
+👉 Mira la **Captura 22**.
 
 ![Captura 22 — El cliente gestiona su cita](capturas/22_gestionar_cita.png)
 
@@ -703,7 +743,7 @@ Con su enlace, el cliente toca **Cambiar fecha u hora** o **Cancelar reserva**. 
 
 Con el bot de Telegram, Afilao te avisa de cada reserva nueva o cancelada. También avisa a tus clientes y a tus profesionales. Es opcional, pero muy útil.
 
-Telegram es una aplicación de mensajes, como WhatsApp. Es gratuita.
+Telegram es una aplicación de mensajes, como WhatsApp. Es gratuita. Un bot es un asistente automático que escribe mensajes por ti.
 
 > ❓ **Nota:** Cada negocio crea su propio bot. Así los avisos salen con el nombre de tu salón.
 
@@ -730,6 +770,8 @@ Solo lo hace el dueño, una vez.
 7. Pega el token en **Token del bot de Telegram (opcional)**.
 8. Pulsa **Guardar ajustes**.
 
+👉 Mira la **Captura 23**.
+
 ![Captura 23 — Ficha Avisos con el bot conectado](capturas/23_avisos_telegram.png)
 
 > 📸 **Captura 23** — Ficha **Avisos** de **Configuraciones** con el bot ya conectado. Elementos a resaltar: 1) **Recordatorios**, 2) **Avisos al dueño**, 3) código `/vincular`, 4) **Desconectar bot**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `23_avisos_telegram.png`
@@ -754,6 +796,8 @@ Solo lo hace el dueño, una vez.
 3. Abre tu bot en Telegram. Pulsa su nombre, que aparece como **Bot conectado: @…**.
 4. Pulsa **Iniciar** si Telegram te lo pide.
 5. Envía el mensaje, por ejemplo `/vincular A1B2C3D4`.
+
+👉 Mira la **Captura 24**.
 
 ![Captura 24 — Chat con el bot en Telegram](capturas/24_telegram_chat.png)
 
@@ -783,6 +827,8 @@ Cada profesional vincula su propio Telegram.
 1. El profesional entra a Afilao con su cuenta.
 2. Pulsa el icono de persona, arriba a la derecha, y luego **Mi Perfil**.
 3. Baja hasta **Avisos de mis citas por Telegram**.
+
+👉 Mira la **Captura 25**.
 
 ![Captura 25 — Avisos de Telegram en Mi perfil](capturas/25_perfil_telegram.png)
 
@@ -827,17 +873,21 @@ En **Servicios** pones lo que ofreces, con su precio y su duración. En **Catego
 
 ## Conoce la pantalla de Servicios
 
+👉 Mira la **Captura 26**.
+
 ![Captura 26 — Lista de servicios](capturas/26_servicios_lista.png)
 
 > 📸 **Captura 26** — Pantalla **Servicios**. Elementos a resaltar: 1) botón **Agregar servicio**, 2) buscador, 3) fila de un servicio, 4) icono de lápiz, 5) icono de papelera. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `26_servicios_lista.png`
 
 1. **Agregar servicio** (número 1): crea un servicio nuevo.
-2. **Buscador** (número 2): escribe una parte del nombre. Debajo tienes dos filtros: **Todas las categorías** y **Toda visibilidad**.
-3. **Fila del servicio** (número 3): muestra el nombre, la categoría, el precio, la duración y si es **Visible**.
-4. **Lápiz** (número 4): edita el servicio.
-5. **Papelera** (número 5): borra el servicio.
+2. Buscador (número 2): escribe una parte del nombre. Debajo tienes dos filtros: **Todas las categorías** y **Toda visibilidad**.
+3. Fila del servicio (número 3): muestra el nombre, la categoría, el precio, la duración y si es **Visible**.
+4. Lápiz (número 4): edita el servicio.
+5. Papelera (número 5): borra el servicio.
 
 ## Crear un servicio
+
+👉 Mira la **Captura 27**.
 
 ![Captura 27 — Formulario de nuevo servicio](capturas/27_servicio_formulario.png)
 
@@ -886,6 +936,8 @@ Estos campos son opcionales:
 
 ## Las categorías
 
+👉 Mira la **Captura 28**.
+
 ![Captura 28 — Lista de categorías](capturas/28_categorias.png)
 
 > 📸 **Captura 28** — Pantalla **Categorías**. Elementos a resaltar: 1) botón **Agregar Categoría**, 2) buscador, 3) tarjeta de una categoría. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `28_categorias.png`
@@ -917,6 +969,8 @@ Aquí creas la ficha de cada persona que atiende. Defines cuándo trabaja, qué 
 **Menú › Profesionales** (lo ven el dueño y el gerente)
 
 ## Conoce la pantalla
+
+👉 Mira la **Captura 29**.
 
 ![Captura 29 — Lista de profesionales](capturas/29_profesionales_lista.png)
 
@@ -960,6 +1014,8 @@ Cada profesional elige una de estas dos formas.
 
 ### Si eliges Por hora
 
+👉 Mira la **Captura 30**.
+
 ![Captura 30 — Profesional que reserva por hora](capturas/30_profesional_por_hora.png)
 
 > 📸 **Captura 30** — Formulario de un profesional **Por hora**. Elementos a resaltar: 1) **Cómo recibe reservas**, 2) opción elegida, 3) **Horario semanal**, 4) hora de un tramo, 5) **+ tramo**. Encuadre: recorte del formulario. Nombre de archivo sugerido: `30_profesional_por_hora.png`
@@ -973,6 +1029,8 @@ Cada profesional elige una de estas dos formas.
 7. Pulsa **Guardar**.
 
 ### Si eliges Por cupos
+
+👉 Mira la **Captura 31**.
 
 ![Captura 31 — Profesional que reserva por cupos](capturas/31_profesional_por_cupos.png)
 
@@ -1004,6 +1062,8 @@ Cada profesional elige una de estas dos formas.
 ## Ausencias: vacaciones y descansos
 
 Si un profesional no estará, registra su ausencia. En esos días nadie podrá reservarle.
+
+👉 Mira la **Captura 32**.
 
 ![Captura 32 — Ausencias de un profesional](capturas/32_profesional_ausencias.png)
 
@@ -1058,6 +1118,8 @@ En la parte de arriba hay seis botones. Toca el de la ficha que quieres.
 
 ## Ficha Negocio
 
+👉 Mira la **Captura 33**.
+
 ![Captura 33 — Ficha Negocio](capturas/33_config_negocio.png)
 
 > 📸 **Captura 33** — Ficha **Negocio** de **Configuraciones**. Elementos a resaltar: 1) los seis botones de fichas, 2) **Tipo de negocio**, 3) **Zona horaria**, 4) **Vocabulario**, 5) botón **Guardar ajustes**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `33_config_negocio.png`
@@ -1073,6 +1135,8 @@ En la parte de arriba hay seis botones. Toca el de la ficha que quieres.
 > ❓ **Nota:** Cambiar el **Tipo de negocio** cambia las palabras del sistema. Tus servicios y horarios no se tocan.
 
 ## Ficha Marca
+
+👉 Mira la **Captura 34**.
 
 ![Captura 34 — Ficha Marca](capturas/34_config_marca.png)
 
@@ -1092,6 +1156,8 @@ En la parte de arriba hay seis botones. Toca el de la ficha que quieres.
 
 Aquí dices qué días y a qué horas abre tu negocio. Los clientes no pueden reservar fuera de estas horas.
 
+👉 Mira la **Captura 35**.
+
 ![Captura 35 — Ficha Horarios con un día abierto para editar](capturas/35_config_horarios.png)
 
 > 📸 **Captura 35** — Ficha **Horarios** con el lunes desplegado. Elementos a resaltar: 1) nombre del día, 2) interruptor **Abierto**, 3) **Hora de Apertura**, 4) **Hora de Cierre**, 5) **Límite de citas**, 6) **Agregar horario exacto**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `35_config_horarios.png`
@@ -1101,7 +1167,7 @@ Cada día aparece resumido, por ejemplo *09:00 – 18:00*. Para cambiarlo:
 1. Pulsa la ficha **Horarios**.
 2. Busca el día y pulsa **Editar horario**.
 3. Cambia la **Hora de Apertura** (número 3) y la **Hora de Cierre** (número 4).
-4. Si quieres limitar las citas de ese día, escribe un número en **Límite de citas (0 = Sin límite)** (número 5).
+4. Para limitar las citas del día, escribe un número en **Límite de citas (0 = Sin límite)** (número 5).
 5. Pulsa **Guardar**.
 
 ✅ **Resultado esperado:** Ves el aviso *Horario actualizado correctamente*.
@@ -1131,6 +1197,8 @@ Si no quieres horas cada 30 minutos, puedes poner horas exactas para un día.
 ## Ficha Cierres
 
 Usa esta ficha para días sueltos en que no abres: feriados, vacaciones, un evento.
+
+👉 Mira la **Captura 36**.
 
 ![Captura 36 — Ficha Cierres](capturas/36_config_cierres.png)
 
@@ -1168,6 +1236,8 @@ En **Equipo** el dueño crea las cuentas de las personas que entran a Afilao. En
 
 ## Conoce la pantalla de Equipo
 
+👉 Mira la **Captura 37**.
+
 ![Captura 37 — Lista del equipo](capturas/37_equipo_lista.png)
 
 > 📸 **Captura 37** — Pantalla **Equipo**. Elementos a resaltar: 1) botón **Nuevo usuario**, 2) tipo de usuario, 3) botón **Restablecer contraseña**, 4) botón **Desactivar**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `37_equipo_lista.png`
@@ -1175,6 +1245,8 @@ En **Equipo** el dueño crea las cuentas de las personas que entran a Afilao. En
 Cada persona muestra su tipo (**Dueño**, **Gerente** o **Profesional**) y su correo. El dueño no se puede cambiar.
 
 ## Crear una cuenta
+
+👉 Mira la **Captura 38**.
 
 ![Captura 38 — Formulario de nuevo usuario](capturas/38_equipo_nuevo.png)
 
@@ -1199,6 +1271,8 @@ Primero crea su ficha en **Profesionales**. Luego:
 4. Pulsa **Crear usuario**.
 
 ### Entrega los datos de acceso
+
+👉 Mira la **Captura 39**.
 
 ![Captura 39 — Datos de acceso con la contraseña temporal](capturas/39_equipo_contrasena.png)
 
@@ -1235,7 +1309,7 @@ La persona entra como en el [capítulo 5](#5-antes-de-empezar) y cambia su contr
 ## Desactivar, activar o borrar
 
 - **Desactivar**: la persona no puede entrar, pero conservas su historial. El botón pasa a decir **Activar**.
-- La **papelera** borra la cuenta. Afilao pregunta antes: *¿Eliminar a … ? Perderá el acceso.*
+- La papelera borra la cuenta. Afilao pregunta antes: *¿Eliminar a … ? Perderá el acceso.*
 
 > 💡 **Consejo:** Si alguien dejó de trabajar contigo, **desactívalo** en lugar de borrarlo.
 
@@ -1267,6 +1341,8 @@ Un recurso es algo que se ocupa durante una cita: una silla, una cabina, una mes
 
 **Menú › Recursos**
 
+👉 Mira la **Captura 40**.
+
 ![Captura 40 — Recursos](capturas/40_recursos.png)
 
 > 📸 **Captura 40** — Pantalla **Recursos**. Elementos a resaltar: 1) botón **Agregar**, 2) un recurso de la lista. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `40_recursos.png`
@@ -1286,6 +1362,8 @@ Cada recurso muestra cuántos servicios lo usan y la casilla **Activo**. Quita l
 Aquí guardas fotos de tus diseños, cada una con su servicio.
 
 **Menú › Galería**
+
+👉 Mira la **Captura 41**.
 
 ![Captura 41 — Galería de inspiración](capturas/41_galeria.png)
 
@@ -1309,12 +1387,14 @@ Aquí ves todos los avisos que Afilao envió a tus clientes: correos y mensajes 
 
 **Menú › Notificaciones**
 
+👉 Mira la **Captura 42**.
+
 ![Captura 42 — Centro de notificaciones](capturas/42_notificaciones.png)
 
 > 📸 **Captura 42** — Pantalla **Centro de Notificaciones** en el computador. Elementos a resaltar: 1) los cuatro contadores, 2) la tabla de avisos, 3) un aviso con **Error**. Encuadre: pantalla completa. Nombre de archivo sugerido: `42_notificaciones.png`
 
 1. Arriba (número 1) ves cuatro números: **Total**, **Pendientes**, **Enviadas** y **Errores**.
-2. Abajo (número 2) ves una tabla. Cada fila tiene la fecha, el tipo (**Email** o **Telegram**), el destinatario, el cliente, un trozo del mensaje y el estado.
+2. Abajo (número 2) ves una tabla. Cada fila tiene la fecha, el tipo (**Email** o **Telegram**) y el destinatario. También tiene el cliente, un trozo del mensaje y el estado.
 3. Un aviso con **Error** (número 3) no llegó. Busca al cliente en **Clientes** y revisa su correo o su teléfono.
 
 > 💡 **Consejo:** En el celular, la tabla es ancha. Desliza hacia los lados para ver todas las columnas.
@@ -1325,6 +1405,8 @@ Aquí el dueño ve el plan de Afilao que tiene contratado.
 
 **Menú › Facturación** (solo lo ve el dueño)
 
+👉 Mira la **Captura 43**.
+
 ![Captura 43 — Facturación](capturas/43_facturacion.png)
 
 > 📸 **Captura 43** — Pantalla **Facturación**. Elementos a resaltar: 1) nombre del plan, 2) estado del plan, 3) **Próximo cobro**, 4) **Método de pago**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `43_facturacion.png`
@@ -1332,3 +1414,303 @@ Aquí el dueño ve el plan de Afilao que tiene contratado.
 Ves el nombre de tu plan y su precio. También ves el estado, por ejemplo **En periodo de prueba**, la fecha de **Próximo cobro** y el **Método de pago**.
 
 > ❓ **Nota:** Por ahora el cobro lo gestiona Afilao de forma manual. No tienes que pagar desde esta pantalla. Para cambiar de plan, escribe a soporte.
+
+---
+
+# 16. Tareas de principio a fin
+
+Aquí juntamos las tareas más comunes, de la primera a la última acción. Cada una te manda al capítulo con los detalles.
+
+## Abrir tu salón por primera vez
+
+Hazlo una sola vez, en este orden. Tardas unos 30 minutos.
+
+1. Entra con tu enlace, tu correo y tu contraseña temporal. Mira el [capítulo 5](#5-antes-de-empezar).
+2. Cambia tu contraseña en **Mi Perfil**.
+3. Ve a **Menú › Configuraciones › Negocio**. Elige tu **Tipo de negocio** y revisa la **Zona horaria**.
+4. Ve a la ficha **Marca**. Sube tu logo y elige tu color.
+5. Ve a la ficha **Horarios**. Revisa los días y horas en que abres.
+6. Ve a la ficha **Cierres**. Agrega los feriados que ya conoces.
+7. Ve a **Menú › Categorías**. Crea tus categorías.
+8. Ve a **Menú › Servicios**. Crea tus servicios con precio y duración.
+9. Ve a **Menú › Profesionales**. Crea una ficha por cada persona. Elige si reserva por hora o por cupos.
+10. Ve a **Menú › Equipo**. Crea las cuentas de tu gente y entrégales sus datos.
+11. Ve a **Configuraciones › Reservas**. Copia tu enlace e imprime tu cartel con QR.
+12. (Opcional) Conecta tu bot de Telegram. Mira el [capítulo 10](#10-el-bot-de-telegram).
+13. Abre tu enlace de reserva en otro celular. Haz una reserva de prueba.
+14. Entra a **Citas** y comprueba que la ves.
+
+✅ **Resultado esperado:** Tu salón está listo para recibir reservas.
+
+> 💡 **Consejo:** Después de la prueba, cancela la cita de prueba para liberar el horario.
+
+## Atender a un cliente que llama por teléfono
+
+1. Pulsa **Menú › Clientes**.
+2. Escribe el nombre o el teléfono en **Buscar clientes...**.
+3. Si no existe, pulsa **Nuevo cliente** y guárdalo. Mira el [capítulo 8](#8-clientes).
+4. Pulsa **Menú › Citas**.
+5. Pulsa **Nueva cita**.
+6. Elige el cliente, el servicio, el profesional, la fecha y la hora.
+7. Pulsa **Guardar cita**.
+
+✅ **Resultado esperado:** Ves el aviso *Se creó la cita*. Tu cliente recibe su confirmación.
+
+## Cambiar la cita de un cliente
+
+1. Pulsa **Menú › Citas**.
+2. Toca el día de la cita en el calendario.
+3. Pulsa **Editar cita** en su tarjeta.
+4. Cambia la **Fecha de la cita** o la **Hora de Inicio**.
+5. Pulsa **Guardar cita**.
+
+✅ **Resultado esperado:** Ves el aviso *Se actualizó la cita*.
+
+## Dar de alta a un profesional nuevo, con acceso
+
+1. Pulsa **Menú › Servicios**. Revisa que existan los servicios que hará.
+2. Pulsa **Menú › Profesionales** y luego **Agregar profesional**.
+3. Escribe su **Nombre**, su **Correo** y su **Teléfono**.
+4. Elige **Cómo recibe reservas** y revisa su horario o sus cupos.
+5. En **Servicios que realiza**, toca los servicios que hace.
+6. Pulsa **Guardar**.
+7. Pulsa **Menú › Equipo** y luego **Nuevo usuario**.
+8. Elige **Profesional (solo ve su agenda)** y escoge su nombre.
+9. Pulsa **Crear usuario**.
+10. Pulsa **Copiar datos** y envíaselos por mensaje privado.
+
+✅ **Resultado esperado:** La persona entra a Afilao y ve solo su agenda.
+
+## Mandar a un profesional de vacaciones
+
+1. Pulsa **Menú › Profesionales**.
+2. Toca el lápiz del profesional.
+3. Baja hasta **Ausencias (vacaciones, descansos)**.
+4. Elige la fecha de inicio y la de fin.
+5. Escribe el **Motivo (opcional)**.
+6. Pulsa **Añadir** y luego **Guardar**.
+7. Revisa en **Citas** si ya tenía citas esos días. Reprográmalas.
+
+✅ **Resultado esperado:** Nadie puede reservar con esa persona en esas fechas.
+
+## Cerrar tu negocio un día
+
+1. Pulsa **Menú › Configuraciones** y luego la ficha **Cierres**.
+2. Elige la **Fecha de Cierre**.
+3. Escribe el **Motivo (Opcional)**.
+4. Pulsa **Agregar Día**.
+5. Revisa en **Citas** si ya había citas ese día. Avisa a tus clientes y reprográmalas.
+
+✅ **Resultado esperado:** Ese día sale como **No disponible**. Nadie puede reservar.
+
+## Cambiar el precio de un servicio
+
+1. Pulsa **Menú › Servicios**.
+2. Busca el servicio.
+3. Toca el lápiz.
+4. Cambia el **Precio**.
+5. Pulsa **Guardar**.
+
+✅ **Resultado esperado:** Ves el aviso *Servicio actualizado correctamente*. Las citas que ya existen mantienen el precio de cuando se reservaron.
+
+## Pasar a un profesional a trabajar por cupos
+
+1. Pulsa **Menú › Profesionales**.
+2. Toca el lápiz del profesional.
+3. Marca **Por cupos**.
+4. Añade las horas de cada día con **+ cupo**. Usa **Copiar a todos los días** si son las mismas.
+5. Pulsa **Guardar**.
+
+✅ **Resultado esperado:** Tus clientes ven solo esas horas con ese profesional.
+
+> ⚠️ **Atención:** Las citas que ya tiene se quedan en su hora. No las toques si no hace falta.
+
+## Recuperar el acceso de alguien de tu equipo
+
+1. Pulsa **Menú › Equipo**.
+2. Busca a la persona.
+3. Pulsa **Restablecer contraseña**.
+4. Pulsa **Copiar datos** y envíaselos.
+
+✅ **Resultado esperado:** La persona entra con la contraseña temporal y la cambia en **Mi Perfil**.
+
+---
+
+# 17. Preguntas frecuentes
+
+## Sobre tus clientes
+
+**¿Mis clientes tienen que crear una cuenta?**
+No. Reservan con su nombre y un teléfono o un correo. Nada más.
+
+**¿Cómo comparto mi página de reservas?**
+Ve a **Configuraciones › Reservas** y pulsa **Copiar**. Pega el enlace en tu Instagram, tu WhatsApp o Google Maps. También puedes imprimir el cartel con QR.
+
+**¿Mis clientes pueden cancelar o cambiar su cita?**
+Sí. Usan el enlace **Cambiar o cancelar mi cita** que reciben al reservar. Hasta cuántas horas antes lo decides tú, en **Configuraciones › Reservas**.
+
+**¿Por qué un cliente no ve horas para un día?**
+Hay cuatro causas posibles. Ese día cierras. El profesional no trabaja. No quedan huecos. O pasó el límite de **Reservas hasta (días hacia adelante)**. Mira el [capítulo 18](#18-solución-de-problemas).
+
+**¿Qué pasa si dos clientes quieren la misma hora a la vez?**
+Gana el primero. Al segundo Afilao le pide que elija otra hora.
+
+## Sobre tu cuenta
+
+**Olvidé mi contraseña. ¿Qué hago?**
+Si eres gerente o profesional, pídele al dueño que pulse **Restablecer contraseña** en **Equipo**. Si eres el dueño, escribe a soporte.
+
+**¿Puedo entrar desde varios dispositivos?**
+Sí. Entra con tu mismo correo y contraseña en cada uno. Si cambias tu contraseña, los demás dispositivos te pedirán entrar de nuevo.
+
+**¿Por qué no veo la opción Equipo o Facturación?**
+Solo el dueño las ve. Un gerente no, y un profesional ve aún menos.
+
+**¿Otros negocios pueden ver mis datos?**
+No. Cada negocio ve solo lo suyo.
+
+## Sobre el uso diario
+
+**¿Puedo usar Afilao sin internet?**
+No. Necesitas conexión para entrar y para ver tu agenda.
+
+**¿Qué pasa si borro un cliente?**
+Se borra su ficha y también todas sus citas. No se puede deshacer. Mejor no lo borres si quieres conservar tu historial.
+
+**¿Cuál es la diferencia entre Horarios y Cierres?**
+**Horarios** son tus días y horas normales de cada semana. **Cierres** son días sueltos en que no abres, como un feriado.
+
+**¿Cómo cambio las palabras, por ejemplo cita por turno?**
+Ve a **Configuraciones › Negocio** y cambia el **Vocabulario**.
+
+**¿Cuánto antes pueden reservar mis clientes?**
+Tú lo decides con **Antelación mínima para reservar (horas)**, en **Configuraciones › Reservas**.
+
+**¿Telegram es obligatorio?**
+No. Si no lo usas, tus clientes reciben los avisos por correo.
+
+**¿Puedo cambiar mi logo cuando quiera?**
+Sí. Ve a **Configuraciones › Marca**, sube el logo nuevo y pulsa **Guardar marca**.
+
+---
+
+# 18. Solución de problemas
+
+Busca tu síntoma en la tabla. Si no lo ves, prueba primero lo básico:
+
+1. Recarga la página.
+2. Cierra la sesión y entra de nuevo.
+3. Prueba con otro navegador.
+4. Si sigue igual, escribe a soporte. Mira el [capítulo 20](#20-cómo-contactar-a-soporte).
+
+## Para ti
+
+| Síntoma | Causa probable | Qué hacer |
+|---|---|---|
+| No puedo entrar. | Correo o contraseña mal escritos. Mayúsculas o espacios de más. | Copia y pega tu contraseña. Revisa tu correo. Si sigue, pide que te la restablezcan. |
+| Dice *Demasiados intentos*. | Te equivocaste varias veces. | Espera unos minutos y prueba de nuevo. |
+| Dice *Este salón está suspendido*. | Tu cuenta de Afilao está detenida. | Escribe a soporte. |
+| Los cambios no se guardan. | Faltó pulsar el botón de guardar, o salió un aviso rojo. | Pulsa **Guardar** o **Guardar ajustes**. Lee el aviso rojo. |
+| Las citas salen a una hora equivocada. | La **Zona horaria** de tu negocio está mal. | Corrígela en **Configuraciones › Negocio**. |
+| Un día sale **Completo** y quedan huecos. | Tienes un **Límite de citas** para ese día. | Cámbialo en **Configuraciones › Horarios**. |
+| No puedo crear un profesional o un usuario. | Llegaste al máximo de tu plan. | Escribe a soporte para cambiar de plan. |
+| No puedo borrar un profesional. | Ya tiene citas. | Quítale la marca **Activo**. |
+| No se imprime el cartel. | El navegador bloqueó la ventana. | Permite las ventanas emergentes y pulsa **Imprimir cartel** otra vez. |
+| La pantalla se ve cortada. | El navegador está desactualizado o la página no cargó bien. | Recarga. Actualiza tu navegador. |
+| Cambié mi contraseña y me pidió entrar de nuevo. | Es normal: se cerraron las demás sesiones. | Entra con la contraseña nueva. |
+
+## Para tus clientes
+
+| Síntoma | Causa probable | Qué hacer |
+|---|---|---|
+| No ve ninguna hora. | Cierras ese día. El profesional tiene una ausencia. El día está lleno. | Revisa **Cierres** y las **Ausencias**. Pídele que pruebe otro día. |
+| No ve un servicio. | El servicio está **Inactivo** o sin la marca **Visible para los clientes**. | Revísalo en **Servicios**. |
+| No ve a un profesional. | Tiene quitada la casilla **Acepta reservas en línea**, o no hace ese servicio. | Revisa su ficha en **Profesionales**. |
+| Dice *Enlace no válido o vencido*. | El enlace de su cita está incompleto o ya no existe. | Busca su cita en tu **Agenda de Citas** y cámbiala tú. |
+| No recibió el correo. | Escribió mal su correo, o el mensaje cayó en spam. | Revisa **Notificaciones**. Pídele que mire su carpeta de spam. |
+| No puede cancelar su cita. | Pasó el plazo de **El cliente puede cancelar hasta (horas antes)**. | Cancélala tú desde **Citas**. |
+
+## Del bot de Telegram
+
+| Síntoma | Causa probable | Qué hacer |
+|---|---|---|
+| El bot no responde. | Escribiste mal el comando, o el bot se desconectó. | Prueba `/citas`. Revisa **Configuraciones › Avisos**. |
+| Dice *Código inválido*. | El código ya se usó o se copió mal. | Recarga Afilao y copia el código nuevo. |
+| Dice *Telegram no reconoce ese token*. | El token está incompleto o tiene espacios. | Cópialo de nuevo desde **@BotFather**. |
+| Un cliente no recibe avisos por Telegram. | No tocó **Recibir avisos por Telegram**, o bloqueó el bot. | Recibirá los avisos por correo. Puede volver a activarlos desde su enlace de la cita. |
+
+---
+
+# 19. Glosario
+
+| Término | Qué significa |
+|---|---|
+| **Agenda** | La lista de tus citas, por día o por semana. |
+| **Ausencia** | Días en que un profesional no trabaja, como vacaciones. |
+| **Bot** | Un asistente automático dentro de Telegram. Manda avisos y responde comandos. |
+| **Categoría** | Un grupo de servicios. Por ejemplo, *Manicura* o *Pedicura*. |
+| **Cierre** | Un día suelto en que tu negocio no abre. |
+| **Cita** | Una reserva de un cliente, con día, hora, servicio y profesional. |
+| **Cliente** | Una persona que te visita. Aparece en **Clientes**. |
+| **Código QR** | Un cuadro con puntos que el celular lee con la cámara. Abre tu página de reserva. |
+| **Contraseña temporal** | Una contraseña de un solo uso que recibes para entrar la primera vez. La cambias enseguida. |
+| **Cupo** | Una hora exacta de un profesional, para un solo cliente. |
+| **Dueño** | El usuario con acceso a todo en el negocio. |
+| **Enlace de reserva** | La dirección web donde tus clientes reservan. |
+| **Enlace secreto** | La dirección que recibe el cliente para cambiar o cancelar su cita. |
+| **Ficha** | Una de las seis secciones de **Configuraciones**. También, el registro de un cliente o profesional. |
+| **Gerente** | El usuario que administra el negocio, pero no ve **Equipo** ni **Facturación**. |
+| **Horario exacto** | Una hora fija que añades a un día, en lugar de horas cada 30 minutos. |
+| **Navegador** | El programa con el que abres páginas de internet: Chrome, Edge, Safari o Firefox. |
+| **Notificación** | Un aviso que Afilao envía a un cliente, por correo o Telegram. |
+| **Panel de control** | La primera pantalla al entrar. Resume tu día. |
+| **Plan** | El paquete de Afilao que tiene tu negocio. Define cuántos profesionales puedes tener. |
+| **Profesional** | Una persona que atiende a los clientes. |
+| **Recurso** | Algo que se ocupa durante una cita: una silla, una cabina o una mesa. |
+| **Reserva** | Cuando un cliente aparta una cita desde tu página. |
+| **Servicio** | Lo que ofreces, con precio y duración. |
+| **Sesión** | El tiempo en que estás dentro de Afilao con tu usuario. |
+| **Telegram** | Una aplicación de mensajes gratuita, parecida a WhatsApp. |
+| **Token** | Un texto largo con letras y números, que funciona como la llave de tu bot. No lo compartas. |
+| **Usuario** | Una persona con cuenta para entrar a Afilao. Su usuario es su correo. |
+| **Vocabulario** | Las palabras que usa Afilao en tu negocio, como *cita* o *turno*. |
+| **Zona horaria** | El huso horario de tu ciudad. Hace que las horas de las citas sean correctas. |
+
+---
+
+# 20. Cómo contactar a soporte
+
+¿Algo no funciona y este manual no te ayudó? Escríbenos. Estamos para ayudarte.
+
+| Cómo | Dato |
+|---|---|
+| **Correo** | yordenis@yordeniscorreoso.com |
+| **Teléfono** | +1 (305) 792-8837 |
+| **Horario de atención** | De 9am a 5pm |
+
+Fuera de ese horario, escríbenos por correo. Te respondemos al volver.
+
+## Qué información enviar
+
+Cuanta más información nos des, más rápido te ayudamos. Escribe estas seis cosas:
+
+1. El **nombre de tu salón**.
+2. **Tu nombre** y el **correo** con el que entras.
+3. **Qué intentabas hacer.** Por ejemplo: *crear una cita para mañana*.
+4. **Qué pasó.** Copia el mensaje exacto que viste.
+5. **Una captura de pantalla** del problema.
+6. Tu **dispositivo y navegador.** Por ejemplo: *celular Android, Chrome*.
+
+💡 **Consejo:** Para sacar una captura, pulsa a la vez dos botones del celular. Casi siempre son el de encendido y el de bajar el volumen.
+
+## Un mensaje de ejemplo
+
+> Hola. Soy Laura Gómez, del salón Salón Ejemplo. Mi correo es laura@ejemplo.com.
+> Intentaba crear una cita para mañana a las 9:00 y me salió el aviso *Esa hora ya no está disponible. Elige otra.*
+> Uso un celular Android con Chrome. Adjunto una captura.
+
+> ⚠️ **Atención:** Nunca nos envíes tu contraseña ni el token de tu bot. No los necesitamos.
+
+---
+
+**Afilao · Manual de usuario · Versión 1.0 · Octubre de 2026**
