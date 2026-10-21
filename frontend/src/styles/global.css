@@ -177,16 +177,10 @@ body {
 h1,
 h2 {
   font-family: var(--heading);
-  font-weight: 500;
 }
 
-h1 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-}
 h2 {
+  font-weight: 500;
   font-size: 24px;
   line-height: 118%;
   letter-spacing: -0.24px;

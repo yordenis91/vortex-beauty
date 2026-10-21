@@ -1,7 +1,6 @@
 import express from 'express';
 import { zodResponse } from '../lib/validation';
 import { z } from 'zod';
-import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { imageSchema } from '../lib/images';
@@ -36,11 +35,8 @@ const clientSchema = z.object({
   imageUrl: imageSchema.optional(),
 });
 
-const createClientSchema = clientSchema.extend({
-  username: z.string().min(1).optional(),
-  password: z.string().min(8).max(128).optional(),
-  sendWelcomeEmail: z.boolean().optional(),
-});
+// Los clientes no tienen portal ni cuenta de acceso: solo la ficha.
+const createClientSchema = clientSchema;
 
 const updateClientSchema = clientSchema.partial();
 
@@ -90,47 +86,20 @@ router.get('/:id', requirePermission('customers:read'), async (req, res) => {
 router.post('/', requireAdmin, async (req, res) => {
   try {
     const parsed = createClientSchema.parse(req.body);
-    const {
-      username,
-      password,
-      sendWelcomeEmail,
-      ...clientData
-    } = parsed;
+    const clientData = parsed;
 
     const tenantId = req.user!.tenantId;
-    const result = await runInTransaction(async (tx) => {
-      const newClient = await tx.client.create({
+    const newClient = await runInTransaction((tx) =>
+      tx.client.create({
         data: {
           ...clientData,
           userId: req.userId!,
           tenantId,
         },
-      });
+      })
+    );
 
-      let newUser = null;
-      if (username && password) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        newUser = await tx.user.create({
-          data: {
-            email: clientData.email,
-            username,
-            password: hashedPassword,
-            name: clientData.displayName || clientData.name,
-            role: 'CLIENT',
-            clientId: newClient.id,
-            tenantId,
-          },
-        });
-
-        if (sendWelcomeEmail) {
-          console.log('Sending welcome email to...', clientData.email);
-        }
-      }
-
-      return { newClient, newUser };
-    });
-
-    res.status(201).json(result.newClient);
+    res.status(201).json(newClient);
   } catch (error: any) { // Le decimos a TS que confíe en nosotros aquí temporalmente
     // Usamos el método interno de Zod para verificar o simplemente asumimos si tiene name
     if (error?.name === 'ZodError') {

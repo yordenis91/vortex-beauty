@@ -3,7 +3,8 @@ import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { addDays, endOfMonth, format, isBefore, startOfDay, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale/es';
-import { CalendarCheck, Check, ChevronLeft, Clock, User, Users } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { CalendarCheck, Check, ChevronLeft, Clock, Copy, User, Users } from 'lucide-react';
 import {
   apiErrorMessage,
   publicApi,
@@ -40,6 +41,11 @@ const Booking: React.FC = () => {
   const [website, setWebsite] = useState(''); // campo trampa para bots
   const [error, setError] = useState('');
   const [booked, setBooked] = useState<PublicAppointment | null>(null);
+
+  // Cada paso empieza arriba: con una lista larga de servicios u horas, el siguiente paso no debe quedar a media pantalla.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [step]);
 
   // Con la primera pantalla ya pintada, descarga el calendario en segundo plano para que el paso 2 sea instantáneo.
   useEffect(() => {
@@ -164,15 +170,44 @@ const Booking: React.FC = () => {
     return acc;
   }, {});
 
+  // Con un solo profesional no hay paso para elegirlo.
+  const visibleSteps: Step[] = professionals.length > 1 ? ['service', 'professional', 'date', 'time', 'details'] : ['service', 'date', 'time', 'details'];
+  const stepCount = visibleSteps.length;
+  const stepNumber = Math.max(1, visibleSteps.indexOf(step) + 1);
+
+  const copyManageLink = async () => {
+    if (!booked?.manageUrl) return;
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${booked.manageUrl}`);
+      toast.success('Enlace copiado');
+    } catch {
+      toast.error('No se pudo copiar. Mantén pulsado «Cambiar o cancelar» para copiar el enlace.');
+    }
+  };
+
   const maxDate = addDays(today, data.maxAdvanceDays);
   const availableSet = new Set(calendar.data ?? []);
 
   return (
     <PublicShell title={data.name} salon={data} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
       {step !== 'service' && step !== 'done' && (
-        <button onClick={back} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> Atrás
-        </button>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <button onClick={back} className="inline-flex items-center gap-1 py-1 text-sm text-muted-foreground hover:text-foreground">
+              <ChevronLeft className="h-4 w-4" /> Atrás
+            </button>
+            <span className="text-xs text-muted-foreground">Paso {stepNumber} de {stepCount}</span>
+          </div>
+          {service && step !== 'details' && (
+            <div className="rounded-xl border border-border bg-card px-3 py-2 text-sm">
+              <span className="font-medium text-foreground">{service.name}</span>
+              <span className="text-muted-foreground">
+                {' · '}{money(service.price, service.currency)}
+                {professionalName && step !== 'professional' ? ` · ${professionalName}` : ''}
+              </span>
+            </div>
+          )}
+        </div>
       )}
 
       {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200">{error}</div>}
@@ -347,9 +382,18 @@ const Booking: React.FC = () => {
           {customer.email && <p className="text-sm text-muted-foreground">Te enviamos la confirmación a {customer.email}.</p>}
           <TelegramOptIn telegram={booked.telegram} />
           {booked.manageUrl && (
-            <Link to={booked.manageUrl} className="inline-flex items-center gap-2 text-blue-600 font-medium">
-              <CalendarCheck className="h-4 w-4" /> Cambiar o cancelar mi {word('appointment', 'cita')}
-            </Link>
+            <div className="flex flex-col items-center gap-3">
+              <Link to={booked.manageUrl} className="inline-flex items-center gap-2 py-1 text-blue-600 font-medium">
+                <CalendarCheck className="h-4 w-4" /> Cambiar o cancelar mi {word('appointment', 'cita')}
+              </Link>
+              <button
+                type="button"
+                onClick={() => void copyManageLink()}
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                <Copy className="h-4 w-4" /> Copiar enlace de mi {word('appointment', 'cita')}
+              </button>
+            </div>
           )}
           <p className="text-xs text-muted-foreground">Guarda este enlace: es la única forma de gestionar tu {word('appointment', 'cita')} sin cuenta.</p>
         </section>

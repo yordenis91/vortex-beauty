@@ -71,6 +71,21 @@ describe('Clientes', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Guardar' }))
     await waitFor(() => expect(calls).toHaveLength(1))
     expect(calls[0].body).toMatchObject({ name: 'Raúl Gómez', email: 'raul@example.com', phone: '+53 5 555 7777' })
+    expect(Object.keys(calls[0].body!)).not.toEqual(expect.arrayContaining(['username']))
+    expect(calls[0].body).not.toHaveProperty('password')
+  })
+
+  it('el formulario de nuevo cliente no ofrece credenciales de acceso (los clientes no tienen portal)', async () => {
+    mock([client()])
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: /Nuevo cliente/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).queryByText('Credenciales de Acceso')).not.toBeInTheDocument()
+    expect(within(dialog).queryByText('Contraseña')).not.toBeInTheDocument()
+    expect(within(dialog).queryByText('Enviar correo de bienvenida')).not.toBeInTheDocument()
+    expect(within(dialog).queryByPlaceholderText('nombre_usuario')).not.toBeInTheDocument()
   })
 
   it('eliminar pide confirmación y no borra al cancelar', async () => {
