@@ -90,4 +90,64 @@ describeIfDb('clientes: contacto opcional', () => {
     const res = await request(app).put(`/api/clients/${body.id}`).set(auth()).send({ phone: '+53 5 555 1234' });
     expect(res.status).toBe(409);
   });
+
+  describe('borrado', () => {
+    const del = (id: string) => request(app).delete(`/api/clients/${id}`).set(auth());
+    const exists = (id: string) => adminPool.query('SELECT 1 FROM "Client" WHERE id = $1', [id]).then((r) => r.rowCount === 1);
+
+    let seq = 0;
+    const withAppointments = async (n: number, status: 'SCHEDULED' | 'CANCELLED' | 'COMPLETED' = 'SCHEDULED') => {
+      const { body } = await create({ name: `Con citas ${++seq}`, phone: `+53 5 777 ${1000 + seq}` });
+      await ctx.runAsAdmin(async () => {
+        const owner = await prisma.user.findFirstOrThrow({ where: { tenantId, role: 'OWNER' } });
+        const category = (await prisma.category.findFirst({ where: { tenantId } })) ?? (await prisma.category.create({ data: { name: 'Servicios', tenantId } }));
+        const service = (await prisma.service.findFirst({ where: { tenantId } })) ?? (await prisma.service.create({ data: { name: 'Corte', price: 10, categoryId: category.id, userId: owner.id, tenantId } }));
+        for (let i = 0; i < n; i++) {
+          const startsAt = new Date(Date.UTC(2031, 0, 5 + i, 14));
+          const endsAt = new Date(startsAt.getTime() + 3600000);
+          await prisma.appointment.create({
+            data: { tenantId, clientId: body.id, serviceId: service.id, status, startsAt, endsAt, blockStartsAt: startsAt, blockEndsAt: endsAt, serviceName: 'Corte', priceAmount: 10, durationMin: 60, source: 'ADMIN' },
+          });
+        }
+      });
+      return body.id as string;
+    };
+
+    it('un cliente sin citas se borra', async () => {
+      const { body } = await create({ name: 'Sin citas', phone: '+53 5 888 0001' });
+      const res = await del(body.id);
+      expect(res.status).toBe(200);
+      expect(await exists(body.id)).toBe(false);
+    });
+
+    it('un cliente con una cita no se borra, y el motivo dice cuántas tiene', async () => {
+      const id = await withAppointments(1);
+      const res = await del(id);
+      expect(res.status).toBe(409);
+      expect(res.body.error).toMatch(/1 cita registrada/);
+      expect(res.body.appointments).toBe(1);
+      expect(await exists(id)).toBe(true);
+    });
+
+    it('cuenta también las citas canceladas y completadas: es historial', async () => {
+      const cancelled = await withAppointments(2, 'CANCELLED');
+      const completed = await withAppointments(1, 'COMPLETED');
+      const a = await del(cancelled);
+      expect(a.status).toBe(409);
+      expect(a.body.error).toMatch(/2 citas registradas/);
+      expect((await del(completed)).status).toBe(409);
+      expect(await exists(cancelled)).toBe(true);
+    });
+
+    it('las citas del cliente siguen ahí después del intento', async () => {
+      const id = await withAppointments(1);
+      await del(id);
+      const rows = await adminPool.query('SELECT count(*)::int AS n FROM "Appointment" WHERE "clientId" = $1', [id]);
+      expect(rows.rows[0].n).toBe(1);
+    });
+
+    it('un cliente inexistente responde 404', async () => {
+      expect((await del('00000000-0000-0000-0000-000000000000')).status).toBe(404);
+    });
+  });
 });

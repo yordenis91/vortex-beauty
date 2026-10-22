@@ -90,6 +90,25 @@ describe('Clientes', () => {
     expect(calls[0].body).toMatchObject({ name: 'Marta Solo Teléfono', email: '', phone: '+53 5 555 0000' })
   })
 
+  it('si el cliente tiene citas, el servidor rechaza el borrado y la ficha sigue en la lista', async () => {
+    mock([client()])
+    const deletes: string[] = []
+    server.use(
+      http.delete(`${API}/clients/:id`, ({ params }) => {
+        deletes.push(String(params.id))
+        return HttpResponse.json({ error: 'Este cliente tiene 2 citas registradas. Para no perder tu historial, no se puede eliminar.', appointments: 2 }, { status: 409 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar' })[0])
+    await screen.findByText('¿Estás seguro de que quieres eliminar el cliente? Esta acción no se puede deshacer.')
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar' }).at(-1)!)
+    await waitFor(() => expect(deletes).toHaveLength(1))
+    expect(screen.getByText('Carlos Méndez')).toBeInTheDocument()
+  })
+
   it('sin teléfono ni correo no se envía el formulario', async () => {
     const calls = mock([client()])
     const user = userEvent.setup()

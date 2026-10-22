@@ -46,17 +46,21 @@ de borrarla.
 
 ## 4. Pendiente de desarrollo (por orden de prioridad)
 1. [x] Logo y color del salón en los correos y en el cartel con QR (2026-10-20). Telegram solo envía texto: el logo del bot se pone en @BotFather → Edit Bot → Edit Botpic. `API_PUBLIC_URL` ya está definida en el backend (verificado)
-2. [ ] Obligar a cambiar la contraseña temporal en el primer acceso
-3. [ ] Página pública del salón (servicios, galería, botón de reservar) para
+2. [ ] **Siguiente paso:** archivar (desactivar) clientes. Hoy un cliente con citas no se puede borrar (2026-10-22), así que no hay forma de quitarlo de la lista. Añadir un estado «Archivado»: se oculta de la lista y del selector de citas nuevas, conserva su historial y se puede restaurar. Pide una migración de la base de datos.
+3. [ ] Obligar a cambiar la contraseña temporal en el primer acceso
+4. [ ] Página pública del salón (servicios, galería, botón de reservar) para
        compartir por WhatsApp e Instagram
-4. [ ] Dominio propio y salida a producción (hoy corre en el host de prueba de Easypanel)
-5. [ ] Respaldos de la base de datos a Drive (script listo; falta autorizar Drive y el cron)
-6. [ ] Logo definitivo hecho por un diseñador (el actual es provisional)
-7. [ ] Cupones en la app de staff (`yorde-what-store-mobile`); pospuesto a propósito
-8. [ ] Cupos, fase 4 (solo si un salón lo pide): cupos solo para ciertos servicios y cantidad distinta en una fecha concreta
-9. [ ] Hacer opcional el correo al crear un cliente a mano (el backend lo exige y los clientes que reservan solo con teléfono no lo tienen)
-10. [ ] El aviso «Completo» del calendario de citas depende del tope diario del salón; con profesionales por cupos puede confundir (dejar el tope en 0)
-11. [ ] Limpiar el CSS sobrante de la plantilla de Vite en `frontend/src/styles/global.css` (reglas de `h1`, `p`, `code` ya corregidas; quedan estilos sin uso)
+5. [ ] Dominio propio y salida a producción (hoy corre en el host de prueba de Easypanel)
+6. [ ] Respaldos de la base de datos a Drive (script listo; falta autorizar Drive y el cron)
+7. [ ] Logo definitivo hecho por un diseñador (el actual es provisional)
+8. [ ] Cupones en la app de staff (`yorde-what-store-mobile`); pospuesto a propósito
+9. [ ] Cupos, fase 4 (solo si un salón lo pide): cupos solo para ciertos servicios y cantidad distinta en una fecha concreta
+
+Hecho de esta lista:
+- [x] El correo del cliente es opcional al crearlo a mano (2026-10-21)
+- [x] El aviso «Completo» del calendario tiene en cuenta los cupos libres (2026-10-21)
+- [x] CSS sobrante de la plantilla de Vite limpiado (2026-10-21)
+- [x] Un cliente con citas ya no se puede borrar (2026-10-22)
 
 ## 5. Decisiones tomadas
 - Un bot de Telegram por salón, creado por el propio salón en @BotFather. No un bot
@@ -88,3 +92,4 @@ de borrarla.
 | 2026-10-21 | Auditoría de interfaces en móvil y PC: diálogos, desbordes, títulos, Configuración por fichas |
 | 2026-10-21 | Reserva pública con pasos y resumen; clientes sin credenciales de acceso |
 | 2026-10-21 | Manual de usuario de Afilao: capítulos, capturas anotadas, mockups y versión web |
+| 2026-10-22 | Un cliente con citas ya no se puede borrar; archivar clientes queda como siguiente paso de desarrollo |
