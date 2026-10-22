@@ -136,7 +136,7 @@ describe('Agenda de citas', () => {
   })
 
   it('«Cancelar» no pide confirmación: avisa con «Deshacer» y cancela de verdad pasados unos segundos', async () => {
-    cancelDelay.ms = 80
+    cancelDelay.ms = 1500
     const puts = mockAgenda([apt('a1')], { appointment: 'turno', appointments: 'turnos', customer: 'clienta' })
     const confirm = vi.spyOn(window, 'confirm')
     const user = userEvent.setup()
@@ -145,18 +145,18 @@ describe('Agenda de citas', () => {
     expect(confirm).not.toHaveBeenCalled()
     expect(await screen.findByText('Turno cancelado')).toBeInTheDocument()
     expect(puts).toHaveLength(0) // todavía no se envió nada
-    await waitFor(() => expect(puts).toHaveLength(1))
+    await waitFor(() => expect(puts).toHaveLength(1), { timeout: 8000 })
     expect(puts[0].body).toEqual({ status: 'CANCELLED' })
   })
 
   it('«Deshacer» tras cancelar evita que se cancele y no avisa a nadie', async () => {
-    cancelDelay.ms = 300
+    cancelDelay.ms = 1500
     const puts = mockAgenda([apt('a1')])
     const user = userEvent.setup()
     open()
     await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
     await user.click(await screen.findByRole('button', { name: 'Deshacer' }))
-    await new Promise((r) => setTimeout(r, 450))
+    await new Promise((r) => setTimeout(r, 2000))
     expect(puts).toHaveLength(0)
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument() // la cita sigue activa
   })
