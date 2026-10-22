@@ -231,6 +231,28 @@ Es lo primero que ves al entrar. Te da un resumen de tu día.
 3. **Próximas citas** (número 3). Las siguientes citas, con cliente, servicio, día y hora.
 4. **Ver agenda** (número 4). Te lleva a tu agenda completa.
 
+Si tienes citas por delante, arriba de las tarjetas ves la tarjeta **Siguiente cita**.
+
+👉 Mira la **Captura 46**.
+
+![Captura 46 — Tarjeta Siguiente cita en el Panel de control](capturas/46_siguiente_cita.png)
+
+> 📸 **Captura 46** — **Panel de control** con la tarjeta **Siguiente cita**. Elementos a resaltar: 1) tarjeta **Siguiente cita**, 2) botón **Llamar**, 3) botón **WhatsApp**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `46_siguiente_cita.png`
+
+La tarjeta (número 1) te dice quién viene, para qué servicio y cuándo, por ejemplo *Hoy a las 13:00 · en 25 min*. Con **Llamar** (número 2) y **WhatsApp** (número 3) hablas con el cliente sin buscar su número. Si la cita ya empezó, la tarjeta dice **Ahora** y tiene un botón **Completar**.
+
+### El buscador
+
+Arriba, junto al botón de menú, hay un campo **Buscar…**. Escribe dos letras o más y verás los clientes y las citas que coinciden.
+
+👉 Mira la **Captura 45**.
+
+![Captura 45 — Resultados del buscador](capturas/45_buscador.png)
+
+> 📸 **Captura 45** — Buscador con el texto *yad*. Elementos a resaltar: 1) campo de búsqueda, 2) lista de resultados con **Clientes** y **Citas**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `45_buscador.png`
+
+Toca un resultado para ir a él. Mira el [capítulo 7](#7-citas) para más detalle.
+
 > ❓ **Nota:** Arriba a la derecha tienes también un botón con una luna. Cambia entre el modo claro y el oscuro. Elige el que te canse menos la vista.
 
 ## El menú
@@ -308,22 +330,227 @@ Como profesional:
 
 ## Qué puedes hacer aquí
 
-En **Citas** ves tu agenda. Creas citas nuevas. Cambias, confirmas, completas o cancelas las que ya existen.
+En **Citas** ves tu agenda. Creas citas nuevas. Confirmas, completas, cambias o cancelas las que ya existen. También puedes bloquear unas horas y avisar a un cliente por WhatsApp.
 
 **Menú › Citas**
 
-## Conoce la pantalla
+La pantalla cambia según el aparato. En el **celular** la agenda se divide en dos mitades: arriba el calendario y abajo las citas del día. En el **computador** ves la agenda con las vistas **Día** y **Semana**. Primero te explicamos el celular; el computador está más abajo.
+
+## Conoce la pantalla en el celular
 
 👉 Mira la **Captura 7**.
 
-![Captura 7 — Agenda de citas con el calendario](capturas/07_agenda_calendario.png)
+![Captura 7 — Agenda en el celular: calendario arriba y citas del día abajo](capturas/07_agenda_calendario.png)
 
-> 📸 **Captura 7** — Pantalla **Agenda de Citas** en el móvil. Elementos a resaltar: 1) botón **Día**, 2) botón **Semana**, 3) botón **Nueva cita**, 4) calendario del mes. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `07_agenda_calendario.png`
+> 📸 **Captura 7** — Pantalla **Citas** en el móvil. Elementos a resaltar: 1) mes del calendario, 2) un día con citas (puntos de color), 3) asa para pasar de mes a semana, 4) lista de citas del día, 5) filtro **Todo el equipo**, 6) botón **+** de nueva cita. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `07_agenda_calendario.png`
+
+1. **Mes** (número 1). Usa las flechas **‹** y **›** para cambiar de mes. También puedes deslizar el calendario hacia los lados.
+2. **Días con puntos** (número 2). Un punto de color significa que ese día tiene citas. Si tienes varios profesionales, cada uno tiene su color. Con un solo profesional, el color dice el estado: azul, agendada; amarillo, pendiente; verde, completada.
+3. **Asa** (número 3). Es la barrita gris debajo del calendario. Tócala o deslízala para pasar de **mes** a **semana**.
+4. **Citas del día** (número 4). Muestra las citas del día elegido, de la más temprana a la más tardía.
+5. **Todo el equipo** (número 5). Elige a una persona para ver solo sus citas. Solo aparece si tienes varios profesionales.
+6. **Botón +** (número 6). Crea una cita nueva.
+
+El botón **Hoy** te lleva al día de hoy. Los días en gris están cerrados o fuera del mes.
+
+> ❓ **Nota:** El día de hoy tiene un círculo rojo cuando lo eliges y un anillo azul cuando eliges otro.
+
+## Ver un día
+
+1. Pulsa **Citas** en el menú.
+2. Toca el día que quieres en el calendario.
+3. Mira la lista de abajo.
+
+✅ **Resultado esperado:** Arriba de la lista ves el día, por ejemplo **Jueves 22 oct**, y cuántas citas tiene.
+
+En la lista de un día verás, además de las citas:
+
+| Lo que ves | Qué significa |
+|---|---|
+| Una línea roja con la hora, por ejemplo **17:43** | Es **ahora**. Solo sale en el día de hoy. |
+| Un recuadro con rayitas y el texto **Libre 17:10–18:00 · 50 min** | Es un hueco libre. Tócalo para crear una cita en esa hora. |
+| Un candado y **Bloqueado · Almuerzo** | Esas horas están bloqueadas. Nadie puede reservar. |
+| **Tu negocio está cerrado este día** | Es un día de cierre o no abres ese día de la semana. |
+
+> ❓ **Nota:** Los huecos libres se muestran por persona. Si tienes varios profesionales, elige a uno en **Todo el equipo** para verlos.
+
+## Pasar de mes a semana
+
+Cuando quieres ver más citas a la vez, usa la semana.
+
+👉 Mira la **Captura 44**.
+
+![Captura 44 — La agenda con una sola semana arriba](capturas/44_agenda_semana_movil.png)
+
+> 📸 **Captura 44** — Agenda en el móvil en modo **semana**. Elementos a resaltar: 1) asa, 2) botón **Hoy**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `44_agenda_semana_movil.png`
+
+1. Toca el **asa** (número 1) o deslízala hacia arriba.
+2. El calendario se reduce a una semana y la lista de citas gana espacio.
+3. Para volver al mes, toca el asa otra vez o deslízala hacia abajo.
+
+Con las flechas **‹** y **›** pasas de semana en semana. Pulsa **Hoy** (número 2) para volver a la semana actual.
+
+> ❓ **Nota:** Afilao recuerda tu elección en ese celular. La próxima vez que abras Citas, verás el mismo modo.
+
+## Crear una cita en pocos toques
+
+En el celular, la cita nueva se hace en una hoja que sube desde abajo.
+
+👉 Mira la **Captura 8**.
+
+![Captura 8 — Hoja para crear una cita](capturas/08_agenda_horarios.png)
+
+> 📸 **Captura 8** — Hoja **Nueva cita** en el móvil. Elementos a resaltar: 1) **Cliente**, 2) **Servicio**, 3) **Con quién**, 4) **Día**, 5) **Hora**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `08_agenda_horarios.png`
+
+Hay tres formas de abrirla:
+
+- Toca un **hueco libre** en la lista del día. Ya viene con la hora puesta.
+- Pulsa el botón **+**.
+- Desde otra cita, con **Próxima cita** (te lo explicamos más abajo).
+
+Luego:
+
+1. En **Cliente** (número 1), escribe el nombre o el teléfono y toca al cliente de la lista.
+2. Toca el **Servicio** (número 2).
+3. Si hay varios profesionales, toca **Con quién** (número 3). **Cualquiera** deja que Afilao elija.
+4. Revisa el **Día** (número 4).
+5. Toca una **Hora** (número 5). Solo salen horas libres.
+6. Escribe una nota si quieres.
+7. Pulsa **Agendar**.
+
+✅ **Resultado esperado:** Ves el aviso *Se creó la cita* y la cita aparece en la lista del día.
+
+### Si tu cliente no está en la lista
+
+No necesitas salir de la hoja.
+
+1. Escribe el nombre en **Cliente**.
+2. Toca **Crear cliente «…»**.
+3. Escribe su **Teléfono**.
+4. Sigue con el servicio y la hora.
+
+Al pulsar **Agendar**, Afilao guarda al cliente nuevo y crea la cita.
+
+### ⚠️ Si algo sale mal
+
+| Ves este mensaje | Qué hacer |
+|---|---|
+| **Elige primero un servicio.** | Toca un servicio. Las horas salen después. |
+| **No hay horas libres ese día. Prueba con otro día.** | Ese profesional no trabaja ese día o ya tiene todo ocupado. Cambia el **Día** o la persona. |
+| El botón **Agendar** está apagado. | Falta el cliente, el servicio o la hora. |
+| *Esa hora ya no está disponible. Elige otra.* | Otra persona ocupó esa hora. Elige otra. |
+
+## Tocar una cita
+
+Toca cualquier cita de la lista. Se abre una hoja con todo lo que puedes hacer.
+
+👉 Mira la **Captura 10**.
+
+![Captura 10 — Hoja de acciones de una cita](capturas/10_tarjeta_cita.png)
+
+> 📸 **Captura 10** — Hoja de acciones de una cita **Agendada**. Elementos a resaltar: 1) **Llamar**, 2) **Enviar confirmación por WhatsApp**, 3) **Completar**, 4) **No asistió**, 5) **Próxima cita en**, 6) **Editar cita**, 7) **Cancelar cita**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `10_tarjeta_cita.png`
+
+| Acción | Para qué sirve |
+|---|---|
+| **Llamar** | Abre el teléfono con el número del cliente. Solo sale si el cliente tiene teléfono. |
+| **Enviar confirmación por WhatsApp** | Abre WhatsApp con un mensaje listo: *Hola Yadira, te confirmo tu cita en tu salón: Uñas acrílicas, jueves 22 de octubre a las 13:00. ¡Te esperamos!* Tú solo pulsas enviar. |
+| **Confirmar** | Pasa una cita **Pendiente** a **Agendada**. |
+| **Completar** | Marca que el cliente vino y ya lo atendiste. |
+| **No asistió** | Marca que el cliente no vino. |
+| **Próxima cita en 2, 3 o 4 sem** | Abre una cita nueva para el mismo cliente y servicio, dentro de esas semanas. |
+| **Editar cita** | Abre la cita para cambiar sus datos. |
+| **Cancelar cita** | Cancela la cita y avisa al cliente. |
+
+Los estados que verás son: **Pendiente**, **Agendada**, **Completada**, **Cancelada** y **No asistió**.
+
+> ❓ **Nota:** Si la cita ya pasó o está cancelada, solo ves las acciones que aún tienen sentido.
+
+### Deshacer un cambio
+
+Ya no hay cuadros que pregunten «¿seguro?». En su lugar, cada cambio se puede **deshacer** unos segundos.
+
+1. Cambia el estado de una cita, por ejemplo pulsa **Completar**.
+2. Abajo aparece un aviso con el botón **Deshacer**.
+3. Púlsalo antes de que desaparezca para dejar la cita como estaba.
+
+**Cancelar** funciona un poco distinto. Afilao espera **5 segundos** antes de cancelar de verdad. Así, si te equivocas y pulsas **Deshacer**, tu cliente nunca recibe el aviso de cancelación. Pasados los 5 segundos, la cita se cancela y se avisa al cliente.
+
+> ⚠️ **Atención:** Si cierras la página en esos 5 segundos, la cancelación se hace igual. No se pierde.
+
+## Agendar la próxima cita en un toque
+
+En muchos negocios los clientes vuelven cada cierto tiempo. No tienes que buscar al cliente otra vez.
+
+1. Toca la cita del cliente.
+2. En **Próxima cita en**, toca **2 sem**, **3 sem** o **4 sem**.
+3. Se abre la hoja **Nueva cita** con el mismo cliente, el mismo servicio, la misma persona y la misma hora, con el día movido esas semanas.
+4. Si todo está bien, pulsa **Agendar**. Si esa hora ya está ocupada, toca otra de la lista.
+
+✅ **Resultado esperado:** Ves el aviso *Se creó la cita*.
+
+## Bloquear unas horas
+
+Quizás una profesional sale a hacer un trámite o tiene su almuerzo. Bloquea esas horas y nadie podrá reservarlas.
+
+👉 Mira la **Captura 47**.
+
+![Captura 47 — Bloquear horas de un día](capturas/47_bloquear_horas.png)
+
+> 📸 **Captura 47** — Hoja **Bloquear horas**. Elementos a resaltar: 1) **Quién no atiende**, 2) **Desde**, 3) **Hasta**, 4) **Motivo**, 5) botón **Bloquear**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `47_bloquear_horas.png`
+
+1. Elige el día en el calendario.
+2. Pulsa los tres puntos, arriba a la derecha de la lista.
+3. Pulsa **Bloquear horas**.
+4. Elige quién no atiende (número 1). Si hay un solo profesional, ya viene elegido.
+5. Escribe la hora **Desde** (número 2) y **Hasta** (número 3).
+6. Escribe un **Motivo** si quieres, por ejemplo *Almuerzo* (número 4).
+7. Pulsa **Bloquear** (número 5).
+
+✅ **Resultado esperado:** Ves el aviso *Horas bloqueadas*. En la lista del día aparece **Bloqueado**, con un candado.
+
+> ❓ **Nota:** Para quitar un bloqueo o cerrar días enteros, mira el [capítulo 12](#12-profesionales) (**Ausencias**) y el [capítulo 13](#13-configuración) (**Cierres**).
+
+> ⚠️ **Atención:** Si ya hay citas en esas horas, Afilao te avisa. Reprográmalas primero.
+
+## Copiar las horas libres para un cliente
+
+Un cliente te escribe por WhatsApp: *¿tienes hueco el jueves?* Responde en dos toques.
+
+1. Elige el día en el calendario.
+2. Pulsa los tres puntos, arriba a la derecha de la lista.
+3. Pulsa **Copiar horas libres**.
+4. Abre WhatsApp y pega el texto.
+
+El texto sale así: *Tu salón: horas libres el jueves 22 de octubre: 09:00, 09:30, 13:00. ¿Cuál te viene bien?*
+
+> ❓ **Nota:** Si tienes varios profesionales, elige a uno en **Todo el equipo** antes. Así copias sus horas, no las de todo el equipo.
+
+## Buscar una cita o un cliente
+
+La lupa de arriba busca de verdad. Escribe al menos dos letras.
+
+1. Toca el campo **Buscar…**, arriba.
+2. Escribe el nombre, el teléfono o el correo de un cliente, o el nombre de un servicio.
+3. Toca un resultado.
+
+Los resultados salen en dos grupos: **Clientes** y **Citas**. Al tocar un cliente vas a **Clientes**, ya con su nombre escrito. Al tocar una cita vas a su día y se abre.
+
+> ❓ **Nota:** Los profesionales buscan solo entre sus propias citas.
+
+## Conoce la pantalla en el computador
+
+En el computador la agenda tiene más botones.
+
+👉 Mira la **Captura 11**.
+
+![Captura 11 — Vista Semana en el computador](capturas/11_agenda_semana.png)
+
+> 📸 **Captura 11** — Vista **Semana** de la agenda en el computador. Elementos a resaltar: 1) botones **Día** y **Semana**, 2) botón **Hoy**, 3) cuadrícula de la semana. Encuadre: pantalla completa. Nombre de archivo sugerido: `11_agenda_semana.png`
 
 1. **Día** (número 1): muestra la lista de citas de un solo día.
-2. **Semana** (número 2): muestra la semana entera en una cuadrícula. Úsala en el computador.
-3. **Nueva cita** (número 3): abre el formulario para crear una cita.
-4. Calendario (número 4): toca un día para ver su agenda. El día elegido sale en rojo.
+2. **Semana**: muestra la semana entera en una cuadrícula.
+3. **Hoy** (número 2): vuelve a la semana actual.
+4. **Nueva cita**: abre el formulario para crear una cita.
 
 Debajo del calendario hay una leyenda de colores:
 
@@ -333,45 +560,13 @@ Debajo del calendario hay una leyenda de colores:
 | Amarillo, **Completo** | Ya no caben más citas ese día. |
 | Punto rojo, **Con citas** | Ese día ya tiene citas. |
 
-> 💡 **Consejo:** En el celular usa la vista **Día**. La vista **Semana** es mejor en una pantalla grande.
+### Crear una cita en el computador
 
-## Ver la agenda de un día
+Hay dos formas.
 
-1. Pulsa **Citas** en el menú.
-2. Toca el día que quieres en el calendario.
-3. Baja hasta el título **Agenda del** y la fecha.
+**Forma 1: desde un horario libre.** Toca el día en el calendario. Baja hasta **Horarios disponibles**. Elige el servicio y el profesional. Toca el horario libre que quieres.
 
-✅ **Resultado esperado:** Ves el título **Agenda del miércoles 21 de octubre** (o el día que elegiste). Debajo ves el número de citas de ese día.
-
-Si tienes varios profesionales, hay un filtro **Todo el equipo**. Tócalo para ver solo las citas de una persona.
-
-## Crear una cita
-
-Hay dos formas. Elige la que te resulte más cómoda.
-
-### Forma 1: desde un horario libre
-
-Es la más rápida.
-
-👉 Mira la **Captura 8**.
-
-![Captura 8 — Filtros y horarios disponibles](capturas/08_agenda_horarios.png)
-
-> 📸 **Captura 8** — Sección **Horarios disponibles** de la agenda. Elementos a resaltar: 1) filtro **Todo el equipo**, 2) lista de servicios, 3) lista de profesionales, 4) un horario libre. Encuadre: recorte de la zona de horarios. Nombre de archivo sugerido: `08_agenda_horarios.png`
-
-1. Toca el día en el calendario.
-2. Baja hasta **Horarios disponibles**.
-3. Elige el servicio en la primera lista (número 2).
-4. Elige el profesional en la segunda lista (número 3), o deja **Cualquier profesional**.
-5. Toca el horario libre que quieres, por ejemplo **09:00** (número 4).
-6. Completa el formulario que se abre. Mira abajo cómo.
-
-### Forma 2: con el botón Nueva cita
-
-1. Pulsa **Nueva cita**.
-2. Completa el formulario que se abre.
-
-### Completa el formulario de la cita
+**Forma 2: con el botón Nueva cita.** Pulsa **Nueva cita** y completa el formulario.
 
 👉 Mira la **Captura 9**.
 
@@ -391,7 +586,9 @@ Es la más rápida.
 
 > ❓ **Nota:** La lista **Hora de Inicio** dice **Elige primero un servicio** hasta que eliges el servicio. Hazlo en ese orden.
 
-> ❓ **Nota:** ¿Tu cliente no está en la lista? Primero créalo en **Clientes**. Mira el [capítulo 8](#8-clientes).
+### Los botones de cada cita en el computador
+
+Cada cita tiene una tarjeta con botones: **Confirmar**, **Completar**, **No asistió**, **Cancelar** y **Editar cita**. Funcionan igual que en la hoja del celular, con la misma opción de **Deshacer**.
 
 ### ⚠️ Si algo sale mal
 
@@ -402,39 +599,9 @@ Es la más rápida.
 | *Por favor completa todos los campos requeridos* | Falta un campo con asterisco rojo. Complétalo. |
 | No sale ninguna hora en la lista. | Ese profesional no trabaja ese día o ya tiene todo ocupado. Prueba con otro día. |
 
-## Cambiar el estado de una cita
-
-Cada cita tiene una tarjeta con botones. Los botones cambian según el estado de la cita.
-
-👉 Mira la **Captura 10**.
-
-![Captura 10 — Tarjeta de una cita con sus botones](capturas/10_tarjeta_cita.png)
-
-> 📸 **Captura 10** — Tarjeta de una cita **Pendiente**. Elementos a resaltar: 1) estado **Pendiente**, 2) **Confirmar**, 3) **Completar**, 4) **No asistió**, 5) **Cancelar**, 6) **Editar cita**. Encuadre: recorte de la tarjeta. Nombre de archivo sugerido: `10_tarjeta_cita.png`
-
-| Botón | Para qué sirve |
-|---|---|
-| **Confirmar** | Pasa una cita **Pendiente** a **Agendada**. |
-| **Completar** | Marca que el cliente vino y ya lo atendiste. |
-| **No asistió** | Marca que el cliente no vino. |
-| **Cancelar** | Cancela la cita y avisa al cliente. |
-| **Editar cita** | Abre la cita para cambiar sus datos. |
-
-Los estados que verás son: **Pendiente**, **Agendada**, **Completada**, **Cancelada** y **No asistió**.
-
-### Cancelar una cita
-
-1. Busca la tarjeta de la cita.
-2. Pulsa **Cancelar**.
-3. Confirma en el mensaje que aparece: *¿Cancelar la cita? Se avisará al cliente.*
-
-✅ **Resultado esperado:** La cita cambia a **Cancelada** y el horario queda libre otra vez.
-
-> ⚠️ **Atención:** Cancelar avisa al cliente. Hazlo solo cuando estés seguro.
-
 ## Cambiar el día o la hora de una cita
 
-1. Busca la tarjeta de la cita.
+1. Toca la cita (en el celular) o busca su tarjeta (en el computador).
 2. Pulsa **Editar cita**.
 3. Cambia la **Fecha de la cita** o la **Hora de Inicio**.
 4. Pulsa **Guardar cita**.
@@ -467,7 +634,7 @@ En la vista **Semana** puedes mover una cita con el ratón.
 Quizás un día cierras antes o abres más tarde. Puedes cambiar solo ese día, sin tocar tu horario normal.
 
 1. Toca el día en el calendario.
-2. Pulsa **Gestionar Horario de este Día**.
+2. En el celular, pulsa los tres puntos y luego **Gestionar horario de este día**. En el computador, pulsa **Gestionar Horario de este Día**.
 3. Mira el recuadro **Horario General** o **Horario Personalizado**.
 4. En **Horarios disponibles para este día**, escribe una hora, por ejemplo `10:00`.
 5. Pulsa **+ Agregar**. Repite para cada hora.
@@ -481,14 +648,14 @@ Para volver al horario normal, pulsa **Restaurar Horario Normal**. Verás *Horar
 
 ## Si eres profesional
 
-Tú ves solo tus citas. No ves el filtro **Todo el equipo**. Puedes confirmar, completar y marcar **No asistió** en tus citas.
+Tú ves solo tus citas. No ves el filtro **Todo el equipo**. Puedes confirmar, completar y marcar **No asistió** en tus citas. Tu buscador también busca solo entre tus citas.
 
 ### ⚠️ Errores frecuentes
 
 | Qué pasa | Qué hacer |
 |---|---|
 | No encuentro una cita. | Revisa el día en el calendario. Si eres dueño, mira el filtro **Todo el equipo**. |
-| Cancelé una cita por error. | Pulsa **Editar cita**, cambia **Estado** a **Agendada** y pulsa **Guardar cita**. Si la hora ya se ocupó, crea una cita nueva. |
+| Cancelé una cita por error. | Si fue hace menos de 5 segundos, pulsa **Deshacer**. Si no, pulsa **Editar cita**, cambia **Estado** a **Agendada** y pulsa **Guardar cita**. Si la hora ya se ocupó, crea una cita nueva. |
 | El día sale **Completo** pero quedan huecos. | Tu negocio tiene un límite de citas por día. Cámbialo en **Configuraciones › Horarios**. |
 
 ---
@@ -715,6 +882,8 @@ El cliente escribe su nombre y un teléfono o un correo. Luego toca **Confirmar 
 
 El cliente ve **¡Listo! Ya tienes tu cita** con el resumen. Si tu negocio tiene el bot de Telegram (un asistente automático que manda avisos; lo explicamos en el [capítulo 10](#10-el-bot-de-telegram)), ve también el botón **Recibir avisos por Telegram**.
 
+Debajo del resumen, el cliente ve **Añadir a mi calendario**. Tiene dos botones: **Google Calendar** y **Apple / Outlook (.ics)**. Con uno de ellos, la cita queda en su calendario con la fecha, la hora y el nombre del salón. Así no se le olvida.
+
 > ⚠️ **Atención:** Dile a tus clientes que guarden el enlace **Cambiar o cancelar mi cita**. Es la única forma de gestionar su cita sin cuenta. Para eso sirve **Copiar enlace de mi cita**.
 
 ### Cambiar o cancelar su cita
@@ -725,7 +894,13 @@ El cliente ve **¡Listo! Ya tienes tu cita** con el resumen. Si tu negocio tiene
 
 > 📸 **Captura 22** — Página **Tu reserva**. Elementos a resaltar: 1) estado, 2) resumen de la cita, 3) **Recibir avisos por Telegram**, 4) **Cambiar fecha u hora**, 5) **Cancelar reserva**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `22_gestionar_cita.png`
 
-Con su enlace, el cliente toca **Cambiar fecha u hora** o **Cancelar reserva**. Tú ves el cambio en tu agenda al instante.
+Con su enlace, el cliente toca **Cambiar fecha u hora** o **Cancelar reserva**. Tú ves el cambio en tu agenda al instante. Mientras la cita esté activa, también puede **Añadir a mi calendario**.
+
+👉 Mira la **Captura 49**.
+
+![Captura 49 — El cliente añade su cita a su calendario](capturas/49_anadir_calendario.png)
+
+> 📸 **Captura 49** — Página **Tu reserva** con **Añadir a mi calendario**. Elementos a resaltar: 1) grupo **Añadir a mi calendario**, 2) botón **Google Calendar**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `49_anadir_calendario.png`
 
 ### ⚠️ Lo que puede ver tu cliente cuando algo falla
 
@@ -752,11 +927,24 @@ Telegram es una aplicación de mensajes, como WhatsApp. Es gratuita. Un bot es u
 
 | A quién | Qué recibe |
 |---|---|
-| **Dueño** | Cada reserva nueva y cada cancelación del salón. |
-| **Profesional** | Las reservas nuevas y las cancelaciones de sus propias citas. |
+| **Dueño** | Cada reserva nueva y cada cancelación del salón. Y cada mañana, a las 8:00, el resumen de las citas del día. |
+| **Profesional** | Las reservas nuevas y las cancelaciones de sus propias citas. Y cada mañana, a las 8:00, el resumen de sus citas del día. |
 | **Cliente** | Su confirmación y recordatorios de su cita. |
 
 Si un cliente no usa Telegram, recibe los avisos por correo.
+
+### El resumen del día
+
+Cada mañana, a las 8:00 de la hora de tu salón, el bot te escribe con las citas de hoy. Por ejemplo:
+
+> ☀️ Tu salón: 2 citas hoy, jueves 22 de octubre
+>
+> • 09:00 · María Fernández · Uñas acrílicas (Ana)
+> • 11:00 · Yadira Castillo · Manicura clásica (Luis) — pendiente de confirmar
+
+El profesional recibe el suyo con solo sus citas. Si no hay citas ese día, el bot no escribe. Los resúmenes llegan una sola vez por día.
+
+Para apagarlo, ve a **Configuraciones › Avisos** y quita la marca de **Resumen del día por Telegram, cada mañana a las 8:00**. Pulsa **Guardar ajustes**.
 
 ## Crear el bot de tu salón
 
@@ -775,7 +963,7 @@ Solo lo hace el dueño, una vez.
 
 ![Captura 23 — Ficha Avisos con el bot conectado](capturas/23_avisos_telegram.png)
 
-> 📸 **Captura 23** — Ficha **Avisos** de **Configuraciones** con el bot ya conectado. Elementos a resaltar: 1) **Recordatorios**, 2) **Avisos al dueño**, 3) código `/vincular`, 4) **Desconectar bot**. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `23_avisos_telegram.png`
+> 📸 **Captura 23** — Ficha **Avisos** de **Configuraciones** con el bot ya conectado. Elementos a resaltar: 1) **Recordatorios**, 2) **Avisos al dueño**, 3) **Resumen del día por Telegram**, 4) código `/vincular`. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `23_avisos_telegram.png`
 
 ✅ **Resultado esperado:** Ves **Bot conectado: @el_nombre_de_tu_bot**.
 
@@ -793,7 +981,7 @@ Solo lo hace el dueño, una vez.
 ## Recibir los avisos tú, el dueño
 
 1. En **Configuraciones › Avisos**, busca el recuadro **Avisos al dueño**.
-2. Copia el mensaje que dice `/vincular` y un código (número 3 de la Captura 23).
+2. Copia el mensaje que dice `/vincular` y un código (número 4 de la Captura 23).
 3. Abre tu bot en Telegram. Pulsa su nombre, que aparece como **Bot conectado: @…**.
 4. Pulsa **Iniciar** si Telegram te lo pide.
 5. Envía el mensaje, por ejemplo `/vincular A1B2C3D4`.
@@ -1327,6 +1515,31 @@ Allí puedes:
 - Cambiar tu contraseña. Mira el [capítulo 5](#5-antes-de-empezar).
 - Pulsar **Cerrar sesión**.
 - Si eres profesional, vincular tu Telegram. Mira el [capítulo 10](#10-el-bot-de-telegram).
+- Ver tus citas en tu propio calendario, con **Ver mis citas en mi calendario**. Está justo aquí abajo.
+
+### Ver tus citas en tu calendario
+
+Puedes suscribir tu agenda en Google Calendar, Apple Calendar u Outlook. Las citas nuevas, los cambios y las cancelaciones aparecen solas en tu teléfono, sin abrir Afilao. El dueño y los administradores ven la agenda de todo el salón. Un profesional ve solo sus citas.
+
+👉 Mira la **Captura 48**.
+
+![Captura 48 — Calendario suscrito en Mi perfil](capturas/48_calendario_suscrito.png)
+
+> 📸 **Captura 48** — **Mi perfil**, sección **Ver mis citas en mi calendario**, con el enlace recién creado. Elementos a resaltar: 1) título de la sección, 2) enlace, 3) botón **Copiar enlace**. Encuadre: recorte de la sección. Nombre de archivo sugerido: `48_calendario_suscrito.png`
+
+1. Ve a **Mi Perfil**.
+2. En **Ver mis citas en mi calendario**, pulsa **Activar mi calendario**.
+3. Pulsa **Copiar enlace** (número 3).
+4. Pega el enlace en tu calendario:
+   - **Google Calendar** (en el navegador): **Otros calendarios**, el signo **+**, **Desde URL**, y pega el enlace.
+   - **iPhone:** **Ajustes › Calendario › Cuentas › Añadir cuenta › Otra › Añadir calendario suscrito**.
+   - **Outlook:** **Agregar calendario › Suscribirse desde la web**.
+
+✅ **Resultado esperado:** Tus citas aparecen en tu calendario. Se actualizan cada pocas horas; los calendarios deciden cada cuánto.
+
+> ⚠️ **Atención:** El enlace se muestra **una sola vez**. Quien lo tenga puede ver tus citas. Guárdalo bien y no lo compartas.
+
+Si lo pierdes o se filtra, pulsa **Generar un enlace nuevo**. El anterior deja de funcionar. Para dejar de recibir tus citas en el calendario, pulsa **Desactivar**.
 
 > ⚠️ **Atención:** Tu correo es tu usuario. Si lo cambias, la próxima vez entra con el correo nuevo.
 
@@ -1572,6 +1785,15 @@ No. Cada negocio ve solo lo suyo.
 
 ## Sobre el uso diario
 
+**¿Puedo ver mis citas en el calendario de mi teléfono?**
+Sí. En **Mi Perfil**, pulsa **Activar mi calendario** y pega el enlace en Google Calendar, Apple Calendar u Outlook. Mira el [capítulo 14](#14-equipo-y-mi-perfil).
+
+**¿Mis clientes pueden guardar su cita en su calendario?**
+Sí. Al reservar ven los botones **Google Calendar** y **Apple / Outlook (.ics)**. También están en la página **Tu reserva**.
+
+**¿Cómo respondo rápido a un cliente que pregunta por un hueco?**
+En **Citas**, elige el día, pulsa los tres puntos y luego **Copiar horas libres**. Pega el texto en WhatsApp.
+
 **¿Puedo usar Afilao sin internet?**
 No. Necesitas conexión para entrar y para ver tu agenda.
 
@@ -1619,6 +1841,7 @@ Busca tu síntoma en la tabla. Si no lo ves, prueba primero lo básico:
 | No se imprime el cartel. | El navegador bloqueó la ventana. | Permite las ventanas emergentes y pulsa **Imprimir cartel** otra vez. |
 | La pantalla se ve cortada. | El navegador está desactualizado o la página no cargó bien. | Recarga. Actualiza tu navegador. |
 | Cambié mi contraseña y me pidió entrar de nuevo. | Es normal: se cerraron las demás sesiones. | Entra con la contraseña nueva. |
+| Mi calendario del teléfono no muestra una cita nueva. | Google, Apple y Outlook actualizan los calendarios suscritos cada pocas horas. | Espera un poco. En **Mi Perfil** puedes generar un enlace nuevo si lo perdiste. |
 
 ## Para tus clientes
 
@@ -1636,6 +1859,7 @@ Busca tu síntoma en la tabla. Si no lo ves, prueba primero lo básico:
 | Síntoma | Causa probable | Qué hacer |
 |---|---|---|
 | El bot no responde. | Escribiste mal el comando, o el bot se desconectó. | Prueba `/citas`. Revisa **Configuraciones › Avisos**. |
+| No me llegó el resumen de las 8:00. | No había citas ese día, el resumen está apagado, tu chat no está vinculado, o la **Zona horaria** del negocio está mal. | Revisa **Configuraciones › Avisos** (casilla del resumen y `/vincular`) y la zona horaria en **Negocio**. |
 | Dice *Código inválido*. | El código ya se usó o se copió mal. | Recarga Afilao y copia el código nuevo. |
 | Dice *Telegram no reconoce ese token*. | El token está incompleto o tiene espacios. | Cópialo de nuevo desde **@BotFather**. |
 | Un cliente no recibe avisos por Telegram. | No tocó **Recibir avisos por Telegram**, o bloqueó el bot. | Recibirá los avisos por correo. Puede volver a activarlos desde su enlace de la cita. |
