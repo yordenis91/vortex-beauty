@@ -82,7 +82,8 @@ describeIfDb('aislamiento multi-tenant', () => {
   describe('RLS en la base de datos', () => {
     it('toda tabla con tenantId de negocio tiene RLS activa y forzada', async () => {
       // Tablas de plataforma: tienen tenantId pero las gestiona el portal de plataforma.
-      const platformTables = ['AuditLog', 'PlatformInvoice', 'TenantSubscription', 'RefreshToken'];
+      // RefreshToken y CalendarFeed se consultan por un token secreto (solo su hash) antes de conocer el salón.
+      const platformTables = ['AuditLog', 'PlatformInvoice', 'TenantSubscription', 'RefreshToken', 'CalendarFeed'];
       const { rows } = await adminPool.query(
         `SELECT c.table_name, cl.relrowsecurity, cl.relforcerowsecurity
            FROM information_schema.columns c

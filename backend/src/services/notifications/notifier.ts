@@ -71,7 +71,7 @@ type Channel = 'EMAIL' | 'TELEGRAM';
  * Registra el aviso y lo envía. Devuelve 'retry' si el fallo es transitorio
  * (el worker relanza el trabajo) y 'done' en cualquier otro caso.
  */
-async function deliver(params: {
+export async function deliver(params: {
   tenantId: string;
   channel: Channel;
   recipient: string;

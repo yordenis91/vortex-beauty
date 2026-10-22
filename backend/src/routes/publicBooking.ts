@@ -293,6 +293,7 @@ interface PresentableAppointment {
   startTime: string;
   endTime: string;
   startsAt: Date;
+  endsAt: Date;
   priceAmount: unknown;
   currency: string;
   cancelToken: string | null;
@@ -325,6 +326,7 @@ const presentAppointment = (a: PresentableAppointment, slug: string) => ({
   startTime: a.startTime,
   endTime: a.endTime,
   startsAt: a.startsAt,
+  endsAt: a.endsAt,
   priceAmount: a.priceAmount,
   currency: a.currency,
   manageUrl: a.cancelToken ? `/${slug}/mi-cita/${a.cancelToken}` : null,

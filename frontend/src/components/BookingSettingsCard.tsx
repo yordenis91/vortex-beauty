@@ -67,6 +67,7 @@ const BookingSettingsForm: React.FC<FormProps> = ({ initial, logoUrl, brandColor
         .map((v) => parseInt(v))
         .filter((v) => Number.isFinite(v) && v > 0),
       ownerAlerts: form.ownerAlerts,
+      dailySummary: form.dailySummary,
       ...(telegramToken ? { telegramBotToken: telegramToken } : {}),
       labels: form.labels,
     });
@@ -188,6 +189,13 @@ const BookingSettingsForm: React.FC<FormProps> = ({ initial, logoUrl, brandColor
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.ownerAlerts} onChange={(e) => set('ownerAlerts', e.target.checked)} />
               Avisarme por correo cuando haya una reserva nueva o una cancelación
+            </label>
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={form.dailySummary} onChange={(e) => set('dailySummary', e.target.checked)} />
+              <span>
+                Resumen del día por Telegram, cada mañana a las 8:00
+                <span className="block text-xs text-muted-foreground">Lo recibes tú y cada profesional con su chat vinculado (solo sus citas). Si no hay citas, no se envía.</span>
+              </span>
             </label>
             {form.telegramBotUsername ? (
               <div className="space-y-2 text-sm">

@@ -20,6 +20,7 @@ const settings = {
   maxActivePerCustomer: 3,
   reminderHours: [24, 2],
   ownerAlerts: true,
+  dailySummary: true,
   telegramConfigured: false,
   telegramChatId: '',
   telegramBotUsername: null,

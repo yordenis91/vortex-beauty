@@ -1,3 +1,4 @@
+import { DateTime } from 'luxon';
 import { formatLocalDateTime } from '../../lib/time';
 
 /** Datos que necesitan los mensajes; los carga notifier.ts. */
@@ -108,4 +109,21 @@ export function professionalAlert(kind: 'created' | 'cancelled', ctx: MessageCon
     `${ctx.customerName} — ${ctx.serviceName}`,
     when,
   ].join('\n');
+}
+
+// ---------- Resumen diario ----------
+
+export interface SummaryLine {
+  time: string;
+  client: string;
+  service: string;
+  professional: string | null;
+  pending: boolean;
+}
+
+export function summaryText(salon: string, dateStr: string, word: { one: string; many: string }, lines: SummaryLine[], showProfessional: boolean): string {
+  const day = DateTime.fromISO(dateStr, { zone: 'utc' }).setLocale('es').toFormat("cccc d 'de' LLLL");
+  const count = lines.length === 1 ? `1 ${word.one}` : `${lines.length} ${word.many}`;
+  const rows = lines.map((l) => `• ${l.time} · ${l.client} · ${l.service}${showProfessional && l.professional ? ` (${l.professional})` : ''}${l.pending ? ' — pendiente de confirmar' : ''}`);
+  return [`☀️ ${salon}: ${count} hoy, ${day}`, '', ...rows].join('\n');
 }

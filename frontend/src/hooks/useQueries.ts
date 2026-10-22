@@ -814,6 +814,24 @@ export const useMyTelegramLink = () =>
 export const useUnlinkMyTelegram = (options?: MutationOptions) =>
   useResourceMutation(async () => (await api.delete('/professionals/me/telegram')).data, [['my-telegram-link']], options);
 
+// ---- Calendario suscrito (iCal) ----
+
+export interface CalendarFeedStatus {
+  active: boolean;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+}
+
+export const useCalendarFeed = () =>
+  useQuery({ queryKey: ['calendar-feed'], queryFn: async () => (await api.get<CalendarFeedStatus>('/calendar-feed')).data });
+
+/** Crea el enlace o lo regenera; devuelve la URL completa, que solo se ve esta vez. */
+export const useActivateCalendarFeed = (options?: MutationOptions) =>
+  useResourceMutation(async () => (await api.post<{ url: string }>('/calendar-feed')).data, [['calendar-feed']], options);
+
+export const useDeactivateCalendarFeed = (options?: MutationOptions) =>
+  useResourceMutation(async () => (await api.delete('/calendar-feed')).data, [['calendar-feed']], options);
+
 // ---- Equipo: cuentas de acceso al panel ----
 
 export const useTeam = () =>

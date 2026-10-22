@@ -301,6 +301,7 @@ export interface BookingSettings {
   maxActivePerCustomer: number;
   reminderHours: number[];
   ownerAlerts: boolean;
+  dailySummary: boolean;
   telegramConfigured: boolean;
   telegramChatId: string;
   telegramBotUsername: string | null;

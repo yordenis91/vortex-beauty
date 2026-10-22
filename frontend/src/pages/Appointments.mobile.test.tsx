@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
@@ -87,11 +87,18 @@ const open = () => {
   )
 }
 
+// Los huecos libres dependen de la hora actual: estas pruebas fijan «ahora» a mediodía de La Habana (solo Date).
+const atMidday = () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(`${today}T17:00:00Z`))
+}
+
 const widthBefore = window.innerWidth
 beforeEach(() => {
   Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true })
 })
 afterEach(() => {
+  vi.useRealTimers()
   Object.defineProperty(window, 'innerWidth', { value: widthBefore, configurable: true })
   toast.remove()
 })
@@ -148,6 +155,7 @@ describe('Agenda del móvil', () => {
   })
 
   it('con un solo profesional ofrece los huecos libres entre citas y al tocar uno abre la cita con esa hora', async () => {
+    atMidday()
     mock([apt('a1', { startTime: '10:00', endTime: '11:00' })])
     const user = userEvent.setup()
     open()
@@ -232,6 +240,7 @@ describe('Agenda del móvil', () => {
   })
 
   it('«Copiar horas libres» deja en el portapapeles un texto para WhatsApp', async () => {
+    atMidday()
     mock([apt('a1', { startTime: '10:00', endTime: '11:00' })])
     const user = userEvent.setup()
     const writes: string[] = []

@@ -23,6 +23,20 @@ describe('Gestionar mi reserva (enlace secreto)', () => {
     expect(screen.getByRole('button', { name: 'Cancelar reserva' })).toBeEnabled()
   })
 
+  it('una reserva activa ofrece guardarla en el calendario; una cancelada, no', async () => {
+    server.use(http.get(BASE, () => HttpResponse.json(manageView())))
+    open()
+    const group = await screen.findByRole('group', { name: 'Añadir a mi calendario' })
+    expect(group).toBeInTheDocument()
+  })
+
+  it('una reserva cancelada no ofrece añadirla al calendario', async () => {
+    server.use(http.get(BASE, () => HttpResponse.json(manageView({ status: 'CANCELLED' }))))
+    open()
+    await screen.findByText('Corte de cabello')
+    expect(screen.queryByRole('group', { name: 'Añadir a mi calendario' })).not.toBeInTheDocument()
+  })
+
   it('un enlace inválido o vencido lo explica', async () => {
     server.use(http.get(BASE, () => HttpResponse.json({ error: 'No encontrado' }, { status: 404 })))
     open()

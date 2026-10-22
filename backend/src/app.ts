@@ -13,6 +13,7 @@ import clientRoutes from './routes/clients';
 import serviceRoutes from './routes/services';
 import categoryRoutes from './routes/categories';
 import appointmentRoutes from './routes/appointments';
+import { calendarFeedRouter, calendarPublicRouter } from './routes/calendarFeed';
 import notificationRoutes from './routes/notifications';
 import portalRoutes from './routes/portal';
 import overridesRoutes from './routes/overrides';
@@ -107,6 +108,8 @@ app.use('/api/services', serviceRoutes);
 app.use('/api/resources', resourceRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/appointments', appointmentRoutes);
+app.use('/api/calendar-feed', calendarFeedRouter);
+app.use('/api/calendar', calendarPublicRouter);
 app.use('/api/notifications', notificationRoutes);
 
 // Perfil propio (mi perfil)

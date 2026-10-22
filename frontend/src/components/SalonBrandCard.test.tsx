@@ -6,7 +6,7 @@ import SalonBrandCard from './SalonBrandCard'
 import { renderWithProviders } from '../test/render'
 import { server, API } from '../test/server'
 
-const base = { name: 'Barbería Demo', slug: 'barberia-demo', currency: 'CUP', timezone: 'America/Havana', vertical: 'BARBER', slotIntervalMin: 30, minNoticeHours: 2, maxAdvanceDays: 60, cancelWindowHrs: 12, bookingEnabled: true, maxActivePerCustomer: 3, reminderHours: [24, 2], ownerAlerts: true, telegramConfigured: false, telegramChatId: '', telegramBotUsername: null, telegramOwnerCode: null, labels: {} }
+const base = { name: 'Barbería Demo', slug: 'barberia-demo', currency: 'CUP', timezone: 'America/Havana', vertical: 'BARBER', slotIntervalMin: 30, minNoticeHours: 2, maxAdvanceDays: 60, cancelWindowHrs: 12, bookingEnabled: true, maxActivePerCustomer: 3, reminderHours: [24, 2], ownerAlerts: true, dailySummary: true, telegramConfigured: false, telegramChatId: '', telegramBotUsername: null, telegramOwnerCode: null, labels: {} }
 
 function mockSettings(over: Record<string, unknown>) {
   const puts: Array<Record<string, unknown>> = []

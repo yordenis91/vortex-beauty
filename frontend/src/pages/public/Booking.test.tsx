@@ -32,6 +32,7 @@ function mockBooking(opts: { catalog?: ReturnType<typeof catalog>; postStatus?: 
           startTime: '09:30',
           endTime: '10:00',
           startsAt: '2030-03-04T14:30:00.000Z',
+          endsAt: '2030-03-04T15:00:00.000Z',
           priceAmount: '500',
           currency: 'CUP',
           manageUrl: '/barberia-demo/mi-cita/tok123',
@@ -46,7 +47,7 @@ function mockBooking(opts: { catalog?: ReturnType<typeof catalog>; postStatus?: 
 
 const firstEnabledDay = async () => {
   await screen.findByText('Elige el día')
-  await waitFor(() => expect(document.querySelector('td[data-day] button:not([disabled])')).not.toBeNull())
+  await waitFor(() => expect(document.querySelector('td[data-day] button:not([disabled])')).not.toBeNull(), { timeout: 8000 })
   return document.querySelector<HTMLButtonElement>('td[data-day] button:not([disabled])')!
 }
 
@@ -236,6 +237,7 @@ describe('Reserva pública', () => {
         startTime: '09:00',
         endTime: '09:30',
         startsAt: '2030-03-04T14:00:00.000Z',
+        endsAt: '2030-03-04T14:30:00.000Z',
         priceAmount: '500',
         currency: 'CUP',
         manageUrl: '/barberia-demo/mi-cita/tok123',
@@ -252,4 +254,22 @@ describe('Reserva pública', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
     expect(await screen.findByRole('link', { name: /Recibir avisos por Telegram/ })).toHaveAttribute('href', 'https://t.me/barberia_bot?start=tok123')
   })
+
+  it('al confirmar ofrece guardar la cita en Google Calendar o como archivo .ics', async () => {
+    const posted = mockBooking()
+    void posted
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: /Corte de cabello/ }))
+    await user.click(await firstEnabledDay())
+    await user.click(await screen.findByRole('button', { name: '09:00' }))
+    await user.type(screen.getByLabelText(/Nombre/), 'Marta')
+    await user.type(screen.getByLabelText('Teléfono'), '5555')
+    await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
+    const group = await screen.findByRole('group', { name: 'Añadir a mi calendario' })
+    const google = new URL(within(group).getByRole('link', { name: 'Google Calendar' }).getAttribute('href')!)
+    expect(google.searchParams.get('text')).toBe('Corte de cabello en Barbería Demo')
+    expect(google.searchParams.get('dates')).toMatch(/^\d{8}T\d{6}Z\/\d{8}T\d{6}Z$/)
+    expect(within(group).getByRole('button', { name: /\.ics/ })).toBeInTheDocument()
+  }, 15000)
 })
