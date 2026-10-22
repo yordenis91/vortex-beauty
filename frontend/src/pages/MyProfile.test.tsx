@@ -120,5 +120,50 @@ describe('Mi perfil', () => {
     expect(await screen.findByText('Profesional')).toBeInTheDocument()
     setAccessToken(null)
   })
-})
 
+  describe('calendario suscrito', () => {
+    const feedMock = (active: boolean) => {
+      const calls: string[] = []
+      server.use(
+        http.get(`${API}/calendar-feed`, () => HttpResponse.json({ active, createdAt: active ? '2026-10-20T10:00:00Z' : null, lastUsedAt: null })),
+        http.post(`${API}/calendar-feed`, () => {
+          calls.push('POST')
+          return HttpResponse.json({ active: true, url: 'https://api.afilao.app/api/calendar/ABC123tokensecretoABC123tokensecreto123.ics' }, { status: 201 })
+        }),
+        http.delete(`${API}/calendar-feed`, () => {
+          calls.push('DELETE')
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+      return calls
+    }
+
+    it('activar muestra el enlace una sola vez, con instrucciones para Google, iPhone y Outlook', async () => {
+      const calls = feedMock(false)
+      const user = userEvent.setup()
+      open()
+      await user.click(await screen.findByRole('button', { name: 'Activar mi calendario' }))
+      expect(await screen.findByTestId('enlace-calendario')).toHaveTextContent('https://api.afilao.app/api/calendar/ABC123tokensecreto')
+      expect(screen.getByText(/Otros calendarios/)).toBeInTheDocument()
+      expect(screen.getByText(/Añadir calendario suscrito/)).toBeInTheDocument()
+      expect(screen.getByText(/Suscribirse desde la web/)).toBeInTheDocument()
+      expect(calls).toEqual(['POST'])
+    })
+
+    it('con el calendario ya activo no vuelve a mostrar el enlace; permite generar otro o desactivar', async () => {
+      const calls = feedMock(true)
+      const user = userEvent.setup()
+      open()
+      expect(await screen.findByText(/Tu calendario está activo/)).toBeInTheDocument()
+      expect(screen.queryByTestId('enlace-calendario')).not.toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Desactivar' }))
+      await waitFor(() => expect(calls).toEqual(['DELETE']))
+    })
+
+    it('un profesional ve que son solo sus citas', async () => {
+      feedMock(false)
+      open('STAFF')
+      expect(await screen.findByText(/Suscribe tus citas/)).toBeInTheDocument()
+    })
+  })
+})

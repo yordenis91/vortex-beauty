@@ -5,6 +5,7 @@ import { User, LogOut, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import MyTelegramCard from '../components/MyTelegramCard';
+import CalendarFeedCard from '../components/CalendarFeedCard';
 import api from '../lib/api';
 import { setAccessToken } from '../lib/session';
 import { getErrorMessage, useBookingSettings, useUpdateClientProfile } from '../hooks/useQueries';
@@ -131,6 +132,8 @@ const MyProfile: React.FC = () => {
           </button>
         </form>
       </section>
+
+      <CalendarFeedCard isStaff={user?.role === 'STAFF'} />
 
       <MyTelegramCard />
 

@@ -4,7 +4,7 @@ Documento vivo. Al terminar o decidir algo, marca la casilla (`[x]`), añade la 
 y anota en el registro del final. Si una decisión cambia, tacha la anterior en lugar
 de borrarla.
 
-**Última actualización:** 2026-10-21 (noche)
+**Última actualización:** 2026-10-22
 
 ## 1. Qué vendemos y a quién
 - **Producto:** Afilao, reservas con turnos para negocios de servicios (barberías,
@@ -30,7 +30,11 @@ de borrarla.
 - [x] Configuración por fichas (Negocio, Marca, Horarios, Cierres, Reservas, Avisos) en lugar de una página larguísima
 - [x] Reserva pública más clara en móvil: «Paso X de N», resumen del servicio elegido, botón para copiar el enlace de la cita
 - [x] Clientes sin credenciales de acceso (no hay portal): el formulario solo pide la ficha
-- [x] Manual de usuario (`docs/manual/`): 20 capítulos, 43 capturas reales anotadas y mockups; versión web privada para compartir (2026-10-21)
+- [x] Manual de usuario (`docs/manual/`): 20 capítulos, 49 capturas reales anotadas y mockups; versión web privada para compartir (2026-10-21; actualizado 2026-10-22 con la agenda nueva)
+- [x] Agenda del móvil en dos mitades (calendario de mes o semana con días marcados arriba, citas del día abajo con huecos libres, bloqueos y línea de «ahora»); hoja de acciones por cita; deshacer en vez de cuadros de confirmación (cancelar espera 5 s antes de avisar al cliente) (2026-10-22, en rama, pendiente de fusionar)
+- [x] Buscador real en la barra superior (clientes y citas); tarjeta «Siguiente cita» en el Panel con llamar, WhatsApp y completar (2026-10-22)
+- [x] Cita nueva en pocos toques (cliente al vuelo), próxima cita en 2/3/4 semanas, bloquear horas, copiar horas libres para WhatsApp, confirmación por WhatsApp con mensaje listo (2026-10-22)
+- [x] Calendario suscrito (Google/Apple/Outlook) desde Mi perfil; «Añadir a mi calendario» para el cliente al reservar; resumen del día por Telegram a las 8:00 (2026-10-22; pide migración: backend primero)
 
 ## 3. Pendiente por tu parte
 - [ ] **Yumi Manicure:** que entre con su correo y cambie la contraseña temporal en Mi perfil;
@@ -55,6 +59,8 @@ de borrarla.
 7. [ ] Logo definitivo hecho por un diseñador (el actual es provisional)
 8. [ ] Cupones en la app de staff (`yorde-what-store-mobile`); pospuesto a propósito
 9. [ ] Cupos, fase 4 (solo si un salón lo pide): cupos solo para ciertos servicios y cantidad distinta en una fecha concreta
+
+Notas de despliegue de las tres olas: las ramas están apiladas (la 2 sale de la 1 y la 3 de la 2), así que se fusiona solo la `feat/agenda-ola3` o cada una en orden. Solo la ola 3 tiene migración (tabla `CalendarFeed` y el campo `dailySummary`, activo por defecto: los salones con bot empezarán a recibir el resumen de las 8:00). Se pulsa Deploy del backend primero.
 
 Hecho de esta lista:
 - [x] El correo del cliente es opcional al crearlo a mano (2026-10-21)
@@ -93,3 +99,4 @@ Hecho de esta lista:
 | 2026-10-21 | Reserva pública con pasos y resumen; clientes sin credenciales de acceso |
 | 2026-10-21 | Manual de usuario de Afilao: capítulos, capturas anotadas, mockups y versión web |
 | 2026-10-22 | Un cliente con citas ya no se puede borrar; archivar clientes queda como siguiente paso de desarrollo |
+| 2026-10-22 | Tres olas de mejoras de la agenda (ramas `feat/agenda-ola1`, `-ola2`, `-ola3`, apiladas): agenda móvil en dos mitades, buscador, siguiente cita, cita rápida, bloqueo de horas, calendario suscrito, añadir al calendario y resumen diario por Telegram. Manual actualizado |

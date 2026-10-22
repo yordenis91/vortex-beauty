@@ -1,17 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, CheckCircle2, Clock, Users, ArrowRight } from 'lucide-react';
-import { useAppointments, useClients } from '../hooks/useQueries';
+import { useAppointments, useBookingSettings, useClients } from '../hooks/useQueries';
 import { useLabels } from '@/hooks/useLabels';
-
-const todayStr = () => new Date().toISOString().split('T')[0];
+import NextAppointmentCard from '../components/NextAppointmentCard';
+import { localParts, nextAppointment } from '../lib/agenda';
 
 const Dashboard: React.FC = () => {
   const { label, agree } = useLabels();
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: appointments = [], isLoading: appointmentsLoading } = useAppointments();
+  const { data: settings } = useBookingSettings();
 
-  const today = todayStr();
+  // «Hoy» es el día del salón, no el de UTC (de noche ya sería mañana).
+  const now = localParts(settings?.timezone ?? 'America/Havana');
+  const today = now.date;
+  const next = nextAppointment(appointments, now);
   const scheduled = appointments.filter((a) => a.status === 'SCHEDULED');
   const todayCount = scheduled.filter((a) => a.date.split('T')[0] === today).length;
   const upcoming = scheduled.filter((a) => a.date.split('T')[0] >= today).slice(0, 8);
@@ -40,6 +44,8 @@ const Dashboard: React.FC = () => {
         <h1 className="text-2xl font-bold text-foreground">Panel de control</h1>
         <p className="mt-1 text-sm text-muted-foreground">Resumen de tu agenda.</p>
       </div>
+
+      {next && <NextAppointmentCard next={next} today={today} salonName={settings?.name} appointmentWord={label('appointment')} />}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => (

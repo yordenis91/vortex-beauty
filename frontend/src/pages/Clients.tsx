@@ -1,5 +1,6 @@
 import { compressImage } from '../lib/image';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
 import { Users, Plus, Edit, Trash2, Search, Mail, Phone, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -18,7 +19,16 @@ interface ClientFormData {
 
 const Clients: React.FC = () => {
   const { label, agree, the } = useLabels();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('buscar') ?? '');
+  // El buscador de la barra superior lleva aquí con el nombre ya escrito.
+  useEffect(() => {
+    const wanted = searchParams.get('buscar');
+    if (wanted !== null) {
+      setSearchTerm(wanted);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);

@@ -109,6 +109,14 @@ describe('Clientes', () => {
     expect(screen.getByText('Carlos Méndez')).toBeInTheDocument()
   })
 
+  it('si llegas desde el buscador (?buscar=) el nombre ya está escrito y la lista filtrada', async () => {
+    mock([client(), client({ id: 'c2', name: 'Luis Pérez', email: 'luis@example.com' })])
+    renderWithProviders(<Clients />, { route: '/admin/clients?buscar=Luis' })
+    expect(await screen.findByDisplayValue('Luis')).toBeInTheDocument()
+    expect(screen.getByText('Luis Pérez')).toBeInTheDocument()
+    expect(screen.queryByText('Carlos Méndez')).not.toBeInTheDocument()
+  })
+
   it('sin teléfono ni correo no se envía el formulario', async () => {
     const calls = mock([client()])
     const user = userEvent.setup()

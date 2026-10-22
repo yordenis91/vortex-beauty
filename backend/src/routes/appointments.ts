@@ -41,6 +41,8 @@ const listQuerySchema = z.object({
   to: z.string().optional(), // YYYY-MM-DD (inclusive)
   professionalId: z.string().uuid().optional(),
   status: z.enum(['PENDING', 'SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional(),
+  // Búsqueda libre: nombre, teléfono o correo del cliente, o nombre del servicio.
+  q: z.string().trim().min(1).max(80).optional(),
 });
 
 // GET /api/appointments
@@ -67,6 +69,16 @@ router.get('/', async (req, res) => {
         tenantId,
         ...(Object.keys(range).length ? { startsAt: range } : {}),
         ...(query.status ? { status: query.status } : {}),
+        ...(query.q
+          ? {
+              OR: [
+                { client: { name: { contains: query.q, mode: 'insensitive' as const } } },
+                { client: { email: { contains: query.q, mode: 'insensitive' as const } } },
+                { client: { phone: { contains: query.q } } },
+                { serviceName: { contains: query.q, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
         professionalId: scope.professionalId ?? query.professionalId,
       },
       include: appointmentInclude,

@@ -3,7 +3,9 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import Appointments from './Appointments'
+import toast, { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '../contexts/AuthContext'
+import { cancelDelay } from '../hooks/useAppointmentActions'
 import { renderWithProviders } from '../test/render'
 import { server, API } from '../test/server'
 import { ymd } from '../test/fixtures'
@@ -59,11 +61,16 @@ function mockAgenda(appointments: unknown[], labels: Record<string, string> = {}
 const open = () =>
   renderWithProviders(
     <AuthProvider>
+      <Toaster />
       <Appointments />
     </AuthProvider>,
   )
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  cancelDelay.ms = 5000
+  toast.remove() // los avisos son globales: que uno no pase a la prueba siguiente
+})
 
 describe('Agenda de citas', () => {
   it('muestra las citas del día con hora, cliente, servicio, profesional y estado, ordenadas por hora', async () => {
@@ -116,22 +123,54 @@ describe('Agenda de citas', () => {
     expect(puts[0]).toEqual({ id: 'a1', body: { status: 'COMPLETED' } })
   })
 
-  it('«Cancelar» pide confirmación con el vocabulario del salón; si se rechaza no envía nada', async () => {
+  it('si llegas desde el buscador (?fecha=&cita=) se abre esa cita para editarla', async () => {
+    mockAgenda([apt('a1')])
+    renderWithProviders(
+      <AuthProvider>
+        <Appointments />
+      </AuthProvider>,
+      { route: `/admin/appointments?fecha=${today}&cita=a1` },
+    )
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText(/Editar cita/)).toBeInTheDocument()
+  })
+
+  it('«Cancelar» no pide confirmación: avisa con «Deshacer» y cancela de verdad pasados unos segundos', async () => {
+    cancelDelay.ms = 1500
     const puts = mockAgenda([apt('a1')], { appointment: 'turno', appointments: 'turnos', customer: 'clienta' })
     const confirm = vi.spyOn(window, 'confirm')
     const user = userEvent.setup()
     open()
-    const cancel = await screen.findByRole('button', { name: 'Cancelar' })
-
-    confirm.mockReturnValueOnce(false)
-    await user.click(cancel)
-    expect(confirm).toHaveBeenCalledWith('¿Cancelar el turno? Se avisará a la clienta.')
-    expect(puts).toHaveLength(0)
-
-    confirm.mockReturnValueOnce(true)
-    await user.click(cancel)
-    await waitFor(() => expect(puts).toHaveLength(1))
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    expect(confirm).not.toHaveBeenCalled()
+    expect(await screen.findByText('Turno cancelado')).toBeInTheDocument()
+    expect(puts).toHaveLength(0) // todavía no se envió nada
+    await waitFor(() => expect(puts).toHaveLength(1), { timeout: 8000 })
     expect(puts[0].body).toEqual({ status: 'CANCELLED' })
+  })
+
+  it('«Deshacer» tras cancelar evita que se cancele y no avisa a nadie', async () => {
+    cancelDelay.ms = 1500
+    const puts = mockAgenda([apt('a1')])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    await user.click(await screen.findByRole('button', { name: 'Deshacer' }))
+    await new Promise((r) => setTimeout(r, 2000))
+    expect(puts).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument() // la cita sigue activa
+  })
+
+  it('«Deshacer» tras completar devuelve la cita a su estado anterior', async () => {
+    const puts = mockAgenda([apt('a1')])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Completar' }))
+    await waitFor(() => expect(puts).toHaveLength(1))
+    expect(puts[0].body).toEqual({ status: 'COMPLETED' })
+    await user.click(await screen.findByRole('button', { name: 'Deshacer' }))
+    await waitFor(() => expect(puts).toHaveLength(2))
+    expect(puts[1].body).toEqual({ status: 'SCHEDULED' })
   })
 
   it('una cita ya completada no ofrece acciones de estado', async () => {

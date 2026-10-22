@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAppointments, useClients, useServices, useProfessionals, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useBookingSettings, useClosedDates, useFullyBookedDates, useAdminSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
 import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle, UserCog } from 'lucide-react';
@@ -13,6 +13,10 @@ import { useAuth } from '../contexts/AuthContext';
 import WeekAgenda from '../components/WeekAgenda';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from '@/components/ui/calendar';
+import { useSearchParams } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MobileAgenda from '../components/agenda/MobileAgenda';
+import { useAppointmentActions } from '../hooks/useAppointmentActions';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -136,6 +140,11 @@ const Appointments: React.FC = () => {
 
   const { role } = useAuth();
   const isManager = canManage(role);
+  const isMobile = useIsMobile();
+  const { setStatus } = useAppointmentActions();
+  // Desde el buscador: ?fecha=aaaa-mm-dd&cita=id lleva a ese día y abre esa cita.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [focusId, setFocusId] = useState<string | null>(null);
   // Vista: el día con su lista y huecos, o la semana con arrastre para reprogramar
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
   const [calendarView, setCalendarView] = useState<'week' | 'day'>('week');
@@ -440,10 +449,8 @@ const Appointments: React.FC = () => {
   };
 
   // Cambio rápido de estado desde la tarjeta de la agenda
-  const quickStatus = (appointment: Appointment, status: AppointmentStatus) => {
-    if (status === 'CANCELLED' && !window.confirm(`¿Cancelar ${the('appointment')}? Se avisará ${label('customer') === 'clienta' ? 'a la clienta' : 'al cliente'}.`)) return;
-    updateMutation.mutate({ id: appointment.id, appointmentData: { status } });
-  };
+  // Sin cuadro de confirmación: cada cambio se puede deshacer unos segundos (cancelar espera antes de avisar al cliente).
+  const quickStatus = (appointment: Appointment, status: AppointmentStatus) => setStatus(appointment, status);
 
   // Funciones de Acciones
   const handleDeleteAppointment = (id: string) => {
@@ -475,11 +482,36 @@ const Appointments: React.FC = () => {
     });
   };
 
+  useEffect(() => {
+    const day = searchParams.get('fecha');
+    const id = searchParams.get('cita');
+    if (!day && !id) return;
+    if (day && /^\d{4}-\d{2}-\d{2}$/.test(day)) {
+      const target = parseDateString(day);
+      setCurrentDate(target);
+      setVisibleMonth(target);
+    }
+    if (id) setFocusId(id);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // En escritorio la cita elegida se abre para editarla; en el móvil la abre la hoja de acciones.
+  useEffect(() => {
+    if (!focusId || isMobile) return;
+    const found = appointments.find((a) => a.id === focusId);
+    if (found) {
+      openModal(found);
+      setFocusId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusId, appointments, isMobile]);
+
   const isLoading = appointmentsLoading || clientsLoading || servicesLoading || businessHoursLoading || closedDatesLoading || fullyBookedLoading;
 
   return (
     <div className="space-y-6">
       {/* Header */}
+      {!isMobile && (
       <div className="md:flex md:items-center md:justify-between">
         <div className="min-w-0 flex-1">
           <h2 className="text-2xl font-bold leading-7 text-foreground sm:truncate">
@@ -518,11 +550,37 @@ const Appointments: React.FC = () => {
           </button>
         </div>
       </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center h-96">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
         </div>
+      ) : isMobile ? (
+        <MobileAgenda
+          appointments={appointments}
+          professionals={professionalList}
+          businessHours={businessHours}
+          closedDates={closedDates}
+          timezone={bookingSettings?.timezone ?? 'America/Havana'}
+          salonName={bookingSettings?.name}
+          selected={currentDate}
+          onSelectedChange={(day) => {
+            setCurrentDate(day);
+            setVisibleMonth(day);
+          }}
+          onEdit={(appointment) => openModal(appointment)}
+          onStatus={quickStatus}
+          onManageDay={(date) => {
+            setSelectedDate(date);
+            setActiveTab('schedule');
+            setShowModal(true);
+          }}
+          canManage={isManager}
+          focusAppointmentId={focusId}
+          onFocusHandled={() => setFocusId(null)}
+          words={{ appointments: label('appointments'), appointment: label('appointment') }}
+        />
       ) : viewMode === 'week' ? (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">

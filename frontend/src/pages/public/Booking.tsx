@@ -16,6 +16,7 @@ import {
 import LazyCalendar from './LazyCalendar';
 import { loadCalendar } from './calendarLoader';
 import TelegramOptIn from './TelegramOptIn';
+import AddToCalendar from '../../components/AddToCalendar';
 import PublicShell from './PublicShell';
 import { money } from './format';
 import { Spinner } from './shared';
@@ -380,6 +381,7 @@ const Booking: React.FC = () => {
             <div className="text-muted-foreground">{money(booked.priceAmount, booked.currency)}</div>
           </div>
           {customer.email && <p className="text-sm text-muted-foreground">Te enviamos la confirmación a {customer.email}.</p>}
+          <AddToCalendar event={{ title: `${booked.serviceName} en ${data.name}`, startsAt: booked.startsAt, endsAt: booked.endsAt, location: data.name, details: booked.professionalName ? `Con ${booked.professionalName}` : undefined, uid: booked.id }} />
           <TelegramOptIn telegram={booked.telegram} />
           {booked.manageUrl && (
             <div className="flex flex-col items-center gap-3">

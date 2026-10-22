@@ -127,6 +127,7 @@ model User {
   clients       Client[]       @relation("AdminofClient") // Relación inversa: admin de varios clientes
   professional  Professional?
   refreshTokens RefreshToken[]
+  calendarFeed  CalendarFeed?
   services      Service[]
 
   createdAt DateTime @default(now())
@@ -449,6 +450,7 @@ model TenantSettings {
   // Avisos
   reminderHours         Int[]   @default([24, 2]) // horas antes de la cita en que se recuerda al cliente
   ownerAlerts           Boolean @default(true) // avisar al dueño de reservas y cancelaciones
+  dailySummary          Boolean @default(true) // resumen de las citas del día por Telegram, a las 8:00 del salón
   telegramBotToken      String? // bot propio del salón para avisos al dueño (nunca se devuelve por la API)
   telegramChatId        String?
   // Bot de clientes: usuario del bot (para el enlace t.me), secreto del webhook y código de un solo uso
@@ -680,6 +682,19 @@ enum NotificationStatus {
 // Sesiones renovables. El access token dura 15 minutos; este token opaco (que
 // viaja en una cookie httpOnly) se rota en cada renovación. Solo se guarda su
 // hash. Es una tabla de sesión, sin RLS: se consulta antes de saber el salón.
+// Enlace secreto para suscribir la agenda en Google Calendar, Apple Calendar u Outlook (formato iCal).
+// Sin RLS (como RefreshToken): la petición viene de un programa de calendario sin sesión; el token
+// es la credencial y solo se guarda su hash. Una cuenta tiene un solo enlace; regenerarlo anula el anterior.
+model CalendarFeed {
+  id         String    @id @default(uuid())
+  tokenHash  String    @unique
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenantId   String
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+}
+
 model RefreshToken {
   id         String    @id @default(uuid())
   tokenHash  String    @unique

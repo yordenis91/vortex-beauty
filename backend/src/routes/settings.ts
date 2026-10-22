@@ -104,6 +104,7 @@ const bookingSettingsSchema = z.object({
   maxActivePerCustomer: z.number().int().min(1).max(50).optional(),
   reminderHours: z.array(z.number().int().min(1).max(24 * 14)).max(5).optional(),
   ownerAlerts: z.boolean().optional(),
+  dailySummary: z.boolean().optional(),
   // Telegram: el token solo se escribe (nunca se devuelve); '' lo borra.
   telegramBotToken: z.string().max(200).optional(),
   telegramChatId: z.string().max(60).optional(),
@@ -132,6 +133,7 @@ async function loadBookingSettings(tenantId: string, canManage: boolean) {
     maxActivePerCustomer: settings?.maxActivePerCustomer ?? 3,
     reminderHours: settings?.reminderHours ?? [24, 2],
     ownerAlerts: settings?.ownerAlerts ?? true,
+    dailySummary: settings?.dailySummary ?? true,
     telegramConfigured: !!(settings?.telegramBotToken && settings?.telegramChatId),
     telegramChatId: settings?.telegramChatId ?? '',
     // Bot de clientes: el código de enlace del dueño solo lo ven quienes gestionan ajustes.

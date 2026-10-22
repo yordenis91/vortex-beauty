@@ -1,6 +1,7 @@
 import { config } from './config';
 import { getBoss, QUEUES, stopBoss } from './lib/queue';
 import { pingHeartbeat, runBackup } from './services/backup';
+import { sendDailySummaries } from './services/notifications/dailySummary';
 import { processCancelled, processConfirmed, processReminder } from './services/notifications/notifier';
 
 /**
@@ -30,6 +31,14 @@ export async function startWorker() {
   });
   await boss.work<{ tenantId: string; appointmentId: string; by: 'CUSTOMER' | 'STAFF' | 'SYSTEM' }>(QUEUES.cancelled, async (jobs) => {
     for (const job of jobs) settle(await processCancelled(job.data.tenantId, job.data.appointmentId, job.data.by));
+  });
+
+  // Resumen diario: cada hora en punto se revisa qué salones están en su hora de envío (las 8:00 locales).
+  await boss.schedule(QUEUES.dailySummary, '0 * * * *', {}, { tz: 'UTC', retryLimit: 1, retryDelay: 120, expireInSeconds: 900 });
+  await boss.work(QUEUES.dailySummary, async () => {
+    const result = await sendDailySummaries();
+    if (result.sent > 0) console.log(`[resumen] ${result.sent} resumen(es) enviados`);
+    if (result.retry) throw new Error('Fallo transitorio al enviar un resumen; se reintentará');
   });
 
   // Respaldo programado. pg-boss guarda el horario en la base: con varias réplicas solo una lo ejecuta.

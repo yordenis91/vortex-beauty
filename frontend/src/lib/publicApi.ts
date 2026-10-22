@@ -60,6 +60,7 @@ export interface PublicAppointment {
   startTime: string;
   endTime: string;
   startsAt: string;
+  endsAt: string;
   priceAmount: number | string;
   currency: string;
   manageUrl: string | null;

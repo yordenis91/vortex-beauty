@@ -7,6 +7,7 @@ import LazyCalendar from './LazyCalendar';
 import { apiErrorMessage, publicApi, type ManageView, type PublicSlot } from '../../lib/publicApi';
 import PublicShell from './PublicShell';
 import TelegramOptIn from './TelegramOptIn';
+import AddToCalendar from '../../components/AddToCalendar';
 import { money } from './format';
 import { Spinner } from './shared';
 
@@ -89,6 +90,7 @@ const ManageBooking: React.FC = () => {
         <div className="text-muted-foreground">{money(a.priceAmount, a.currency)}</div>
       </section>
 
+      {active && <AddToCalendar event={{ title: `${a.serviceName} en ${salonName}`, startsAt: a.startsAt, endsAt: a.endsAt, location: salonName, details: a.professionalName ? `Con ${a.professionalName}` : undefined, uid: a.id }} />}
       {active && <TelegramOptIn telegram={telegram} />}
 
       {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200">{error}</div>}

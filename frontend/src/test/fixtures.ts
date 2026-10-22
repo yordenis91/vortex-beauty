@@ -52,6 +52,7 @@ export const manageView = (over: { status?: ManageView['appointment']['status'];
     startTime: '10:00',
     endTime: '10:30',
     startsAt: '2030-03-04T15:00:00.000Z',
+    endsAt: '2030-03-04T15:30:00.000Z',
     priceAmount: '500',
     currency: 'CUP',
     manageUrl: '/barberia-demo/mi-cita/tok',

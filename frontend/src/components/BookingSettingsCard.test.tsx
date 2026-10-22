@@ -20,6 +20,7 @@ const settings = (over: Record<string, unknown> = {}) => ({
   maxActivePerCustomer: 3,
   reminderHours: [24, 2],
   ownerAlerts: true,
+  dailySummary: true,
   telegramConfigured: false,
   telegramChatId: '',
   telegramBotUsername: null,
@@ -51,6 +52,18 @@ describe('Ajustes de reservas y Telegram', () => {
     const link = await screen.findByDisplayValue(`${window.location.origin}/r/barberia-demo`)
     expect(link).toHaveAttribute('readonly')
     expect(await screen.findByRole('img', { name: 'Código QR de reservas' })).toBeInTheDocument()
+  })
+
+  it('el resumen diario por Telegram se puede apagar y se guarda', async () => {
+    const puts = mockSettings({ dailySummary: true })
+    const user = userEvent.setup()
+    renderWithProviders(<BookingSettingsCard />)
+    const box = await screen.findByRole('checkbox', { name: /Resumen del día por Telegram/ })
+    expect(box).toBeChecked()
+    await user.click(box)
+    await user.click(screen.getByRole('button', { name: 'Guardar ajustes' }))
+    await waitFor(() => expect(puts).toHaveLength(1))
+    expect(puts[0]).toMatchObject({ dailySummary: false })
   })
 
   it('sin bot: pide el token y lo envía al guardar', async () => {
