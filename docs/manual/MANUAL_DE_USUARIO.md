@@ -564,7 +564,7 @@ En **Clientes** guardas los datos de las personas que te visitan. Los buscas, lo
 
 ✅ **Resultado esperado:** Ves el aviso *Se eliminó el cliente*.
 
-> ⚠️ **Atención:** Borrar no se puede deshacer. Al borrar un cliente también se borran todas sus citas. Si solo quieres dejar de atenderlo, no lo borres.
+> ⚠️ **Atención:** Borrar no se puede deshacer. Afilao no te deja borrar a un cliente que tiene citas, ni siquiera canceladas. Así no pierdes tu historial.
 
 ### ⚠️ Si algo sale mal
 
@@ -573,6 +573,7 @@ En **Clientes** guardas los datos de las personas que te visitan. Los buscas, lo
 | *Indica un teléfono o un correo* | Escribe al menos uno de los dos y guarda de nuevo. |
 | *Ya existe un cliente con ese teléfono* | Ese cliente ya está guardado. Búscalo en la lista. |
 | *Ya existe un cliente con ese correo* | Ese cliente ya está guardado. Búscalo en la lista. |
+| *Este cliente tiene 2 citas registradas. Para no perder tu historial, no se puede eliminar.* | El cliente tiene citas en su historial. Déjalo guardado. |
 
 ---
 
@@ -1574,8 +1575,8 @@ No. Cada negocio ve solo lo suyo.
 **¿Puedo usar Afilao sin internet?**
 No. Necesitas conexión para entrar y para ver tu agenda.
 
-**¿Qué pasa si borro un cliente?**
-Se borra su ficha y también todas sus citas. No se puede deshacer. Mejor no lo borres si quieres conservar tu historial.
+**¿Puedo borrar un cliente?**
+Solo si no tiene citas. Si tiene alguna, aunque esté cancelada, Afilao no te deja borrarlo. Así conservas tu historial. Un cliente sin citas se borra y no se puede recuperar.
 
 **¿Cuál es la diferencia entre Horarios y Cierres?**
 **Horarios** son tus días y horas normales de cada semana. **Cierres** son días sueltos en que no abres, como un feriado.
