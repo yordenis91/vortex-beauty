@@ -71,9 +71,12 @@ router.get('/', requirePermission('customers:read'), async (req, res) => {
     const search = typeof req.query.search === 'string' ? req.query.search.trim().slice(0, 80) : '';
     const visible = await clientScope(req);
     if (!visible) return res.json([]);
+    // Por defecto solo los activos; ?archived=true devuelve los archivados.
+    const archived = req.query.archived === 'true';
     const clients = await prisma.client.findMany({
       where: {
         tenantId: req.user!.tenantId,
+        archivedAt: archived ? { not: null } : null,
         ...visible,
         ...(search
           ? { OR: [{ name: { contains: search, mode: 'insensitive' as const } }, { email: { contains: search, mode: 'insensitive' as const } }, { phone: { contains: search } }] }
@@ -171,6 +174,23 @@ router.put('/:id', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /api/clients/:id/archive y /restore - Archivar o restaurar (el historial no se toca)
+for (const action of ['archive', 'restore'] as const) {
+  router.post(`/:id/${action}`, requireAdmin, async (req, res) => {
+    try {
+      const { count } = await prisma.client.updateMany({
+        where: { id: req.params.id as string, tenantId: req.user!.tenantId },
+        data: { archivedAt: action === 'archive' ? new Date() : null },
+      });
+      if (count === 0) return res.status(404).json({ error: 'Client not found' });
+      res.json(await prisma.client.findUnique({ where: { id: req.params.id as string } }));
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  });
+}
+
 // DELETE /api/clients/:id - Delete client
 router.delete('/:id', requireAdmin, async (req, res) => {
   try {
@@ -191,7 +211,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     if (count === 0) {
       const appointments = await prisma.appointment.count({ where: { clientId: existingClient.id, tenantId: req.user!.tenantId } });
       return res.status(409).json({
-        error: `Este cliente tiene ${appointments} ${appointments === 1 ? 'cita registrada' : 'citas registradas'}. Para no perder tu historial, no se puede eliminar.`,
+        error: `Este cliente tiene ${appointments} ${appointments === 1 ? 'cita registrada' : 'citas registradas'}. Para no perder tu historial, no se puede eliminar: archívalo y dejará de aparecer en tus listas.`,
         appointments,
       });
     }

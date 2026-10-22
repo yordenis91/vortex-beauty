@@ -203,6 +203,9 @@ router.post('/', validateBody(createAppointmentSchema), async (req, res) => {
     const scope = await appointmentScope(req);
     if (scope.none) return res.status(403).json({ error: 'No tienes un perfil de profesional asociado' });
 
+    const target = await prisma.client.findFirst({ where: { id: data.clientId, tenantId }, select: { archivedAt: true } });
+    if (target?.archivedAt) return res.status(409).json({ error: 'Este cliente está archivado. Restáuralo en Clientes para agendarle una cita.' });
+
     const appointment = await createBooking({
       tenantId,
       serviceId: data.serviceId,

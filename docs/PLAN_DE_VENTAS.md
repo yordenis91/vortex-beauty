@@ -50,7 +50,7 @@ de borrarla.
 
 ## 4. Pendiente de desarrollo (por orden de prioridad)
 1. [x] Logo y color del salón en los correos y en el cartel con QR (2026-10-20). Telegram solo envía texto: el logo del bot se pone en @BotFather → Edit Bot → Edit Botpic. `API_PUBLIC_URL` ya está definida en el backend (verificado)
-2. [ ] **Siguiente paso:** archivar (desactivar) clientes. Hoy un cliente con citas no se puede borrar (2026-10-22), así que no hay forma de quitarlo de la lista. Añadir un estado «Archivado»: se oculta de la lista y del selector de citas nuevas, conserva su historial y se puede restaurar. Pide una migración de la base de datos.
+2. [x] Archivar clientes (2026-10-22): se ocultan de las listas y de las citas nuevas, conservan su historial y se restauran. Reservar de nuevo desde la página pública los restaura. Migración: `Client.archivedAt`.
 3. [ ] Obligar a cambiar la contraseña temporal en el primer acceso
 4. [ ] Página pública del salón (servicios, galería, botón de reservar) para
        compartir por WhatsApp e Instagram
@@ -99,4 +99,5 @@ Hecho de esta lista:
 | 2026-10-21 | Reserva pública con pasos y resumen; clientes sin credenciales de acceso |
 | 2026-10-21 | Manual de usuario de Afilao: capítulos, capturas anotadas, mockups y versión web |
 | 2026-10-22 | Un cliente con citas ya no se puede borrar; archivar clientes queda como siguiente paso de desarrollo |
+| 2026-10-22 | Archivar y restaurar clientes (rama `feat/archivar-clientes`)|
 | 2026-10-22 | Tres olas de mejoras de la agenda (ramas `feat/agenda-ola1`, `-ola2`, `-ola3`, apiladas): agenda móvil en dos mitades, buscador, siguiente cita, cita rápida, bloqueo de horas, calendario suscrito, añadir al calendario y resumen diario por Telegram. Manual actualizado |
