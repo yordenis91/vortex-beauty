@@ -140,6 +140,18 @@ describe('Agenda del móvil', () => {
     expect(screen.getAllByRole('gridcell').length).toBe(monthCells)
   })
 
+  it('el asa también se puede usar con el teclado (Enter)', async () => {
+    mock([apt('a1')])
+    const user = userEvent.setup()
+    open()
+    await screen.findByText('Carlos Méndez')
+    screen.getByRole('button', { name: 'Mostrar solo la semana' }).focus()
+    await user.keyboard('{Enter}')
+    expect(await screen.findByRole('button', { name: 'Mostrar el mes completo' })).toBeInTheDocument()
+    await user.keyboard('{Enter}')
+    expect(await screen.findByRole('button', { name: 'Mostrar solo la semana' })).toBeInTheDocument()
+  })
+
   it('tocar una cita abre la hoja de acciones; «Completar» la marca y ofrece «Deshacer»', async () => {
     const puts = mock([apt('a1')])
     const user = userEvent.setup()

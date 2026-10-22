@@ -121,6 +121,10 @@ const AgendaCalendar: React.FC<Props> = ({ selected, onSelect, mode, onModeChang
         aria-label={mode === 'month' ? 'Mostrar solo la semana' : 'Mostrar el mes completo'}
         onPointerDown={onHandleDown}
         onPointerUp={onHandleUp}
+        // Con teclado (Enter o espacio) no hay eventos de puntero: el clic sin posición alterna el modo.
+        onClick={(e) => {
+          if (e.detail === 0) onModeChange(mode === 'month' ? 'week' : 'month');
+        }}
         style={{ touchAction: 'none' }}
         className="flex w-full items-center justify-center py-2"
       >
