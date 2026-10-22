@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import GlobalSearch from './GlobalSearch';
 import { User, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -39,29 +40,7 @@ const AdminLayout: React.FC = () => {
             <SidebarTrigger />
 
             <div className="flex flex-1 min-w-0">
-              <div className="flex w-full min-w-0 md:ml-0">
-                <label htmlFor="search-field" className="sr-only">
-                  Buscar
-                </label>
-                <div className="relative w-full min-w-0 text-muted-foreground focus-within:text-muted-foreground">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center">
-                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <input
-                    id="search-field"
-                    className="block h-full w-full border-0 py-2 pl-8 pr-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:placeholder:text-muted-foreground focus:ring-0 focus:border-transparent sm:text-sm"
-                    placeholder="Buscar..."
-                    type="search"
-                    name="search"
-                  />
-                </div>
-              </div>
+              <GlobalSearch />
             </div>
 
             <div className="ml-4 flex shrink-0 items-center gap-4 md:ml-6">

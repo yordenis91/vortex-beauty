@@ -49,3 +49,8 @@ if (!window.PointerEvent) {
 Element.prototype.scrollIntoView ??= () => {}
 Element.prototype.hasPointerCapture ??= () => false
 Element.prototype.releasePointerCapture ??= () => {}
+
+// vaul (la hoja que sube desde abajo) usa la captura de puntero, que jsdom no trae.
+Element.prototype.setPointerCapture ??= () => {}
+Element.prototype.releasePointerCapture ??= () => {}
+Element.prototype.hasPointerCapture ??= () => false

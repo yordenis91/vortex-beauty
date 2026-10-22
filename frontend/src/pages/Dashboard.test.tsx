@@ -5,9 +5,10 @@ import Dashboard from './Dashboard'
 import { renderWithProviders } from '../test/render'
 import { server, API } from '../test/server'
 
-// El panel compara contra la fecha UTC de hoy (así lo calcula la pantalla).
-const todayUtc = new Date().toISOString().split('T')[0]
-const addDays = (n: number) => new Date(Date.now() + n * 86400000).toISOString().split('T')[0]
+// El panel usa el «hoy» del salón (America/Havana en estas pruebas), no el de UTC.
+const havana = (at: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Havana' }).format(at)
+const todayUtc = havana(new Date())
+const addDays = (n: number) => havana(new Date(Date.now() + n * 86400000))
 
 const settings = (labels: Record<string, string>) => ({
   name: 'Barbería Demo',
@@ -98,5 +99,32 @@ describe('Panel de control', () => {
     mockPanel({ customer: 'clienta', customers: 'clientas', appointment: 'cita', appointments: 'citas' }, [])
     renderWithProviders(<Dashboard />)
     expect(await screen.findByText('Clientas')).toBeInTheDocument()
+  })
+
+  it('«Siguiente cita» muestra la próxima con cómo contactar al cliente', async () => {
+    mockPanel({}, [apt('a2', { date: `${addDays(2)}T00:00:00.000Z`, client: { id: 'c2', name: 'Luis Pérez', phone: '+53 5 555 1234' }, startTime: '11:00', endTime: '11:30' })])
+    renderWithProviders(<Dashboard />)
+    const next = await screen.findByRole('region', { name: 'Siguiente cita' })
+    expect(within(next).getByText('Luis Pérez')).toBeInTheDocument()
+    expect(within(next).getByText(/11:00/, { selector: 'p.text-base' })).toBeInTheDocument()
+    expect(within(next).getByRole('link', { name: /Llamar/ })).toHaveAttribute('href', 'tel:+5355551234')
+    expect(within(next).getByRole('link', { name: /WhatsApp/ })).toHaveAttribute('href', expect.stringContaining('https://wa.me/5355551234'))
+    expect(within(next).queryByRole('button', { name: /Completar/ })).not.toBeInTheDocument() // todavía no empieza
+  })
+
+  it('una cita en curso sale como «Ahora» y se puede completar a un toque', async () => {
+    mockPanel({}, [apt('a1', { startTime: '00:00', endTime: '23:59', client: { id: 'c1', name: 'Carlos Méndez', phone: null } })])
+    renderWithProviders(<Dashboard />)
+    const next = await screen.findByRole('region', { name: 'Siguiente cita' })
+    expect(within(next).getByText('Ahora')).toBeInTheDocument()
+    expect(within(next).getByRole('button', { name: /Completar/ })).toBeInTheDocument()
+    expect(within(next).queryByRole('link', { name: /Llamar/ })).not.toBeInTheDocument() // sin teléfono no hay llamada
+  })
+
+  it('sin citas próximas no muestra la tarjeta', async () => {
+    mockPanel({}, [apt('a3', { status: 'COMPLETED' })])
+    renderWithProviders(<Dashboard />)
+    await screen.findByText('Citas de hoy')
+    expect(screen.queryByRole('region', { name: 'Siguiente cita' })).not.toBeInTheDocument()
   })
 })
