@@ -722,6 +722,21 @@ En **Clientes** guardas los datos de las personas que te visitan. Los buscas, lo
 
 ✅ **Resultado esperado:** Ves el aviso *Se actualizó el cliente*.
 
+## Archivar a un cliente
+
+Un cliente que ya no viene, pero que tiene citas en su historial, no se puede borrar. Archívalo: desaparece de tus listas y de las citas nuevas, y su historial se conserva.
+
+1. Busca la tarjeta del cliente.
+2. Toca el icono de la caja, **Archivar**.
+
+✅ **Resultado esperado:** Ves el aviso *Marta Díaz archivado* con el botón **Deshacer**. El cliente sale de la lista.
+
+Para ver a tus clientes archivados, pulsa **Archivados**, arriba de la lista. Para traer a uno de vuelta, toca **Restaurar** en su tarjeta. Pulsa **Activos** para volver a la lista normal.
+
+> ❓ **Nota:** Si un cliente archivado vuelve a reservar desde tu página, Afilao lo restaura solo.
+
+> ⚠️ **Atención:** No puedes agendar una cita nueva a un cliente archivado desde el panel. Restáuralo primero.
+
 ## Borrar a un cliente
 
 1. Busca la tarjeta del cliente.
@@ -731,7 +746,7 @@ En **Clientes** guardas los datos de las personas que te visitan. Los buscas, lo
 
 ✅ **Resultado esperado:** Ves el aviso *Se eliminó el cliente*.
 
-> ⚠️ **Atención:** Borrar no se puede deshacer. Afilao no te deja borrar a un cliente que tiene citas, ni siquiera canceladas. Así no pierdes tu historial.
+> ⚠️ **Atención:** Borrar no se puede deshacer. Afilao no te deja borrar a un cliente que tiene citas, ni siquiera canceladas. Así no pierdes tu historial. Si solo quieres quitarlo de la lista, archívalo.
 
 ### ⚠️ Si algo sale mal
 
@@ -740,7 +755,8 @@ En **Clientes** guardas los datos de las personas que te visitan. Los buscas, lo
 | *Indica un teléfono o un correo* | Escribe al menos uno de los dos y guarda de nuevo. |
 | *Ya existe un cliente con ese teléfono* | Ese cliente ya está guardado. Búscalo en la lista. |
 | *Ya existe un cliente con ese correo* | Ese cliente ya está guardado. Búscalo en la lista. |
-| *Este cliente tiene 2 citas registradas. Para no perder tu historial, no se puede eliminar.* | El cliente tiene citas en su historial. Déjalo guardado. |
+| *Este cliente tiene 2 citas registradas. Para no perder tu historial, no se puede eliminar: archívalo…* | El cliente tiene citas en su historial. Archívalo para quitarlo de tus listas. |
+| *Este cliente está archivado. Restáuralo en Clientes para agendarle una cita.* | Pulsa **Archivados**, busca al cliente y toca **Restaurar**. |
 
 ---
 
@@ -1798,7 +1814,7 @@ En **Citas**, elige el día, pulsa los tres puntos y luego **Copiar horas libres
 No. Necesitas conexión para entrar y para ver tu agenda.
 
 **¿Puedo borrar un cliente?**
-Solo si no tiene citas. Si tiene alguna, aunque esté cancelada, Afilao no te deja borrarlo. Así conservas tu historial. Un cliente sin citas se borra y no se puede recuperar.
+Solo si no tiene citas. Si tiene alguna, aunque esté cancelada, Afilao no te deja borrarlo. Así conservas tu historial. Para quitarlo de tus listas, **archívalo**: se puede restaurar cuando quieras. Un cliente sin citas se borra y no se puede recuperar.
 
 **¿Cuál es la diferencia entre Horarios y Cierres?**
 **Horarios** son tus días y horas normales de cada semana. **Cierres** son días sueltos en que no abres, como un feriado.

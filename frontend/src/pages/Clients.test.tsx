@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { Toaster } from 'react-hot-toast'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
@@ -107,6 +108,62 @@ describe('Clientes', () => {
     await user.click(screen.getAllByRole('button', { name: 'Eliminar' }).at(-1)!)
     await waitFor(() => expect(deletes).toHaveLength(1))
     expect(screen.getByText('Carlos Méndez')).toBeInTheDocument()
+  })
+
+  it('archivar saca al cliente de la lista, avisa con «Deshacer» y deshacer lo restaura', async () => {
+    const posts: string[] = []
+    const archived: string[] = []
+    server.use(
+      http.get(`${API}/settings/booking`, () => HttpResponse.json(panelSettings())),
+      http.get(`${API}/clients`, ({ request }) => HttpResponse.json(new URL(request.url).searchParams.get('archived') ? archived.map((id) => client({ id, name: 'Carlos Méndez' })) : archived.length ? [] : [client()])),
+      http.post(`${API}/clients/:id/:action`, ({ params }) => {
+        posts.push(`${params.action}:${params.id}`)
+        if (params.action === 'archive') archived.push(String(params.id))
+        else archived.splice(0)
+        return HttpResponse.json(client({ id: String(params.id) }))
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<><Toaster /><Clients /></>)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: 'Archivar' }))
+    expect(await screen.findByText('Carlos Méndez archivado')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Archivar' })).not.toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Deshacer' }))
+    await waitFor(() => expect(posts).toEqual(['archive:cli1', 'restore:cli1']))
+    expect(await screen.findByText('Carlos Méndez')).toBeInTheDocument()
+  })
+
+  it('la vista «Archivados» lista a los archivados y permite restaurarlos', async () => {
+    const posts: string[] = []
+    server.use(
+      http.get(`${API}/settings/booking`, () => HttpResponse.json(panelSettings())),
+      http.get(`${API}/clients`, ({ request }) => HttpResponse.json(new URL(request.url).searchParams.get('archived') ? [client({ name: 'Marta Antigua' })] : [client()])),
+      http.post(`${API}/clients/:id/:action`, ({ params }) => {
+        posts.push(`${params.action}:${params.id}`)
+        return HttpResponse.json(client())
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: 'Archivados' }))
+    expect(await screen.findByText('Marta Antigua')).toBeInTheDocument()
+    expect(screen.queryByText('Carlos Méndez')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Restaurar' }))
+    await waitFor(() => expect(posts).toEqual(['restore:cli1']))
+  })
+
+  it('sin archivados lo dice', async () => {
+    server.use(
+      http.get(`${API}/settings/booking`, () => HttpResponse.json(panelSettings())),
+      http.get(`${API}/clients`, ({ request }) => HttpResponse.json(new URL(request.url).searchParams.get('archived') ? [] : [client()])),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: 'Archivados' }))
+    expect(await screen.findByText('No tienes clientes archivados.')).toBeInTheDocument()
   })
 
   it('si llegas desde el buscador (?buscar=) el nombre ya está escrito y la lista filtrada', async () => {

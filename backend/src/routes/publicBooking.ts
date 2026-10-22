@@ -262,8 +262,9 @@ async function findOrCreateClient(tenantId: string, customer: { name: string; ph
     null;
 
   if (existing) {
-    // Completa datos que faltaban, sin pisar los que el salón ya tiene.
-    const patch: { email?: string; phone?: string; phoneKey?: string } = {};
+    // Completa datos que faltaban, sin pisar los que el salón ya tiene. Si estaba archivado, vuelve a reservar: se restaura.
+    const patch: { email?: string; phone?: string; phoneKey?: string; archivedAt?: null } = {};
+    if (existing.archivedAt) patch.archivedAt = null;
     if (!existing.email && email) patch.email = email;
     if (!existing.phoneKey && key) {
       patch.phone = customer.phone;

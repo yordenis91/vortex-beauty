@@ -44,12 +44,29 @@ type MutationOptions<TData = unknown, TVariables = unknown> = {
 };
 
 // Clients
-export const useClients = () => {
+export const useClients = (archived = false) => {
   return useQuery({
-    queryKey: ['clients'],
+    queryKey: ['clients', { archived }],
     queryFn: async () => {
-      const response = await api.get<Client[]>('/clients');
+      const response = await api.get<Client[]>('/clients', { params: archived ? { archived: true } : undefined });
       return response.data;
+    },
+  });
+};
+
+/** Archivar un cliente (se oculta de las listas, conserva su historial) o restaurarlo. */
+export const useArchiveClient = (options?: MutationOptions) => {
+  const queryClient = useQueryClient();
+  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
+  return useMutation({
+    ...otherOptions,
+    mutationFn: async ({ id, archive }: { id: string; archive: boolean }) => (await api.post(`/clients/${id}/${archive ? 'archive' : 'restore'}`)).data,
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
+    },
+    onSuccess: (data, variables, context) => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+      if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });
 };

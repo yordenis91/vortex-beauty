@@ -30,6 +30,7 @@ export interface Client {
   country?: string;
   userId: string;
   imageUrl?: string;
+  archivedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

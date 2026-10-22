@@ -1,13 +1,14 @@
 import { compressImage } from '../lib/image';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '../hooks/useQueries';
-import { Users, Plus, Edit, Trash2, Search, Mail, Phone, Camera } from 'lucide-react';
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useArchiveClient } from '../hooks/useQueries';
+import { Users, Plus, Edit, Trash2, Search, Mail, Phone, Camera, Archive, ArchiveRestore } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLabels } from '@/hooks/useLabels';
 import type { Client } from '../types';
+import { toastUndo } from '../lib/undoToast';
 
 interface ClientFormData {
   name: string;
@@ -42,7 +43,18 @@ const Clients: React.FC = () => {
   });
 
   // Usar hooks centralizados
-  const { data: clients = [], isLoading } = useClients();
+  const [showArchived, setShowArchived] = useState(false);
+  const { data: clients = [], isLoading } = useClients(showArchived);
+  const archiveMutation = useArchiveClient();
+  // Archivar o restaurar: sin cuadro de confirmación; el aviso trae «Deshacer».
+  const setArchived = (client: Client, archive: boolean) =>
+    archiveMutation.mutate(
+      { id: client.id, archive },
+      {
+        onSuccess: () =>
+          toastUndo(archive ? `${client.name} archivado` : `${client.name} restaurado`, () => archiveMutation.mutate({ id: client.id, archive: !archive })),
+      }
+    );
   const createMutation = useCreateClient({
     onSuccess: () => toast.success(`Se creó ${the('customer')}`),
   });
@@ -180,12 +192,26 @@ const Clients: React.FC = () => {
         </div>
       </div>
 
+      <div className="flex gap-2" role="group" aria-label="Qué clientes ver">
+        {[false, true].map((archived) => (
+          <button
+            key={String(archived)}
+            type="button"
+            aria-pressed={showArchived === archived}
+            onClick={() => setShowArchived(archived)}
+            className={`rounded-full border px-4 py-1.5 text-sm font-medium ${showArchived === archived ? 'border-blue-600 bg-blue-600 text-white' : 'border-border bg-card text-foreground hover:bg-muted'}`}
+          >
+            {archived ? 'Archivados' : 'Activos'}
+          </button>
+        ))}
+      </div>
+
       {/* Grid de Clientes */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {filteredClients.length === 0 ? (
           <div className="col-span-full bg-card rounded-lg shadow-sm border border-border px-4 py-12 text-center text-muted-foreground">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-            <p>No se encontraron {label('customers')}.</p>
+            <p>{showArchived ? `No tienes ${label('customers')} archivados.` : `No se encontraron ${label('customers')}.`}</p>
           </div>
         ) : (
           filteredClients.map((client) => (
@@ -215,6 +241,14 @@ const Clients: React.FC = () => {
               <div className="flex shrink-0">
                 <button onClick={() => openEdit(client)} aria-label="Editar" className="p-2 text-muted-foreground hover:text-blue-600 rounded-full hover:bg-blue-50 transition">
                   <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setArchived(client, !showArchived)}
+                  aria-label={showArchived ? 'Restaurar' : 'Archivar'}
+                  title={showArchived ? 'Restaurar' : 'Archivar'}
+                  className="p-2 text-muted-foreground hover:text-amber-600 rounded-full hover:bg-amber-50 transition"
+                >
+                  {showArchived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
                 </button>
                 <button onClick={() => handleDelete(client.id)} aria-label="Eliminar" className="p-2 text-muted-foreground hover:text-red-600 rounded-full hover:bg-red-50 transition">
                   <Trash2 className="h-4 w-4" />

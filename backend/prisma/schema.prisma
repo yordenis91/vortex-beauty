@@ -151,6 +151,8 @@ model Client {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   displayName    String?
+  // Archivado: fuera de las listas y de las citas nuevas, con su historial intacto. null = activo.
+  archivedAt     DateTime?
   phone          String?
   // Teléfono normalizado (solo dígitos) para reconocer al mismo cliente entre reservas.
   phoneKey       String?
