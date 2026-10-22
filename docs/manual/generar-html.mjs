@@ -20,10 +20,12 @@ const PC = new Set(['05_panel_pc.png', '11_agenda_semana.png', '42_notificacione
 function image(alt, src) {
   const file = path.join(dir, src);
   const buf = fs.readFileSync(file);
-  const px = buf.readUInt32BE(16);
-  const width = PC.has(path.basename(src)) ? px : Math.round(px / 2);
+  const pxW = buf.readUInt32BE(16);
+  const pxH = buf.readUInt32BE(20);
+  const scale = PC.has(path.basename(src)) ? 1 : 2;
   const name = path.basename(src);
-  return `<img src="data:image/png;base64,${buf.toString('base64')}" alt="${esc(alt)}" width="${width}" data-archivo="${name}" loading="lazy">`;
+  // Ancho y alto reservados: sin ellos las imágenes empujan el contenido al cargar y los enlaces del índice caen en otro sitio.
+  return `<img src="data:image/png;base64,${buf.toString('base64')}" alt="${esc(alt)}" width="${Math.round(pxW / scale)}" height="${Math.round(pxH / scale)}" data-archivo="${name}">`;
 }
 
 function inline(text) {
@@ -155,7 +157,7 @@ const page = `<title>Manual de Afilao</title>
   --ok: #12301f; --ok-ink: #a6e3bd; --tip: #14264a; --tip-ink: #b4cdfa;
   --warn: #3a2a0c; --warn-ink: #f3cd8c; --note: #1c2535; --note-ink: #c3ccda; color-scheme: dark; }
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 4.5rem; }
+html { scroll-padding-top: 4.5rem; }
 body { background: var(--bg); color: var(--ink); font: 400 1.0625rem/1.7 var(--font); }
 .pagina { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 3rem; max-width: 78rem; margin: 0 auto;
   padding-block: 0 4rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -172,7 +174,7 @@ nav.indice h2 { margin: 0 0 0.5rem; font-size: 0.8rem; letter-spacing: 0.08em; t
 details.movil { margin-block: 1rem; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 0.4rem 0.9rem; }
 details.movil summary { cursor: pointer; font-weight: 700; padding: 0.4rem 0; }
 .lateral { display: none; }
-main { min-width: 0; max-width: 46rem; }
+main { min-width: 0; max-width: 46rem; padding-bottom: 60vh; }
 @media (min-width: 62rem) {
   .pagina { grid-template-columns: 17rem minmax(0, 1fr); }
   .barra { grid-column: 1 / -1; }
