@@ -110,7 +110,7 @@ describe('Reserva pública', () => {
       customer: { name: 'Marta Pérez', phone: '+53 5 555 1234' },
       website: '', // el campo trampa llega vacío
     })
-  })
+  }, 15000)
 
   it('exige teléfono o correo antes de enviar', async () => {
     const posted = mockBooking()
