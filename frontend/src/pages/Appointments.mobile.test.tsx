@@ -8,7 +8,8 @@ import { AuthProvider } from '../contexts/AuthContext'
 import { renderWithProviders } from '../test/render'
 import { server, API } from '../test/server'
 import { ymd } from '../test/fixtures'
-import { addDays } from 'date-fns'
+import { addDays, format } from 'date-fns'
+import { es } from 'date-fns/locale/es'
 
 /** Agenda del móvil: calendario arriba, citas del día abajo. */
 const today = ymd(new Date())
@@ -37,14 +38,30 @@ const apt = (id: string, over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
+const posts: Array<{ url: string; body: Record<string, unknown> }> = []
+
 function mock(appointments: unknown[], professionals: unknown[] = [{ id: 'p1', name: 'Yoel', isActive: true, color: '#ec4899', bookingMode: 'TIMED', schedules: [{ id: 's', dayOfWeek: dow, startTime: '09:00', endTime: '18:00' }], quotaSlots: [] }]) {
   const puts: Array<{ id: string; body: Record<string, unknown> }> = []
+  posts.length = 0
   server.use(
     http.get(`${API}/settings/booking`, () => HttpResponse.json({ name: 'Barbería Demo', slug: 'barberia-demo', currency: 'CUP', timezone: 'America/Havana', vertical: 'BARBER', slotIntervalMin: 30, labels: {} })),
     http.get(`${API}/appointments`, () => HttpResponse.json(appointments)),
     http.get(`${API}/appointments/fully-booked-dates`, () => HttpResponse.json([])),
     http.get(`${API}/clients`, () => HttpResponse.json([{ id: 'c1', name: 'Carlos Méndez' }])),
-    http.get(`${API}/services`, () => HttpResponse.json([])),
+    http.get(`${API}/services`, () => HttpResponse.json([{ id: 's1', name: 'Corte de cabello', status: 'ACTIVE', price: 500, currency: 'CUP', durationMinutes: 30 }])),
+    http.get(`${API}/appointments/available-slots`, () => HttpResponse.json([{ startTime: '15:00', professionalIds: ['p1'] }, { startTime: '16:30', professionalIds: ['p1'] }])),
+    http.post(`${API}/appointments`, async ({ request }) => {
+      posts.push({ url: '/appointments', body: (await request.json()) as Record<string, unknown> })
+      return HttpResponse.json(apt('nuevo'), { status: 201 })
+    }),
+    http.post(`${API}/clients`, async ({ request }) => {
+      posts.push({ url: '/clients', body: (await request.json()) as Record<string, unknown> })
+      return HttpResponse.json({ id: 'c-nuevo', name: 'Marta Díaz' }, { status: 201 })
+    }),
+    http.post(`${API}/professionals/:id/time-off`, async ({ request }) => {
+      posts.push({ url: '/time-off', body: (await request.json()) as Record<string, unknown> })
+      return HttpResponse.json({ id: 't1' }, { status: 201 })
+    }),
     http.get(`${API}/professionals`, () => HttpResponse.json(professionals)),
     http.get(`${API}/professionals/:id/time-off`, () => HttpResponse.json([])),
     http.get(`${API}/settings/business-hours`, () => HttpResponse.json(allWeek)),
@@ -58,13 +75,17 @@ function mock(appointments: unknown[], professionals: unknown[] = [{ id: 'p1', n
   return puts
 }
 
-const open = () =>
-  renderWithProviders(
+// El dueño tiene sesión: solo quien administra ve el menú «Más opciones del día».
+const open = () => {
+  localStorage.setItem('hasSession', '1')
+  server.use(http.post(`${API}/auth/refresh`, () => HttpResponse.json({ user: { id: 'u1', email: 'dueno@demo.com', name: 'Yoel', role: 'OWNER', tenantId: 't1' }, token: 'tok' })))
+  return renderWithProviders(
     <AuthProvider>
       <Toaster />
       <Appointments />
     </AuthProvider>,
   )
+}
 
 const widthBefore = window.innerWidth
 beforeEach(() => {
@@ -135,7 +156,7 @@ describe('Agenda del móvil', () => {
     expect(gaps.length).toBeGreaterThan(0)
     await user.click(gaps[gaps.length - 1])
     const dialog = await screen.findByRole('dialog')
-    expect(within(dialog).getByText(/Crear cita/)).toBeInTheDocument()
+    expect(within(dialog).getByText('Nueva cita')).toBeInTheDocument()
   })
 
   it('un día sin citas lo dice y no inventa huecos si no hay profesional elegido entre varios', async () => {
@@ -146,5 +167,80 @@ describe('Agenda del móvil', () => {
     open()
     expect(await screen.findByText('No hay citas este día')).toBeInTheDocument()
     expect(screen.getByRole('combobox', { name: 'Filtrar por profesional' })).toBeInTheDocument()
+  })
+
+  it('cita nueva en pocos toques: busca al cliente, elige servicio y hora, y agenda', async () => {
+    mock([])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Nueva cita' }))
+    const sheet = await screen.findByRole('dialog')
+    expect(within(sheet).getByRole('button', { name: 'Agendar' })).toBeDisabled()
+    await user.type(within(sheet).getByLabelText(/Buscar o escribir/), 'carl')
+    await user.click(await within(sheet).findByRole('button', { name: /Carlos Méndez/ }))
+    await user.click(within(sheet).getByRole('button', { name: 'Corte de cabello' }))
+    await user.click(await within(sheet).findByRole('button', { name: '16:30' }))
+    await user.click(within(sheet).getByRole('button', { name: 'Agendar' }))
+    await waitFor(() => expect(posts.filter((p) => p.url === '/appointments')).toHaveLength(1))
+    expect(posts.find((p) => p.url === '/appointments')!.body).toMatchObject({ clientId: 'c1', serviceId: 's1', startTime: '16:30', professionalId: 'any', status: 'SCHEDULED' })
+  })
+
+  it('un cliente nuevo se crea al vuelo con su teléfono y luego se agenda', async () => {
+    mock([])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Nueva cita' }))
+    const sheet = await screen.findByRole('dialog')
+    await user.type(within(sheet).getByLabelText(/Buscar o escribir/), 'Marta Díaz')
+    await user.click(within(sheet).getByRole('button', { name: /Crear cliente «Marta Díaz»/ }))
+    await user.type(within(sheet).getByLabelText('Teléfono del cliente nuevo'), '+53 5 555 7777')
+    await user.click(within(sheet).getByRole('button', { name: 'Corte de cabello' }))
+    await user.click(await within(sheet).findByRole('button', { name: '15:00' }))
+    await user.click(within(sheet).getByRole('button', { name: 'Agendar' }))
+    await waitFor(() => expect(posts.filter((p) => p.url === '/appointments')).toHaveLength(1))
+    expect(posts[0]).toEqual({ url: '/clients', body: { name: 'Marta Díaz', phone: '+53 5 555 7777' } })
+    expect(posts[1].body).toMatchObject({ clientId: 'c-nuevo', startTime: '15:00' })
+  })
+
+  it('«Próxima cita en 3 sem» abre la hoja con el mismo cliente y servicio, tres semanas después', async () => {
+    mock([apt('a1', { status: 'COMPLETED' })])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByText('Carlos Méndez'))
+    const sheet = await screen.findByRole('dialog')
+    await user.click(within(within(sheet).getByRole('group', { name: 'Próxima cita' })).getByRole('button', { name: '3 sem' }))
+    const next = await screen.findByRole('dialog', { name: /Nueva cita/ })
+    expect(within(next).getByText(format(addDays(new Date(), 21), "EEEE d 'de' MMMM", { locale: es }))).toBeInTheDocument()
+    expect(within(next).getByText('Carlos Méndez')).toBeInTheDocument()
+    expect(within(next).getByRole('button', { name: 'Corte de cabello' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('bloquear horas crea la ausencia del profesional en la zona del salón', async () => {
+    mock([])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Más opciones del día' }))
+    await user.click(await screen.findByRole('menuitem', { name: /Bloquear horas/ }))
+    const sheet = await screen.findByRole('dialog')
+    await user.type(within(sheet).getByLabelText(/Motivo/), 'Almuerzo')
+    await user.click(within(sheet).getByRole('button', { name: 'Bloquear' }))
+    await waitFor(() => expect(posts.filter((p) => p.url === '/time-off')).toHaveLength(1))
+    const body = posts[0].body as { startsAt: string; endsAt: string; reason: string }
+    expect(body.reason).toBe('Almuerzo')
+    expect(body.startsAt).toMatch(/T1[67]:00:00\.000Z$/) // 12:00 en La Habana: 16:00 o 17:00 UTC según el horario de verano
+    expect(new Date(body.endsAt).getTime() - new Date(body.startsAt).getTime()).toBe(3600000)
+  })
+
+  it('«Copiar horas libres» deja en el portapapeles un texto para WhatsApp', async () => {
+    mock([apt('a1', { startTime: '10:00', endTime: '11:00' })])
+    const user = userEvent.setup()
+    const writes: string[] = []
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (t: string) => { writes.push(t) } }, configurable: true })
+    open()
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: 'Más opciones del día' }))
+    await user.click(await screen.findByRole('menuitem', { name: /Copiar horas libres/ }))
+    await waitFor(() => expect(writes).toHaveLength(1))
+    expect(writes[0]).toMatch(/^Barbería Demo: horas libres el .+: .*\d\d:\d\d.*\. ¿Cuál te viene bien\?$/)
   })
 })

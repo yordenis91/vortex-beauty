@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Pencil, Phone, MessageCircle, UserX, X } from 'lucide-react';
+import { CalendarPlus, Check, Pencil, Phone, MessageCircle, UserX, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import type { Appointment, AppointmentStatus } from '../../types';
 import { confirmationMessage, whatsappLink } from '../../lib/whatsapp';
@@ -10,6 +10,8 @@ interface Props {
   onClose: () => void;
   onStatus: (appointment: Appointment, status: AppointmentStatus) => void;
   onEdit: (appointment: Appointment) => void;
+  /** Agendar la siguiente visita del mismo cliente dentro de N semanas. */
+  onNext?: (appointment: Appointment, weeks: number) => void;
 }
 
 const STATUS_LABEL: Record<AppointmentStatus, string> = {
@@ -23,7 +25,7 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 const action = 'flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-base font-medium hover:bg-muted active:bg-muted';
 
 /** Hoja que sube desde abajo al tocar una cita: contactar al cliente y cambiar su estado. */
-const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, onClose, onStatus, onEdit }) => {
+const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, onClose, onStatus, onEdit, onNext }) => {
   const a = appointment;
   const phone = a?.client?.phone ?? null;
   const date = a?.date.split('T')[0] ?? '';
@@ -72,6 +74,17 @@ const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, onClose, on
                     <UserX className="h-5 w-5 text-muted-foreground" /> No asistió
                   </button>
                 </>
+              )}
+              {onNext && a.status !== 'CANCELLED' && a.status !== 'NO_SHOW' && (
+                <div className="flex min-h-12 flex-wrap items-center gap-2 px-4 py-2" role="group" aria-label="Próxima cita">
+                  <CalendarPlus className="h-5 w-5 text-muted-foreground" />
+                  <span className="mr-1 text-base font-medium">Próxima cita en</span>
+                  {[2, 3, 4].map((weeks) => (
+                    <button key={weeks} type="button" onClick={run(() => onNext(a, weeks))} className="min-h-10 rounded-full border border-border px-3 text-sm font-medium hover:bg-muted">
+                      {weeks} sem
+                    </button>
+                  ))}
+                </div>
               )}
               <button type="button" className={action} onClick={run(() => onEdit(a))}>
                 <Pencil className="h-5 w-5 text-muted-foreground" /> Editar cita

@@ -569,10 +569,6 @@ const Appointments: React.FC = () => {
             setCurrentDate(day);
             setVisibleMonth(day);
           }}
-          onCreate={(date, time, professionalId) => {
-            if (!validateDayForBooking(parseDateString(date))) return;
-            openModal(undefined, { date, startTime: time ?? '', serviceId: '', professionalId: professionalId ?? '' });
-          }}
           onEdit={(appointment) => openModal(appointment)}
           onStatus={quickStatus}
           onManageDay={(date) => {

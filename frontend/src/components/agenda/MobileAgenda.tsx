@@ -1,14 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { addWeeks, format } from 'date-fns';
+import toast from 'react-hot-toast';
 import { es } from 'date-fns/locale/es';
-import { CalendarCog, MoreVertical, Plus } from 'lucide-react';
+import { CalendarCog, Copy, Lock, MoreVertical, Plus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTimeOff } from '../../hooks/useQueries';
 import type { Appointment, AppointmentStatus, Professional } from '../../types';
-import { blockOnDay, buildTimeline, localParts, marksByDate, toMin, ymd } from '../../lib/agenda';
+import { blockOnDay, buildTimeline, localParts, marksByDate, parseYmd, toHHmm, toMin, ymd } from '../../lib/agenda';
 import AgendaCalendar, { type CalendarMode } from './AgendaCalendar';
 import DayTimeline from './DayTimeline';
 import AppointmentSheet from './AppointmentSheet';
+import QuickCreateSheet, { type CreatePreset } from './QuickCreateSheet';
+import BlockHoursSheet from './BlockHoursSheet';
 
 interface BusinessHourLite {
   dayOfWeek: number;
@@ -26,7 +29,6 @@ interface Props {
   salonName?: string;
   selected: Date;
   onSelectedChange: (day: Date) => void;
-  onCreate: (date: string, time?: string, professionalId?: string) => void;
   onEdit: (appointment: Appointment) => void;
   onStatus: (appointment: Appointment, status: AppointmentStatus) => void;
   onManageDay: (date: string) => void;
@@ -51,10 +53,12 @@ const readMode = (): CalendarMode => {
  * Agenda del móvil en dos mitades: arriba el calendario (mes o semana) con puntos en los días con citas;
  * abajo, las citas del día elegido con la línea de «ahora» y los huecos libres.
  */
-const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHours, closedDates, timezone, salonName, selected, onSelectedChange, onCreate, onEdit, onStatus, onManageDay, canManage, focusAppointmentId, onFocusHandled, words }) => {
+const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHours, closedDates, timezone, salonName, selected, onSelectedChange, onEdit, onStatus, onManageDay, canManage, focusAppointmentId, onFocusHandled, words }) => {
   const [mode, setModeState] = useState<CalendarMode>(readMode);
   const [professionalId, setProfessionalId] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
+  const [create, setCreate] = useState<CreatePreset | null>(null);
+  const [blockDay, setBlockDay] = useState<string | null>(null);
   const open = useMemo(() => appointments.find((a) => a.id === openId) ?? null, [appointments, openId]);
   const [tick, setTick] = useState(0);
 
@@ -118,6 +122,23 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
     [dayAppointments, gapsFor, dayOfWeek, businessHour, closedSet, selectedKey, blocks, now]
   );
 
+  // Texto listo para pegar en WhatsApp con las horas que quedan libres ese día.
+  const copyFreeTimes = async () => {
+    const times = items.filter((i) => i.kind === 'gap').map((i) => toHHmm(i.start));
+    const day = format(selected, "EEEE d 'de' MMMM", { locale: es });
+    if (times.length === 0) {
+      toast(`No quedan horas libres el ${day}.`);
+      return;
+    }
+    const text = `${salonName ? `${salonName}: ` : ''}horas libres el ${day}: ${times.join(', ')}. ¿Cuál te viene bien?`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('Horas libres copiadas');
+    } catch {
+      toast(text, { duration: 8000 });
+    }
+  };
+
   const count = dayAppointments.filter((a) => a.status === 'SCHEDULED' || a.status === 'PENDING' || a.status === 'COMPLETED').length;
   const dayClosed = closedSet.has(selectedKey) || (!!businessHour && !businessHour.isOpen);
 
@@ -155,6 +176,12 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={() => setBlockDay(selectedKey)}>
+                <Lock className="h-4 w-4" /> Bloquear horas
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={copyFreeTimes}>
+                <Copy className="h-4 w-4" /> Copiar horas libres
+              </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => onManageDay(selectedKey)}>
                 <CalendarCog className="h-4 w-4" /> Gestionar horario de este día
               </DropdownMenuItem>
@@ -168,7 +195,7 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
           items={items}
           showProfessional={professionals.length > 1 && !professionalId}
           onOpen={(a) => setOpenId(a.id)}
-          onGap={(time, pid) => onCreate(selectedKey, time, pid)}
+          onGap={(time, pid) => setCreate({ date: selectedKey, time, professionalId: pid })}
           emptyText={dayClosed ? 'Tu negocio está cerrado este día' : `No hay ${words.appointments} este día`}
         />
       </div>
@@ -176,7 +203,7 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
       <button
         type="button"
         aria-label={`Nueva ${words.appointment}`}
-        onClick={() => onCreate(selectedKey, undefined, professionalId || undefined)}
+        onClick={() => setCreate({ date: selectedKey, professionalId: professionalId || undefined })}
         className="fixed bottom-5 right-5 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg active:scale-95"
         style={{ bottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
       >
@@ -192,7 +219,10 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
         }}
         onStatus={onStatus}
         onEdit={onEdit}
+        onNext={(a, weeks) => setCreate({ date: ymd(addWeeks(parseYmd(a.date.split('T')[0]), weeks)), time: a.startTime, clientId: a.clientId, serviceId: a.serviceId, professionalId: a.professionalId ?? undefined })}
       />
+      <QuickCreateSheet preset={create} professionals={professionals} words={words} onClose={() => setCreate(null)} />
+      <BlockHoursSheet date={blockDay} professionals={professionals} professionalId={professionalId || undefined} timezone={timezone} onClose={() => setBlockDay(null)} />
     </div>
   );
 };
