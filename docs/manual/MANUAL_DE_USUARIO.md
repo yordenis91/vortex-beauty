@@ -324,6 +324,41 @@ Como profesional:
 | Falta una opción en el menú. | Tu tipo de usuario no la tiene. Pregunta al dueño. |
 | El **Panel de control** muestra ceros. | Aún no tienes citas ni clientes. Es normal en un negocio nuevo. |
 
+## Instala Afilao en tu celular
+
+Puedes ponerle a Afilao un icono en tu pantalla, como a cualquier aplicación. Se abre más rápido, ocupa toda la pantalla y sigue abriendo aunque no tengas internet.
+
+1. Abre tu enlace de Afilao en el navegador del celular.
+2. **Android (Chrome):** toca los tres puntos, arriba a la derecha, y luego **Instalar aplicación** o **Añadir a la pantalla principal**.
+3. **iPhone (Safari):** toca el botón **Compartir** y luego **Añadir a pantalla de inicio**.
+4. Toca **Instalar** o **Añadir**.
+
+✅ **Resultado esperado:** Ves el icono de Afilao en tu pantalla. Tócalo para abrirla.
+
+> ❓ **Nota:** No necesitas ninguna tienda de aplicaciones. Es gratis y se actualiza sola.
+
+## Si pierdes la conexión
+
+Afilao guarda en tu celular tu agenda, tus clientes, tus servicios y tus profesionales cada vez que los ves con internet. Si se va la conexión, puedes seguir **mirando** esos datos.
+
+👉 Mira la **Captura 50**.
+
+![Captura 50 — Afilao sin conexión](capturas/50_sin_conexion.png)
+
+> 📸 **Captura 50** — Agenda en el móvil sin conexión. Elementos a resaltar: 1) aviso **Sin conexión**, 2) citas guardadas. Encuadre: pantalla completa del móvil. Nombre de archivo sugerido: `50_sin_conexion.png`
+
+1. Arriba ves un aviso amarillo: **Sin conexión. Ves los datos guardados a las 02:52.** (número 1). Esa es la hora de la última vez que Afilao se actualizó.
+2. Tu agenda y tus citas se siguen viendo (número 2). Puedes cambiar de día, mirar tus clientes y llamar a un cliente desde su cita.
+3. Cuando vuelve la conexión, el aviso desaparece, ves *Conexión recuperada* y los datos se actualizan solos.
+
+Lo que **no** puedes hacer sin conexión es cambiar nada: crear, cancelar o completar citas, ni guardar clientes. Si lo intentas, Afilao te dice *Sin conexión: esta acción necesita internet* y no cambia nada. Así no pasa que algo parezca guardado y no lo esté.
+
+> ⚠️ **Atención:** Los datos guardados pueden estar desactualizados. Si tus clientes reservan desde tu página, esas citas nuevas no aparecen hasta que vuelva la conexión. Mira siempre la hora del aviso.
+
+> ⚠️ **Atención:** Si usas un celular compartido, cierra la sesión al terminar (**Cerrar sesión**). Así se borran los datos guardados.
+
+> ❓ **Nota:** Para abrir Afilao sin conexión, tienes que haberla abierto antes con internet, al menos una vez, e iniciado sesión.
+
 ---
 
 # 7. Citas
@@ -1811,7 +1846,10 @@ Sí. Al reservar ven los botones **Google Calendar** y **Apple / Outlook (.ics)*
 En **Citas**, elige el día, pulsa los tres puntos y luego **Copiar horas libres**. Pega el texto en WhatsApp.
 
 **¿Puedo usar Afilao sin internet?**
-No. Necesitas conexión para entrar y para ver tu agenda.
+A medias. Si ya entraste antes con internet, puedes abrir Afilao y **mirar** tu agenda, tus clientes y tus servicios, con la hora de la última actualización. Para cambiar algo (crear, cancelar o completar una cita) necesitas conexión. Mira [Si pierdes la conexión](#si-pierdes-la-conexión).
+
+**¿Cómo instalo Afilao en mi celular?**
+Abre tu enlace en el navegador y elige **Instalar aplicación** (Android) o **Añadir a pantalla de inicio** (iPhone). Mira [Instala Afilao en tu celular](#instala-afilao-en-tu-celular).
 
 **¿Puedo borrar un cliente?**
 Solo si no tiene citas. Si tiene alguna, aunque esté cancelada, Afilao no te deja borrarlo. Así conservas tu historial. Para quitarlo de tus listas, **archívalo**: se puede restaurar cuando quieras. Un cliente sin citas se borra y no se puede recuperar.
@@ -1856,6 +1894,7 @@ Busca tu síntoma en la tabla. Si no lo ves, prueba primero lo básico:
 | No puedo borrar un profesional. | Ya tiene citas. | Quítale la marca **Activo**. |
 | No se imprime el cartel. | El navegador bloqueó la ventana. | Permite las ventanas emergentes y pulsa **Imprimir cartel** otra vez. |
 | La pantalla se ve cortada. | El navegador está desactualizado o la página no cargó bien. | Recarga. Actualiza tu navegador. |
+| Dice *Sin conexión: esta acción necesita internet*. | Tu celular no tiene internet. Los cambios no se hacen sin conexión. | Espera a que vuelva la conexión y repite la acción. Mientras tanto puedes mirar tu agenda. |
 | Cambié mi contraseña y me pidió entrar de nuevo. | Es normal: se cerraron las demás sesiones. | Entra con la contraseña nueva. |
 | Mi calendario del teléfono no muestra una cita nueva. | Google, Apple y Outlook actualizan los calendarios suscritos cada pocas horas. | Espera un poco. En **Mi Perfil** puedes generar un enlace nuevo si lo perdiste. |
 

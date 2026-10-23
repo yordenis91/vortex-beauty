@@ -125,6 +125,10 @@ describe('Agenda de citas', () => {
 
   it('si llegas desde el buscador (?fecha=&cita=) se abre esa cita para editarla', async () => {
     mockAgenda([apt('a1')])
+    server.use(
+      http.get(`${API}/overrides/:date`, () => HttpResponse.json({ error: 'Sin excepción' }, { status: 404 })),
+      http.get(`${API}/appointments/available-slots`, () => HttpResponse.json([])),
+    )
     renderWithProviders(
       <AuthProvider>
         <Appointments />
@@ -133,6 +137,23 @@ describe('Agenda de citas', () => {
     )
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText(/Editar cita/)).toBeInTheDocument()
+  })
+
+  it('sin conexión, cambiar el estado de una cita no hace nada y avisa de que necesita internet', async () => {
+    const puts = mockAgenda([apt('a1')])
+    const user = userEvent.setup()
+    open()
+    await screen.findByText('Carlos Méndez')
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true })
+    try {
+      await user.click(screen.getByRole('button', { name: 'Completar' }))
+      expect(await screen.findByText(/Sin conexión: esta acción necesita internet/)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Deshacer' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Completar' })).toBeInTheDocument() // la cita no cambió
+      expect(puts).toHaveLength(0)
+    } finally {
+      Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
+    }
   })
 
   it('«Cancelar» no pide confirmación: avisa con «Deshacer» y cancela de verdad pasados unos segundos', async () => {

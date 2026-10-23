@@ -25,7 +25,8 @@ export const useAuth = () => {
 };
 
 import { saveTenantSlug } from '../lib/tenantSlug';
-import { clearImpersonation, consumeImpersonationToken, endSession, refreshSession, rememberSession, setAccessToken } from '../lib/session';
+import { clearImpersonation, consumeImpersonationToken, endSession, lastRefreshWasOffline, loadUserSnapshot, refreshSession, rememberSession, saveUserSnapshot, setAccessToken } from '../lib/session';
+import { clearPersistedCache } from '../lib/persistCache';
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -54,6 +55,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         const session = await refreshSession();
         if (!cancelled && session) setUser(session.user);
+        // Sin red pero con sesión de antes: se abre con los datos guardados (solo lectura) en vez de pedir el login.
+        else if (!cancelled && lastRefreshWasOffline()) {
+          const saved = loadUserSnapshot();
+          if (saved) setUser(saved);
+        }
       }
       if (!cancelled) setIsLoading(false);
     };
@@ -76,6 +82,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await api.post<AuthResponse>('/auth/login', { email, password, tenantSlug });
       const { user, token } = response.data;
+      // Otra cuenta en el mismo dispositivo: no se le muestran los datos guardados de la anterior.
+      const previous = loadUserSnapshot();
+      if (previous && previous.id !== user.id) {
+        queryClient.clear();
+        void clearPersistedCache();
+      }
+      saveUserSnapshot(user);
       setAccessToken(token);
       rememberSession();
       saveTenantSlug(tenantSlug);
@@ -88,6 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     void endSession();
     queryClient.clear();
+    void clearPersistedCache();
     setUser(null);
   };
 

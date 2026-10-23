@@ -34,6 +34,7 @@ de borrarla.
 - [x] Agenda del móvil en dos mitades (calendario de mes o semana con días marcados arriba, citas del día abajo con huecos libres, bloqueos y línea de «ahora»); hoja de acciones por cita; deshacer en vez de cuadros de confirmación (cancelar espera 5 s antes de avisar al cliente) (2026-10-22, en rama, pendiente de fusionar)
 - [x] Buscador real en la barra superior (clientes y citas); tarjeta «Siguiente cita» en el Panel con llamar, WhatsApp y completar (2026-10-22)
 - [x] Cita nueva en pocos toques (cliente al vuelo), próxima cita en 2/3/4 semanas, bloquear horas, copiar horas libres para WhatsApp, confirmación por WhatsApp con mensaje listo (2026-10-22)
+- [x] Funciona sin conexión en modo lectura (2026-10-23, en rama): PWA instalable (icono, pantalla completa) y la agenda, clientes y servicios se guardan en el celular; sin red se ven con la hora de la última actualización y las acciones de escritura avisan que necesitan internet. Pendiente (solo si un salón lo pide): acciones sin red con cola de envío
 - [x] Calendario suscrito (Google/Apple/Outlook) desde Mi perfil; «Añadir a mi calendario» para el cliente al reservar; resumen del día por Telegram a las 8:00 (2026-10-22; pide migración: backend primero)
 
 ## 3. Pendiente por tu parte
@@ -99,5 +100,6 @@ Hecho de esta lista:
 | 2026-10-21 | Reserva pública con pasos y resumen; clientes sin credenciales de acceso |
 | 2026-10-21 | Manual de usuario de Afilao: capítulos, capturas anotadas, mockups y versión web |
 | 2026-10-22 | Un cliente con citas ya no se puede borrar; archivar clientes queda como siguiente paso de desarrollo |
-| 2026-10-22 | Archivar y restaurar clientes (rama `feat/archivar-clientes`)|
+| 2026-10-22 | Archivar y restaurar clientes (fusionado y desplegado) |
+| 2026-10-23 | Modo sin conexión de solo lectura: PWA instalable y caché de la agenda en el dispositivo (rama `feat/offline-pwa`) |
 | 2026-10-22 | Tres olas de mejoras de la agenda (ramas `feat/agenda-ola1`, `-ola2`, `-ola3`, apiladas): agenda móvil en dos mitades, buscador, siguiente cita, cita rápida, bloqueo de horas, calendario suscrito, añadir al calendario y resumen diario por Telegram. Manual actualizado |

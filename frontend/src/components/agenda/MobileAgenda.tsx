@@ -10,6 +10,7 @@ import { blockOnDay, buildTimeline, localParts, marksByDate, parseYmd, toHHmm, t
 import AgendaCalendar, { type CalendarMode } from './AgendaCalendar';
 import DayTimeline from './DayTimeline';
 import AppointmentSheet from './AppointmentSheet';
+import { useOffline } from '../../lib/offline';
 import QuickCreateSheet, { type CreatePreset } from './QuickCreateSheet';
 import BlockHoursSheet from './BlockHoursSheet';
 
@@ -56,6 +57,7 @@ const readMode = (): CalendarMode => {
 const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHours, closedDates, timezone, salonName, selected, onSelectedChange, onEdit, onStatus, onManageDay, canManage, focusAppointmentId, onFocusHandled, words }) => {
   const [mode, setModeState] = useState<CalendarMode>(readMode);
   const [professionalId, setProfessionalId] = useState('');
+  const offline = useOffline(); // el cartel de «Sin conexión» ocupa sitio arriba
   const [openId, setOpenId] = useState<string | null>(null);
   const [create, setCreate] = useState<CreatePreset | null>(null);
   const [blockDay, setBlockDay] = useState<string | null>(null);
@@ -143,7 +145,7 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
   const dayClosed = closedSet.has(selectedKey) || (!!businessHour && !businessHour.isOpen);
 
   return (
-    <div className="relative -mx-1 flex h-[calc(100dvh-5.5rem)] flex-col gap-3">
+    <div className={`relative -mx-1 flex flex-col gap-3 ${offline ? 'h-[calc(100dvh-9rem)]' : 'h-[calc(100dvh-5.5rem)]'}`}>
       <AgendaCalendar selected={selected} onSelect={onSelectedChange} mode={mode} onModeChange={setMode} marks={marks} isClosed={isClosed} today={now.date} />
 
       <div className="flex items-center gap-2 px-1">

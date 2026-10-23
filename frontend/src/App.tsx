@@ -1,11 +1,12 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PlatformAuthProvider, usePlatformAuth } from './contexts/PlatformAuthContext';
 import { queryClient } from './lib/queryClient';
+import { CACHE_BUSTER, MAX_AGE, persister, shouldPersist } from './lib/persistCache';
 import Booking from './pages/public/Booking';
 import ManageBooking from './pages/public/ManageBooking';
 import { getSavedTenantSlug } from './lib/tenantSlug';
@@ -137,7 +138,10 @@ const PageSpinner: React.FC = () => (
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister, maxAge: MAX_AGE, buster: CACHE_BUSTER, dehydrateOptions: { shouldDehydrateQuery: shouldPersist } }}
+    >
       <AuthProvider>
         <PlatformAuthProvider>
           <Router>
@@ -206,7 +210,7 @@ function App() {
           <ReactQueryDevtools initialIsOpen={false} />
         </PlatformAuthProvider>
       </AuthProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

@@ -15,6 +15,7 @@ import {
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import AdminSidebar from './AdminSidebar';
 import { isImpersonating } from '../lib/session';
+import OfflineBanner from './OfflineBanner';
 
 const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
@@ -36,7 +37,9 @@ const AdminLayout: React.FC = () => {
               Estás viendo este salón como soporte de la plataforma. La sesión dura 1 hora y queda registrada.
             </div>
           )}
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
+          <div className="sticky top-0 z-10">
+          <OfflineBanner />
+          <header className="flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
             <SidebarTrigger />
 
             <div className="flex flex-1 min-w-0">
@@ -80,6 +83,7 @@ const AdminLayout: React.FC = () => {
               </DropdownMenu>
             </div>
           </header>
+          </div>
 
           <main className="flex-1 overflow-x-clip p-4 sm:p-6 lg:p-8 bg-muted">
             <div className="mx-auto w-full max-w-7xl space-y-6">

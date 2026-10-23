@@ -17,6 +17,9 @@ afterEach(() => {
   sessionStorage.clear()
 })
 
+// jsdom no implementa elementFromPoint (lo usa el arrastre del calendario semanal).
+document.elementFromPoint ??= () => null
+
 // jsdom no implementa lo que usan Radix y react-day-picker.
 globalThis.ResizeObserver ??= class {
   observe() {}
