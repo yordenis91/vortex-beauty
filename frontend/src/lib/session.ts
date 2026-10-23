@@ -55,6 +55,31 @@ const bare = axios.create({
   headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
 });
 
+// Copia mínima del usuario para poder abrir la app sin conexión (sin contraseñas ni tokens).
+const USER_KEY = 'afilao-user';
+export const saveUserSnapshot = (user: User) => {
+  try {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {
+    // sin almacenamiento: no se podrá abrir sin conexión
+  }
+};
+export const loadUserSnapshot = (): User | null => {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+};
+const clearUserSnapshot = () => {
+  try {
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    // nada que limpiar
+  }
+};
+
 export interface SessionResponse {
   user: User;
   token: string;
@@ -66,7 +91,10 @@ const HINT_KEY = 'hasSession';
 const setHint = (on: boolean) => {
   try {
     if (on) localStorage.setItem(HINT_KEY, '1');
-    else localStorage.removeItem(HINT_KEY);
+    else {
+      localStorage.removeItem(HINT_KEY);
+      clearUserSnapshot();
+    }
   } catch {
     // sin almacenamiento: se intentará renovar siempre
   }
@@ -81,6 +109,13 @@ const hasHint = () => {
 
 export const rememberSession = () => setHint(true);
 
+/** La marca de sesión sigue puesta: la sesión no ha terminado, solo puede faltar la red. */
+export const sessionMayBeAlive = () => hasHint();
+
+let networkFailure = false;
+/** El último intento de renovar la sesión falló por falta de red (no porque la sesión terminara). */
+export const lastRefreshWasOffline = () => networkFailure;
+
 let inflight: Promise<SessionResponse | null> | null = null;
 
 /** Renueva la sesión con la cookie. Varias llamadas simultáneas comparten una sola petición. */
@@ -92,10 +127,13 @@ export function refreshSession(): Promise<SessionResponse | null> {
       .then((response) => {
         setAccessToken(response.data.token);
         setHint(true);
+        saveUserSnapshot(response.data.user);
+        networkFailure = false;
         return response.data;
       })
       .catch((error) => {
         setAccessToken(null);
+        networkFailure = !error?.response;
         // 401 = la sesión terminó de verdad; un fallo de red no borra la marca.
         if (error?.response?.status === 401) setHint(false);
         return null;

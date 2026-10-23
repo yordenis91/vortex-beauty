@@ -4,6 +4,8 @@ import { useUpdateAppointment } from './useQueries';
 import { useLabels } from './useLabels';
 import { defer } from '../lib/deferred';
 import { toastUndo } from '../lib/undoToast';
+import { OFFLINE_MESSAGE, isOffline } from '../lib/offline';
+import toast from 'react-hot-toast';
 
 /** Tiempo que se espera antes de cancelar de verdad (para poder deshacer sin avisar al cliente). */
 export const cancelDelay = { ms: 5000 };
@@ -44,6 +46,11 @@ export function useAppointmentActions() {
   const setStatus = (appointment: Appointment, status: AppointmentStatus) => {
     const previous = appointment.status;
     if (status === previous) return;
+    // Sin conexión no se cambia nada: ni el aviso con «Deshacer» ni el cambio visual a medias.
+    if (isOffline()) {
+      toast.error(OFFLINE_MESSAGE);
+      return;
+    }
 
     if (status === 'CANCELLED') {
       patchCache(appointment.id, 'CANCELLED');
