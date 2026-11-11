@@ -150,9 +150,14 @@ curl -s https://api.afilaoapp.com/api/health          # {"status":"OK",...}
 curl -s https://afilaoapp.com | grep -o 'https://[a-z0-9.-]*/api'   # debe ser api.afilaoapp.com
 ```
 
-### Pendiente: IP del cliente detrás de Cloudflare
+### IP del cliente detrás de Cloudflare
 
-`TRUST_PROXY` vale 1 por defecto (Traefik). Con Cloudflare por delante hay un salto más, y el límite por IP podría ver la IP de Cloudflare en lugar de la del cliente (todos compartirían el mismo cupo de intentos). Sin verificar: comprobar qué IP registra la API y, si hace falta, ajustar `TRUST_PROXY` o la confianza de Traefik en las IP de Cloudflare. Ojo: subir `TRUST_PROXY` sin restringir el acceso directo al servidor a las IP de Cloudflare permite falsear la IP con la cabecera `X-Forwarded-For`.
+Con Cloudflare por delante, `req.ip` era la IP del borde de Cloudflare (compartida por muchos clientes), así que los límites por IP, las sesiones y la auditoría veían la misma IP para todos (comprobado el 2026-11-11: el contador `RateLimit-Remaining` no bajaba de forma continua para un mismo cliente). El middleware `cloudflareClientIp` (`backend/src/lib/clientIp.ts`) sustituye `req.ip` por la cabecera `CF-Connecting-IP`, **solo si** la conexión viene de un rango de Cloudflare. El origen también responde por IP directa, y ahí la cabecera sería falsificable, por lo que se ignora.
+
+- Los rangos están en el código (`https://www.cloudflare.com/ips-v4` y `ips-v6`); cambian muy rara vez, conviene revisarlos de vez en cuando.
+- `TRUST_PROXY` se queda en 1 (Traefik).
+- No se puede limitar el firewall a las IP de Cloudflare mientras este servidor aloje otros servicios que no pasan por Cloudflare.
+- Comprobación tras desplegar: varias peticiones seguidas a `https://api.afilaoapp.com/api/public/booking/<slug-inexistente>` desde la misma IP deben mostrar `ratelimit-remaining` bajando de uno en uno (119, 118, 117...).
 
 ## Reserva pública, correos y recordatorios
 
