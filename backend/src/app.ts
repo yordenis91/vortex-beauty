@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import pinoHttp from 'pino-http';
 import { config } from './config';
 import { logger } from './lib/logger';
+import { cloudflareClientIp } from './lib/clientIp';
 import { captureError } from './lib/monitoring';
 import { basePrisma } from './prismaClient';
 import express from 'express';
@@ -36,6 +37,8 @@ const app = express();
 
 // Detrás de Traefik/Easypanel: sin esto req.ip (y los límites por IP) verían siempre la IP del proxy.
 app.set('trust proxy', process.env.TRUST_PROXY ? Number(process.env.TRUST_PROXY) : 1);
+// Detrás de Cloudflare, req.ip sería la IP del borde de Cloudflare: se sustituye por la del cliente real.
+app.use(cloudflareClientIp);
 
 // Orígenes de desarrollo local, siempre permitidos.
 const DEV_ORIGINS = [
