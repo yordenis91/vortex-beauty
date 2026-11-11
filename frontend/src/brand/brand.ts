@@ -22,7 +22,7 @@ export interface Brand {
 const afilao: Brand = {
   name: 'Afilao',
   tagline: 'Tu agenda, afilada',
-  domains: ['afilao.app'],
+  domains: ['afilao.app', 'afilaoapp.com'],
   colors: {
     ink: '#14213D',
     accent: '#FF6B57',
