@@ -5,7 +5,13 @@ describe('marca', () => {
   it('elige la marca por dominio y cae en la primera si no hay coincidencia', () => {
     expect(brandForHost('afilao.app').name).toBe('Afilao');
     expect(brandForHost('barberia.afilao.app').name).toBe('Afilao');
+    expect(brandForHost('afilaoapp.com').name).toBe('Afilao');
+    expect(brandForHost('www.afilaoapp.com').name).toBe('Afilao');
     expect(brandForHost('deploy-vortex-frontend.wgteoi.easypanel.host').name).toBe('Afilao');
+  });
+
+  it('afilaoapp.com está declarado de forma explícita (no solo por el valor por defecto)', () => {
+    expect(brandForHost('afilaoapp.com').domains).toContain('afilaoapp.com');
   });
 
   it('applyBrand pone título, color del navegador y escala de acción', () => {

@@ -45,7 +45,7 @@ de borrarla.
 - [ ] Probar `/citas` desde el chat de Yumi (dueña y profesional) ya con el backend actualizado
 - [ ] Ejecutar el checklist de pruebas con `@afilao_bot` (Telegram del dueño, del
       profesional y del cliente; staff; marca blanca; regresión)
-- [ ] Comprar `afilao.app` (libre según RDAP al 2026-10)
+- [x] Comprar dominio: `afilaoapp.com` comprado en GoDaddy (2026-11); falta moverlo a Cloudflare y apuntarlo a Easypanel
 - [ ] Reservar el usuario de Instagram y el nombre del bot de Telegram de Afilao
 - [ ] Conseguir 1 o 2 salones piloto y llevarles la demo
 
