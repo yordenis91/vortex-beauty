@@ -5,7 +5,7 @@ import { useBookingSettings, useUpdateBookingSettings } from '../hooks/useQuerie
 import { compressLogo } from '../lib/image';
 import { actionScale, isHexColor } from '../lib/colors';
 
-const SWATCHES = ['#1F8A70', '#2F6FED', '#7C3AED', '#D63B2D', '#E07A1F', '#0F766E', '#BE185D', '#14213D'];
+const SWATCHES = ['#1F8A70', '#2F6FED', '#7C3AED', '#D63B2D', '#E07A1F', '#0F766E', '#BE185D', '#14264A'];
 
 const SalonBrandForm: React.FC<{ name: string; initialLogo: string | null; initialColor: string | null }> = ({ name, initialLogo, initialColor }) => {
   const [logo, setLogo] = useState<string | null>(initialLogo);

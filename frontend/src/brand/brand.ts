@@ -21,24 +21,24 @@ export interface Brand {
 
 const afilao: Brand = {
   name: 'Afilao',
-  tagline: 'Tu agenda, afilada',
+  tagline: 'Tu tiempo bajo control',
   domains: ['afilao.app', 'afilaoapp.com'],
   colors: {
-    ink: '#14213D',
-    accent: '#FF6B57',
+    ink: '#14264A',
+    accent: '#FF6F59',
     action: {
       50: '#FFF1EE',
       100: '#FFE0DA',
       200: '#FFC4BA',
       300: '#FF9F8F',
       400: '#FF806B',
-      500: '#FF6B57',
+      500: '#FF6F59',
       600: '#D63B2D',
       700: '#B52E22',
       800: '#942A21',
       900: '#7A261F',
     },
-    themeColor: '#14213D',
+    themeColor: '#14264A',
   },
 };
 

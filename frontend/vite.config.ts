@@ -29,14 +29,14 @@ export default defineConfig({
       manifest: {
         name: 'Afilao',
         short_name: 'Afilao',
-        description: 'Tu agenda, afilada.',
+        description: 'Tu tiempo bajo control.',
         lang: 'es',
         start_url: '/admin/dashboard',
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#14213D',
-        theme_color: '#14213D',
+        background_color: '#14264A',
+        theme_color: '#14264A',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
