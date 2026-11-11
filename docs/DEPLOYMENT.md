@@ -108,6 +108,52 @@ Las migraciones (`prisma migrate deploy`, que `start:prod` ejecuta al arrancar) 
 
 El login es siempre por salón: `/:slug/login`. El mismo email puede existir en salones distintos. No hay registro público de clientas: reservan sin cuenta.
 
+## Dominio propio y Cloudflare (afilaoapp.com)
+
+Producción (2026-11): frontend en `https://afilaoapp.com`, API en `https://api.afilaoapp.com`, DNS y proxy en Cloudflare, servidor en Easypanel. La marca por dominio vive en `frontend/src/brand/brand.ts` (`domains`).
+
+### Variables
+
+Backend (servicio `backend` en Easypanel):
+
+| Variable | Valor en producción | Notas |
+|---|---|---|
+| `CORS_ORIGINS` | `https://afilaoapp.com,https://www.afilaoapp.com` | Separadas por comas. Si no se define, el código usa los hosts antiguos de la demo (`*.easypanel.host`), así que **no definirla deja fuera al dominio nuevo**. Añade el host antiguo solo mientras convivan |
+| `APP_PUBLIC_URL` | `https://afilaoapp.com` | Enlaces de correos, Telegram y calendario |
+| `FRONTEND_PUBLIC_URL` | `https://afilaoapp.com` | Retorno de Mercado Pago. Si falta, cae en el host antiguo de la demo |
+| `API_PUBLIC_URL` | `https://api.afilaoapp.com` | Logo en los correos y URL del webhook de Telegram |
+| `COOKIE_SAMESITE` | *(sin definir, `lax`)* | `afilaoapp.com` y `api.afilaoapp.com` son del mismo sitio. `none` solo hace falta con dominios distintos y quita una capa de defensa CSRF |
+
+Frontend (servicio `frontend`): `VITE_API_BASE_URL=https://api.afilaoapp.com/api`, como *build arg*. Se incrusta al compilar: tras cambiarla hay que **redesplegar** el frontend.
+
+### Aplicar cambios en Easypanel
+
+- Las variables se leen al arrancar el contenedor. **Restart no las recarga: usa Deploy.** (Con Restart, `CORS_ORIGINS` siguió sin aplicarse el 2026-11-11.)
+- Dominios del servicio frontend: `afilaoapp.com` y `www.afilaoapp.com`. Del backend: `api.afilaoapp.com`, puerto 3000.
+
+### Cloudflare
+
+- DNS: registros `A` para `@`, `www` y `api` hacia la IPv4 del servidor, con proxy activado.
+- SSL/TLS: **Full (strict)** y **Always Use HTTPS**. HSTS, cuando todo esté estable (es difícil de revertir).
+- Los nameservers del dominio (GoDaddy) apuntan a Cloudflare; los registros se gestionan allí, no en GoDaddy.
+- El service worker y el manifiesto salen con `Cache-Control: no-cache` desde nginx y Cloudflare no los cachea (`cf-cache-status: DYNAMIC`). Si algún día se añade una regla de caché, excluye `/sw.js`, `/registerSW.js`, `/workbox-*.js` y `/manifest.webmanifest`.
+- Subidas: el plan Free de Cloudflare limita el cuerpo de la petición a 100 MB.
+- Si Let's Encrypt no emite el certificado con el proxy activo, pon el registro en *DNS only* (nube gris) mientras se emite.
+
+### Comprobar tras un cambio
+
+```bash
+# CORS: debe devolver access-control-allow-origin con el origen permitido y nada con uno ajeno
+curl -s -o /dev/null -D - -X OPTIONS https://api.afilaoapp.com/api/health \
+  -H 'Origin: https://afilaoapp.com' -H 'Access-Control-Request-Method: GET' | grep -i access-control-allow-origin
+curl -s https://api.afilaoapp.com/api/health          # {"status":"OK",...}
+curl -s https://afilaoapp.com | grep -o 'https://[a-z0-9.-]*/api'   # debe ser api.afilaoapp.com
+```
+
+### Pendiente: IP del cliente detrás de Cloudflare
+
+`TRUST_PROXY` vale 1 por defecto (Traefik). Con Cloudflare por delante hay un salto más, y el límite por IP podría ver la IP de Cloudflare en lugar de la del cliente (todos compartirían el mismo cupo de intentos). Sin verificar: comprobar qué IP registra la API y, si hace falta, ajustar `TRUST_PROXY` o la confianza de Traefik en las IP de Cloudflare. Ojo: subir `TRUST_PROXY` sin restringir el acceso directo al servidor a las IP de Cloudflare permite falsear la IP con la cabecera `X-Forwarded-For`.
+
 ## Reserva pública, correos y recordatorios
 
 Cada salón tiene una página pública de reserva sin cuenta en `https://<tu-dominio>/<slug>/reservar`. El cliente recibe un enlace secreto (`/<slug>/mi-cita/<token>`) para cambiar o cancelar.
