@@ -34,6 +34,11 @@ describe('landing (public/landing.html)', () => {
     expect(texto).not.toMatch(/quedan \d+|últimas? (plazas|cupos)|oferta termina/);
   });
 
+  it('la imagen para compartir y los iconos referenciados existen', () => {
+    const og = html.match(/property="og:image" content="https:\/\/afilaoapp\.com(\/[^"]+)"/)![1];
+    for (const r of [og, '/favicon-32.png', '/brand/isotipo.svg']) expect(() => readFileSync(publico(r))).not.toThrow();
+  });
+
   it('cada imagen referenciada existe en public/', () => {
     const rutas = [...html.matchAll(/src="(\/landing\/[^"]+)"/g)].map((m) => m[1]);
     expect(rutas.length).toBeGreaterThanOrEqual(4);

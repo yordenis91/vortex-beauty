@@ -10,6 +10,7 @@ rutas (`/login`, `/admin`, `/<salón>/reservar`...) sigue siendo la app. Las cap
   cabecera es solo para los salones que ya usan Afilao.
 - **Precio:** sin cifras. «Gratis durante el piloto»; se avisa antes de cobrar. Cuando haya
   precio decidido, se cambia la sección `#precio` y la pregunta «¿Cuánto cuesta?».
+- **Eslogan y marca:** «Tu tiempo bajo control» (ver `docs/MARCA.md`). Vista previa al compartir: `og-image.png`.
 - **Qué NO se promete** (la app no lo hace): avisos automáticos por WhatsApp, pagos en línea,
   página pública del salón con galería, acciones sin conexión. Un test lo vigila
   (`frontend/src/landing.test.ts`).

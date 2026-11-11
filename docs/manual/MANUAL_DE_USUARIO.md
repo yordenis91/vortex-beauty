@@ -2,7 +2,7 @@
 
 **[ LOGO DE AFILAO ]**
 
-*Tu agenda, afilada.*
+*Tu tiempo bajo control.*
 
 | | |
 |---|---|

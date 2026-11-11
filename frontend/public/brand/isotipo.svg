@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="215 70 420 385" role="img" aria-label="Afilao">
+  <defs>
+    <clipPath id="clipafilao-isotipo-v2"><path d="M316,130 H484 C530.2,130 550,149.8 550,196 V354 C550,400.2 530.2,420 484,420 H316 C269.8,420 250,400.2 250,354 V196 C250,149.8 269.8,130 316,130 Z"/></clipPath>
+    <mask id="cutafilao-isotipo-v2" maskUnits="userSpaceOnUse" x="0" y="0" width="800" height="800">
+      <rect width="800" height="800" fill="#fff"/>
+      <polygon points="292,290 366,358 612,92 366,298 322,258" fill="#000" stroke="#000" stroke-width="30" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <g mask="url(#cutafilao-isotipo-v2)">
+    <path d="M316,130 H484 C530.2,130 550,149.8 550,196 V354 C550,400.2 530.2,420 484,420 H316 C269.8,420 250,400.2 250,354 V196 C250,149.8 269.8,130 316,130 Z" fill="none" stroke="#FF6F59" stroke-width="30" stroke-linejoin="round"/>
+    <rect x="240" y="120" width="320" height="72" fill="#FF6F59" stroke="none" clip-path="url(#clipafilao-isotipo-v2)"/>
+  </g>
+  <polygon points="292,290 366,358 612,92 366,298 322,258" fill="#FF6F59" stroke="#FF6F59" stroke-width="6" stroke-linejoin="round"/>
+</svg>
