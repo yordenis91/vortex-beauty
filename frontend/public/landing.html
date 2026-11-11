@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Afilao: agenda de citas para salones y barberías en Cuba</title>
+  <meta name="description" content="Tus clientas reservan solas desde un enlace y tú ves todas las citas en el celular. Sin dobles reservas, con avisos por Telegram. Gratis durante el piloto." />
+  <link rel="canonical" href="https://afilaoapp.com/" />
+  <meta name="theme-color" content="#14213D" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="es_ES" />
+  <meta property="og:site_name" content="Afilao" />
+  <meta property="og:title" content="Afilao: tu agenda, afilada" />
+  <meta property="og:description" content="Tus clientas reservan solas desde un enlace y tú ves todas las citas en el celular. Gratis durante el piloto." />
+  <meta property="og:url" content="https://afilaoapp.com/" />
+  <meta property="og:image" content="https://afilaoapp.com/icon-512.png" />
+  <meta name="twitter:card" content="summary" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Afilao",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web, Android, iOS",
+    "inLanguage": "es",
+    "description": "Agenda de citas y reservas en línea para salones, barberías y manicuristas.",
+    "url": "https://afilaoapp.com/",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "Gratis durante el piloto" }
+  }
+  </script>
+  <style>
+    :root {
+      --ink: #14213D;
+      --ink-soft: #4A5568;
+      --accent: #FF6B57;
+      --action: #D63B2D;
+      --action-dark: #B52E22;
+      --tint: #FFF1EE;
+      --line: #E6E8EE;
+      --bg: #FFFFFF;
+      --bg-alt: #F7F8FA;
+      --ok: #1F7A4D;
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(20, 33, 61, .12);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ink: #F2F4F8; --ink-soft: #B6BECC; --tint: #2A1D1B; --line: #2C3548;
+        --bg: #0F1626; --bg-alt: #141C30; --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased; padding-bottom: 84px;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; }
+    .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+    section { padding: 56px 0; }
+    section.alt { background: var(--bg-alt); }
+    h1, h2, h3 { line-height: 1.15; margin: 0 0 .5em; letter-spacing: -.02em; }
+    h1 { font-size: clamp(2rem, 7vw, 3.4rem); }
+    h2 { font-size: clamp(1.6rem, 4.6vw, 2.3rem); }
+    h3 { font-size: 1.15rem; letter-spacing: -.01em; }
+    p { margin: 0 0 1em; }
+    .lead { font-size: 1.15rem; color: var(--ink-soft); }
+    .kicker { display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--action); margin-bottom: .6rem; }
+    .center { text-align: center; }
+    .center .lead { max-width: 620px; margin-left: auto; margin-right: auto; }
+
+    /* Botón de acción: el único objetivo de la página */
+    .cta {
+      display: inline-flex; align-items: center; justify-content: center; gap: .6rem;
+      background: var(--action); color: #fff; font-weight: 700; font-size: 1.05rem;
+      padding: 15px 26px; border-radius: 999px; text-decoration: none; min-height: 52px;
+      box-shadow: 0 6px 18px rgba(214, 59, 45, .35); transition: background .15s, transform .15s;
+    }
+    .cta:hover { background: var(--action-dark); transform: translateY(-1px); }
+    .cta:focus-visible, a:focus-visible, summary:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+    .cta svg { width: 22px; height: 22px; flex: none; }
+    .note { font-size: .9rem; color: var(--ink-soft); margin-top: .8rem; }
+
+    /* Cabecera */
+    header.top { border-bottom: 1px solid var(--line); background: var(--bg); }
+    header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 62px; }
+    .logo { display: flex; align-items: center; gap: .55rem; font-weight: 800; font-size: 1.25rem; text-decoration: none; }
+    .logo img { width: 30px; height: 30px; }
+    .login { font-size: .95rem; color: var(--ink-soft); text-decoration: none; padding: 10px 4px; }
+    .login:hover { color: var(--ink); text-decoration: underline; }
+
+    /* Hero */
+    .hero { padding: 40px 0 56px; background: linear-gradient(180deg, var(--tint), var(--bg)); }
+    .hero .wrap { display: grid; gap: 36px; align-items: center; }
+    .hero-visual { display: flex; justify-content: center; }
+
+    /* Marco de teléfono */
+    .phone { width: 100%; max-width: 270px; background: #0E1626; border-radius: 34px; padding: 9px; box-shadow: var(--shadow); }
+    .phone img { border-radius: 26px; width: 100%; height: auto; background: #fff; }
+    .phones { display: grid; gap: 28px; justify-items: center; margin-top: 32px; }
+    .phones figure { margin: 0; text-align: center; }
+    .phones figcaption { margin-top: 14px; font-weight: 600; }
+    .phones figcaption span { display: block; font-weight: 400; color: var(--ink-soft); font-size: .95rem; }
+
+    /* Dolores */
+    .pains { display: grid; gap: 16px; margin-top: 28px; }
+    .pain { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .pain q { display: block; font-size: 1.15rem; font-weight: 700; line-height: 1.3; quotes: "«" "»"; }
+    .pain p { margin: .7rem 0 0; color: var(--ink-soft); font-size: .98rem; }
+
+    /* Pasos */
+    .steps { display: grid; gap: 18px; margin-top: 28px; counter-reset: paso; }
+    .step { position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 22px 22px 74px; }
+    .step::before {
+      counter-increment: paso; content: counter(paso);
+      position: absolute; left: 20px; top: 20px; width: 40px; height: 40px; border-radius: 50%;
+      background: var(--action); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 1.1rem;
+    }
+    .step p { margin: 0; color: var(--ink-soft); }
+
+    /* Beneficios */
+    .benefits { display: grid; gap: 16px; margin-top: 28px; }
+    .benefit { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .benefit .ico { width: 44px; height: 44px; border-radius: 12px; background: var(--tint); display: grid; place-items: center; margin-bottom: 12px; font-size: 1.3rem; }
+    .benefit p { margin: 0; color: var(--ink-soft); }
+    .benefit .how { margin-top: .7rem; font-size: .88rem; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: .6rem; }
+    .benefit .how b { color: var(--ink); }
+
+    /* Prueba social / garantías */
+    .proof { display: grid; gap: 16px; margin-top: 28px; }
+    .proof .item { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+    .proof .item b { display: block; margin-bottom: .3rem; }
+    .proof .item p { margin: 0; color: var(--ink-soft); font-size: .98rem; }
+    /* Testimonio: oculto hasta tener el texto real de la dueña del salón (ver atributo hidden). */
+    .testimonial { margin: 28px auto 0; max-width: 680px; background: var(--tint); border-radius: var(--radius); padding: 26px; }
+    .testimonial blockquote { margin: 0 0 .8rem; font-size: 1.2rem; font-weight: 600; line-height: 1.4; }
+    .testimonial cite { font-style: normal; color: var(--ink-soft); font-size: .95rem; }
+
+    /* Precio */
+    .price-card {
+      max-width: 460px; margin: 28px auto 0; background: var(--bg); border: 2px solid var(--action);
+      border-radius: 22px; padding: 28px 24px; box-shadow: var(--shadow); position: relative;
+    }
+    .badge { position: absolute; top: -14px; left: 24px; background: var(--action); color: #fff; font-size: .78rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; }
+    .price-card .big { font-size: 2.2rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+    .price-card .sub { color: var(--ink-soft); margin: .3rem 0 1.2rem; }
+    .price-card ul { list-style: none; padding: 0; margin: 0 0 1.4rem; display: grid; gap: .6rem; }
+    .price-card li { padding-left: 28px; position: relative; }
+    .price-card li::before { content: "✓"; position: absolute; left: 0; color: var(--ok); font-weight: 800; }
+    .price-card .cta { width: 100%; }
+
+    /* Preguntas */
+    .faq { max-width: 760px; margin: 28px auto 0; display: grid; gap: 10px; }
+    details { background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 0 18px; }
+    summary { cursor: pointer; font-weight: 700; padding: 16px 0; list-style: none; display: flex; justify-content: space-between; gap: 12px; align-items: center; min-height: 52px; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; font-size: 1.5rem; line-height: 1; color: var(--action); flex: none; }
+    details[open] summary::after { content: "–"; }
+    details p { color: var(--ink-soft); padding-bottom: 6px; }
+
+    /* CTA final */
+    .final { background: var(--ink); color: #fff; text-align: center; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .final { background: #1B2540; } }
+    .final h2 { color: #fff; }
+    .final .lead { color: #D5DAE6; max-width: 600px; margin: 0 auto 1.6rem; }
+    .final .note { color: #B8C0D2; }
+
+    footer { padding: 28px 0 40px; font-size: .9rem; color: var(--ink-soft); }
+    footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+    footer a { text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* Barra fija de acción en móvil */
+    .sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(20, 33, 61, .12); }
+    .sticky .cta { width: 100%; }
+
+    @media (min-width: 760px) {
+      body { padding-bottom: 0; }
+      .sticky { display: none; }
+      section { padding: 80px 0; }
+      .hero { padding: 64px 0 80px; }
+      .hero .wrap { grid-template-columns: 1.15fr .85fr; gap: 56px; }
+      .pains, .benefits, .proof { grid-template-columns: repeat(3, 1fr); }
+      .steps { grid-template-columns: repeat(3, 1fr); }
+      .step { padding: 74px 22px 22px; }
+      .step::before { left: 22px; top: 22px; }
+      .phones { grid-template-columns: repeat(3, 1fr); align-items: start; }
+      .phone { max-width: 260px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .cta { transition: none; } }
+  </style>
+</head>
+<body>
+  <!--
+    PRUEBAS A/B (cambiar el h1 y el texto del botón por la variante a probar)
+    Titulares:
+      A (activo): Tus clientas reservan solas. Tú solo atiendes.
+      B: Deja de dar horas por chat. Que reserven solas.
+      C: Tu agenda llena y sin líos, desde el celular.
+    Botón:
+      A (activo): Escríbenos por WhatsApp
+      B: Quiero Afilao en mi salón
+  -->
+
+  <header class="top">
+    <div class="wrap">
+      <a class="logo" href="/" aria-label="Afilao, inicio"><img src="/favicon.svg" alt="" width="30" height="30" />Afilao</a>
+      <a class="login" href="/login">Iniciar sesión</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- 1. HERO -->
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <span class="kicker">Agenda para salones y barberías</span>
+          <h1>Tus clientas reservan solas. Tú solo atiendes.</h1>
+          <p class="lead">Compartes un enlace y cada clienta elige su hora. Tú ves todas las citas en el celular, sin dobles reservas y sin pasar el día contestando mensajes.</p>
+          <a class="cta" data-cta="hero" href="https://wa.me/5355354530?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20de%20Afilao%20para%20mi%20negocio" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 1.7 17.8L0 24l6.3-1.7a11.8 11.8 0 0 0 5.7 1.5h.1A11.9 11.9 0 0 0 20.5 3.5zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm5.4-7.3c-.3-.1-1.7-.8-2-.9s-.5-.1-.7.1-.8.9-.9 1.1-.3.2-.6.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.6-2c-.2-.3 0-.5.1-.6l.4-.5.3-.5a.6.6 0 0 0 0-.5c-.1-.1-.7-1.7-1-2.3-.2-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.7 6.4 6.4 0 0 0 1.4 3.4 14.7 14.7 0 0 0 5.6 4.9c2.1.9 2.9.9 3.4.8a3 3 0 0 0 2-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.1-.3-.2-.6-.4z"/></svg>
+            Escríbenos por WhatsApp
+          </a>
+          <p class="note">Gratis durante el piloto. Sin tarjeta.</p>
+        </div>
+        <div class="hero-visual">
+          <div class="phone"><img src="/landing/agenda-movil.png" width="780" height="1688" alt="Agenda de Afilao en el celular con las citas del día y los huecos libres" fetchpriority="high" /></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. PROBLEMA -->
+    <section class="alt" id="problema">
+      <div class="wrap">
+        <div class="center">
+          <span class="kicker">¿Te suena?</span>
+          <h2>El día se te va en el celular, y no en tu trabajo</h2>
+        </div>
+        <div class="pains">
+          <div class="pain"><q>Me paso el día contestando mensajes para dar una hora.</q><p>Cada cita cuesta cinco mensajes de ida y vuelta, y a veces a las once de la noche.</p></div>
+          <div class="pain"><q>Le di la misma hora a dos clientas.</q><p>Con la agenda en papel o en el chat, un descuido y alguien se va molesta.</p></div>
+          <div class="pain"><q>La clienta no vino y perdí ese hueco.</q><p>Nadie le recordó la cita y ya no hubo tiempo de llenar la hora.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SOLUCIÓN -->
+    <section id="como-funciona">
+      <div class="wrap">
+        <div class="center">
+          <span class="kicker">Así de simple</span>
+          <h2>Afilao lo resuelve en 3 pasos</h2>
+        </div>
+        <div class="steps">
+          <div class="step"><h3>Compartes tu enlace</h3><p>Lo mandas por WhatsApp o lo pones en tu Instagram. En el local, un cartel con código QR.</p></div>
+          <div class="step"><h3>La clienta reserva</h3><p>Elige servicio, profesional y hora desde su celular. No instala nada ni crea cuenta.</p></div>
+          <div class="step"><h3>Tú recibes la cita</h3><p>Aparece en tu agenda y te llega un aviso por Telegram. Ella recibe su confirmación.</p></div>
+        </div>
+        <div class="phones">
+          <figure>
+            <div class="phone"><img src="/landing/reserva-movil.png" width="780" height="1688" loading="lazy" alt="Página de reserva con servicios y precios" /></div>
+            <figcaption>Lo que ve tu clienta<span>Servicios, precios y horas libres</span></figcaption>
+          </figure>
+          <figure>
+            <div class="phone"><img src="/landing/panel-movil.png" width="780" height="1688" loading="lazy" alt="Panel con las citas de hoy y las próximas" /></div>
+            <figcaption>Lo que ves tú<span>Tu día de un vistazo</span></figcaption>
+          </figure>
+          <figure>
+            <div class="phone"><img src="/landing/mes-movil.png" width="780" height="1688" loading="lazy" alt="Calendario del mes con puntos en los días que tienen citas" /></div>
+            <figcaption>Tu mes de un vistazo<span>Puntos en los días con citas</span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. BENEFICIOS -->
+    <section class="alt" id="beneficios">
+      <div class="wrap">
+        <div class="center">
+          <span class="kicker">Lo que ganas</span>
+          <h2>Menos líos. Más tiempo para atender</h2>
+        </div>
+        <div class="benefits">
+          <article class="benefit"><div class="ico" aria-hidden="true">💬</div><h3>Menos mensajes</h3><p>Las clientas reservan solas, a cualquier hora, sin escribirte.</p><p class="how"><b>Cómo:</b> enlace de reserva y código QR, sin cuenta para la clienta.</p></article>
+          <article class="benefit"><div class="ico" aria-hidden="true">🗓️</div><h3>Cero dobles reservas</h3><p>Una hora ocupada deja de aparecer para los demás.</p><p class="how"><b>Cómo:</b> reserva por horas, o por cupos si trabajas con turnos fijos.</p></article>
+          <article class="benefit"><div class="ico" aria-hidden="true">⏰</div><h3>Menos clientas que faltan</h3><p>Reciben un recordatorio antes de la cita y pueden cancelar o cambiarla ellas mismas.</p><p class="how"><b>Cómo:</b> aviso 24 h y 2 h antes, por Telegram o correo, con enlace para gestionar la cita.</p></article>
+          <article class="benefit"><div class="ico" aria-hidden="true">🔔</div><h3>Te enteras al momento</h3><p>Una cita nueva o una cancelación te llega sin abrir la app.</p><p class="how"><b>Cómo:</b> bot de Telegram propio de tu salón y resumen del día a las 8:00.</p></article>
+          <article class="benefit"><div class="ico" aria-hidden="true">📱</div><h3>Tu agenda en el bolsillo</h3><p>La instalas en el celular y consultas tu día aunque se caiga el internet.</p><p class="how"><b>Cómo:</b> app instalable, vista de mes y semana, y agenda guardada para verla sin conexión.</p></article>
+          <article class="benefit"><div class="ico" aria-hidden="true">👥</div><h3>Cada quien con lo suyo</h3><p>Tu equipo ve solo su agenda y sus clientas. Y la página lleva tu logo y tu color.</p><p class="how"><b>Cómo:</b> cuentas de equipo por profesional y marca propia de tu salón.</p></article>
+        </div>
+        <p class="note center" style="margin-top:20px">Las citas también se pueden ver en el calendario de Google, Apple u Outlook.</p>
+      </div>
+    </section>
+
+    <!-- 5. PRUEBA SOCIAL: garantías reales. El testimonio se activa al quitar "hidden" cuando haya texto real. -->
+    <section id="confianza">
+      <div class="wrap">
+        <div class="center">
+          <span class="kicker">Sin riesgo</span>
+          <h2>Pruébalo en tu salón antes de decidir</h2>
+          <p class="lead">Estamos empezando, y por eso trabajamos de cerca con cada salón.</p>
+        </div>
+        <div class="proof">
+          <div class="item"><b>Ya se usa en un salón real</b><p>Un salón de manicura de verdad lo está probando con sus clientas.</p></div>
+          <div class="item"><b>Te acompañamos al empezar</b><p>Te ayudamos a cargar tus servicios y tu horario. No empiezas solo.</p></div>
+          <div class="item"><b>Sin tarjeta y sin contrato</b><p>No pedimos datos de pago para probar. Si no te sirve, lo dejas.</p></div>
+        </div>
+        <!-- TESTIMONIO (pendiente del texto real y del permiso por escrito de la dueña)
+        <figure class="testimonial" hidden>
+          <blockquote>«…»</blockquote>
+          <cite>Nombre, negocio, ciudad</cite>
+        </figure>
+        -->
+      </div>
+    </section>
+
+    <!-- 6. PRECIOS -->
+    <section class="alt" id="precio">
+      <div class="wrap">
+        <div class="center">
+          <span class="kicker">Precio</span>
+          <h2>Gratis mientras dura el piloto</h2>
+          <p class="lead">Aún no cobramos. Cuando llegue el momento te avisamos con tiempo y tú decides si sigues.</p>
+        </div>
+        <div class="price-card">
+          <span class="badge">Plan piloto</span>
+          <div class="big">Gratis</div>
+          <p class="sub">Durante el piloto. Sin tarjeta.</p>
+          <ul>
+            <li>Página de reserva con tu logo y tu color</li>
+            <li>Agenda en el celular y en la computadora</li>
+            <li>Profesionales y cuentas de equipo</li>
+            <li>Avisos por Telegram y recordatorios</li>
+            <li>Te ayudamos a dejarlo listo</li>
+          </ul>
+          <a class="cta" data-cta="precio" href="https://wa.me/5355354530?text=Hola%2C%20quiero%20probar%20Afilao%20en%20mi%20negocio" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. PREGUNTAS -->
+    <section id="preguntas">
+      <div class="wrap">
+        <div class="center"><span class="kicker">Preguntas</span><h2>Lo que suelen preguntarnos</h2></div>
+        <div class="faq">
+          <details><summary>Mis clientas no van a usar una app</summary><p>No tienen que instalar nada. Abren tu enlace desde el celular, eligen su hora y listo. No crean cuenta ni contraseña. Si saben usar WhatsApp, saben reservar.</p></details>
+          <details><summary>¿Es complicado de configurar?</summary><p>No. Cargas tus servicios, tu horario y tus profesionales, y te ayudamos en ese primer paso. Cuando esté listo, tu enlace funciona.</p></details>
+          <details><summary>¿Cuánto cuesta?</summary><p>Mientras dure el piloto es gratis y sin tarjeta. Antes de cobrar algo te avisamos con tiempo, y tú decides si sigues.</p></details>
+          <details><summary>Mis clientas usan WhatsApp, no Telegram</summary><p>No hace falta que usen Telegram para reservar. Las clientas que quieran pueden recibir avisos por ahí, y las demás los reciben por correo. Los avisos de tu salón sí te llegan por Telegram. Además, con un toque tienes listo el mensaje de WhatsApp para confirmar una cita.</p></details>
+          <details><summary>¿Y si se va el internet?</summary><p>Puedes abrir la app y ver tu agenda, tus clientas y tus servicios, porque se guardan en tu celular. Para crear o cambiar una cita sí hace falta conexión.</p></details>
+          <details><summary>¿Qué pasa si una clienta quiere cancelar o cambiar la hora?</summary><p>Lo hace ella desde el enlace de su cita, sin escribirte. Tú ves el cambio en tu agenda y recibes el aviso.</p></details>
+          <details><summary>¿Cómo cuidan mis datos?</summary><p>Guardamos una copia de seguridad diaria, y cada salón solo ve sus propios datos. Las clientas no necesitan contraseña.</p></details>
+          <details><summary>Tengo un equipo, ¿cada uno ve todo?</summary><p>No. Cada profesional entra con su cuenta y ve su propia agenda y sus clientas. Tú, como dueño, ves todo el salón.</p></details>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. CTA FINAL -->
+    <section class="final" id="empezar">
+      <div class="wrap">
+        <h2>Empieza por tu salón</h2>
+        <p class="lead">Estamos abriendo con pocos salones para acompañar a cada uno en la puesta en marcha. Escríbenos, cuéntanos cómo trabajas y te decimos si Afilao te sirve.</p>
+        <a class="cta" data-cta="final" href="https://wa.me/5355354530?text=Hola%2C%20tengo%20un%20negocio%20y%20quiero%20usar%20Afilao" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+        <p class="note">Te respondemos por WhatsApp, sin compromiso.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <span>© Afilao. Tu agenda, afilada.</span>
+      <span><a href="/login">Iniciar sesión</a></span>
+    </div>
+  </footer>
+
+  <!-- Botón fijo en móvil -->
+  <div class="sticky">
+    <a class="cta" data-cta="fijo" href="https://wa.me/5355354530?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20de%20Afilao%20para%20mi%20negocio" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+  </div>
+</body>
+</html>
