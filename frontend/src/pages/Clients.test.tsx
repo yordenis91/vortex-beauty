@@ -130,6 +130,26 @@ describe('Clientes', () => {
     await waitFor(() => expect(urls).toEqual(['', '?conCitas=true']))
   })
 
+  it('importar contactos: sube un .vcf, se marcan los deseados y solo esos se envían', async () => {
+    mock([client()])
+    let sent: Array<{ name: string }> = []
+    server.use(
+      http.post(`${API}/clients/import`, async ({ request }) => {
+        sent = ((await request.json()) as { contacts: Array<{ name: string }> }).contacts
+        return HttpResponse.json({ created: sent.length, skipped: [] }, { status: 201 })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    const vcf = 'BEGIN:VCARD\nFN:Luis Pérez\nTEL:+53 5 555 1002\nEND:VCARD\nBEGIN:VCARD\nFN:Ana López\nTEL:+53 5 555 1003\nEND:VCARD'
+    await user.upload(screen.getByTestId('vcf-input'), new File([vcf], 'contactos.vcf', { type: 'text/vcard' }))
+    await screen.findByText('Importar contactos', { selector: 'h2' })
+    await user.click(screen.getByRole('checkbox', { name: 'Ana López' })) // desmarcar
+    await user.click(screen.getByRole('button', { name: 'Importar 1' }))
+    await waitFor(() => expect(sent).toEqual([expect.objectContaining({ name: 'Luis Pérez', phone: '+53 5 555 1002' })]))
+  })
+
   it('archivar saca al cliente de la lista, avisa con «Deshacer» y deshacer lo restaura', async () => {
     const posts: string[] = []
     const archived: string[] = []

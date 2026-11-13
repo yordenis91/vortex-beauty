@@ -142,6 +142,70 @@ router.post('/', requireAdmin, async (req, res) => {
   }
 });
 
+// POST /api/clients/import - Alta masiva desde los contactos del teléfono (o un .vcf).
+// Lo que ya existe (mismo teléfono o correo, también entre archivados) y lo que no se puede
+// reconocer (sin teléfono ni correo) se omite y se devuelve con su motivo; el resto se crea.
+const importSchema = z.object({
+  contacts: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(120),
+        phone: z.string().max(40).optional(),
+        email: z.string().max(200).optional(),
+      })
+    )
+    .min(1)
+    .max(500),
+});
+
+router.post('/import', requireAdmin, async (req, res) => {
+  try {
+    const { contacts } = importSchema.parse(req.body);
+    const tenantId = req.user!.tenantId;
+
+    const existing = await prisma.client.findMany({ where: { tenantId }, select: { phoneKey: true, email: true } });
+    const usedPhones = new Set(existing.map((c) => c.phoneKey).filter(Boolean) as string[]);
+    const usedEmails = new Set(existing.map((c) => c.email?.toLowerCase()).filter(Boolean) as string[]);
+
+    const toCreate: Array<{ name: string; phone: string | null; phoneKey: string | null; email: string | null }> = [];
+    const skipped: Array<{ name: string; reason: string }> = [];
+
+    for (const c of contacts) {
+      const key = phoneKey(c.phone);
+      const emailCandidate = c.email?.trim().toLowerCase();
+      const email = emailCandidate && z.string().email().safeParse(emailCandidate).success ? emailCandidate : null;
+      if (!key && !email) {
+        skipped.push({ name: c.name, reason: 'Sin teléfono ni correo válidos' });
+        continue;
+      }
+      if ((key && usedPhones.has(key)) || (email && usedEmails.has(email))) {
+        skipped.push({ name: c.name, reason: 'Ya existe' });
+        continue;
+      }
+      if (key) usedPhones.add(key);
+      if (email) usedEmails.add(email);
+      toCreate.push({ name: c.name, phone: key ? c.phone!.trim() : null, phoneKey: key, email });
+    }
+
+    const created = toCreate.length
+      ? await runInTransaction(async (tx) => {
+          // skipDuplicates: si otro alta coincide justo ahora, no tumba el resto.
+          const r = await tx.client.createMany({
+            data: toCreate.map((c) => ({ ...c, userId: req.userId!, tenantId })),
+            skipDuplicates: true,
+          });
+          return r.count;
+        })
+      : 0;
+
+    res.status(201).json({ created, skipped });
+  } catch (error: any) {
+    if (error?.name === 'ZodError') return res.status(400).json(zodResponse(error));
+    console.error(error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 // PUT /api/clients/:id - Update client
 router.put('/:id', requireAdmin, async (req, res) => {
   try {

@@ -2,13 +2,15 @@ import { compressImage } from '../lib/image';
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient, useArchiveClient } from '../hooks/useQueries';
-import { Users, Plus, Edit, Trash2, Search, Mail, Phone, Camera, Archive, ArchiveRestore } from 'lucide-react';
+import { Users, Contact, Plus, Edit, Trash2, Search, Mail, Phone, Camera, Archive, ArchiveRestore } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLabels } from '@/hooks/useLabels';
 import type { Client } from '../types';
 import { toastUndo } from '../lib/undoToast';
+import ImportContactsDialog from '../components/ImportContactsDialog';
+import { canPickContacts, parseVcf, pickContacts, type ImportableContact } from '../lib/contacts';
 
 interface ClientFormData {
   name: string;
@@ -34,6 +36,25 @@ const Clients: React.FC = () => {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   // Segunda confirmación: el cliente tiene citas y se pide borrarlas junto con él.
+  // Contactos leídos del teléfono o de un .vcf, pendientes de elegir cuáles importar.
+  const [toImport, setToImport] = useState<ImportableContact[]>([]);
+  const vcfInput = React.useRef<HTMLInputElement>(null);
+  const startImport = async () => {
+    if (canPickContacts()) {
+      const picked = await pickContacts();
+      if (picked.length) setToImport(picked);
+    } else {
+      vcfInput.current?.click();
+    }
+  };
+  const onVcfFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const contacts = parseVcf(await file.text());
+    if (contacts.length === 0) toast.error('No se encontraron contactos con teléfono o correo en ese archivo.');
+    else setToImport(contacts);
+  };
   const [withAppointments, setWithAppointments] = useState<{ id: string; count: number } | null>(null);
   
   const [formData, setFormData] = useState<ClientFormData>({
@@ -187,13 +208,23 @@ const Clients: React.FC = () => {
           <h2 className="text-2xl font-bold text-foreground">{label('customers', true)}</h2>
           <p className="mt-1 text-sm text-muted-foreground">Gestiona tu cartera de {label('customers')}</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          {agree('Nuev', 'customer')} {label('customer')}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={startImport}
+            className="flex items-center px-4 py-2 border border-border bg-card text-foreground rounded-md hover:bg-muted transition"
+          >
+            <Contact className="h-5 w-5 mr-2" />
+            Importar contactos
+          </button>
+          <input ref={vcfInput} type="file" accept=".vcf,text/vcard,text/x-vcard" className="hidden" onChange={onVcfFile} data-testid="vcf-input" />
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            {agree('Nuev', 'customer')} {label('customer')}
+          </button>
+        </div>
       </div>
 
       {/* Buscador */}
@@ -404,6 +435,8 @@ const Clients: React.FC = () => {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
+
+      {toImport.length > 0 && <ImportContactsDialog contacts={toImport} onClose={() => setToImport([])} />}
 
       <ConfirmModal
         isOpen={withAppointments !== null}

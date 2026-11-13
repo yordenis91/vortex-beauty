@@ -136,6 +136,27 @@ export const useDeleteClient = (options?: MutationOptions) => {
   });
 };
 
+export interface ImportClientsResult {
+  created: number;
+  skipped: Array<{ name: string; reason: string }>;
+}
+
+export const useImportClients = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (contacts: Array<{ name: string; phone?: string; email?: string }>) => {
+      const response = await api.post<ImportClientsResult>('/clients/import', { contacts });
+      return response.data;
+    },
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'No se pudieron importar los contactos.'));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
+    },
+  });
+};
+
 export const useCreateClient = (options?: MutationOptions) => {
   const queryClient = useQueryClient();
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};

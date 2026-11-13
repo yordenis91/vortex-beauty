@@ -124,4 +124,34 @@ describeIfDb('clientes archivados', () => {
     expect((await adminPool.query('SELECT 1 FROM "Client" WHERE id = $1', [maria])).rowCount).toBe(0);
     expect((await adminPool.query('SELECT 1 FROM "Client" WHERE id = $1', [ajeno])).rowCount).toBe(1);
   });
+  it('importar contactos: crea los nuevos y omite duplicados, repetidos y sin datos', async () => {
+    const res = await request(app)
+      .post('/api/clients/import')
+      .set(as(owner))
+      .send({
+        contacts: [
+          { name: 'Nueva Uno', phone: '+53 5 700 0001' },
+          { name: 'Nueva Dos', email: 'Dos@Ejemplo.com' },
+          { name: 'Repetida en el lote', phone: '5357000001' },
+          { name: 'Sin datos' },
+          { name: 'Correo roto', email: 'no-es-correo' },
+        ],
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.created).toBe(2);
+    expect(res.body.skipped.map((s: { name: string }) => s.name).sort()).toEqual(['Correo roto', 'Repetida en el lote', 'Sin datos']);
+    const rows = await adminPool.query('SELECT name, "phoneKey", email FROM "Client" WHERE "tenantId" = $1 AND name LIKE $2 ORDER BY name', [tenantId, 'Nueva%']);
+    expect(rows.rows).toEqual([
+      { name: 'Nueva Dos', phoneKey: null, email: 'dos@ejemplo.com' },
+      { name: 'Nueva Uno', phoneKey: '5357000001', email: null },
+    ]);
+    // repetir el mismo lote no crea nada
+    const again = await request(app).post('/api/clients/import').set(as(owner)).send({ contacts: [{ name: 'Nueva Uno', phone: '+53 5 700 0001' }] });
+    expect(again.body.created).toBe(0);
+  });
+
+  it('importar contactos: un profesional no puede y el lote vacío o enorme se rechaza', async () => {
+    expect((await request(app).post('/api/clients/import').set(as(staff)).send({ contacts: [{ name: 'X', phone: '5357000009' }] })).status).toBe(403);
+    expect((await request(app).post('/api/clients/import').set(as(owner)).send({ contacts: [] })).status).toBe(400);
+  });
 });
