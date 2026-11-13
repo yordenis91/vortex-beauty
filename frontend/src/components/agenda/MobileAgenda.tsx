@@ -28,6 +28,7 @@ interface Props {
   closedDates: Array<{ date: string }>;
   timezone: string;
   salonName?: string;
+  salonSlug?: string;
   selected: Date;
   onSelectedChange: (day: Date) => void;
   onEdit: (appointment: Appointment) => void;
@@ -54,7 +55,7 @@ const readMode = (): CalendarMode => {
  * Agenda del móvil en dos mitades: arriba el calendario (mes o semana) con puntos en los días con citas;
  * abajo, las citas del día elegido con la línea de «ahora» y los huecos libres.
  */
-const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHours, closedDates, timezone, salonName, selected, onSelectedChange, onEdit, onStatus, onManageDay, canManage, focusAppointmentId, onFocusHandled, words }) => {
+const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHours, closedDates, timezone, salonName, salonSlug, selected, onSelectedChange, onEdit, onStatus, onManageDay, canManage, focusAppointmentId, onFocusHandled, words }) => {
   const [mode, setModeState] = useState<CalendarMode>(readMode);
   const [professionalId, setProfessionalId] = useState('');
   const offline = useOffline(); // el cartel de «Sin conexión» ocupa sitio arriba
@@ -215,6 +216,7 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
       <AppointmentSheet
         appointment={open ?? focusedAppointment}
         salonName={salonName}
+        salonSlug={salonSlug}
         onClose={() => {
           setOpenId(null);
           onFocusHandled?.();

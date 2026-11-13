@@ -251,6 +251,30 @@ describe('Agenda del móvil', () => {
     expect(new Date(body.endsAt).getTime() - new Date(body.startsAt).getTime()).toBe(3600000)
   })
 
+  it('una cita vigente permite copiar su enlace, y el WhatsApp lo incluye', async () => {
+    mock([apt('a1', { cancelToken: 'tok-abc' })])
+    const user = userEvent.setup()
+    const writes: string[] = []
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (t: string) => { writes.push(t) } }, configurable: true })
+    open()
+    await user.click(await screen.findByText('Carlos Méndez'))
+    const sheet = await screen.findByRole('dialog')
+    const href = decodeURIComponent(within(sheet).getByRole('link', { name: /WhatsApp/ }).getAttribute('href') ?? '')
+    expect(href).toContain(`${window.location.origin}/barberia-demo/mi-cita/tok-abc`)
+    await user.click(within(sheet).getByRole('button', { name: /Copiar enlace de la cita/ }))
+    await waitFor(() => expect(writes).toEqual([`${window.location.origin}/barberia-demo/mi-cita/tok-abc`]))
+  })
+
+  it('una cita cancelada no ofrece copiar el enlace ni lo incluye en el WhatsApp', async () => {
+    mock([apt('a2', { status: 'CANCELLED', cancelToken: 'tok-cancelada', client: { id: 'c2', name: 'Luis Pérez', phone: '+53 5 555 9999' } })])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByText('Luis Pérez'))
+    const sheet = await screen.findByRole('dialog')
+    expect(within(sheet).queryByRole('button', { name: /Copiar enlace de la cita/ })).not.toBeInTheDocument()
+    expect(decodeURIComponent(within(sheet).getByRole('link', { name: /WhatsApp/ }).getAttribute('href') ?? '')).not.toContain('mi-cita')
+  })
+
   it('«Copiar horas libres» deja en el portapapeles un texto para WhatsApp', async () => {
     atMidday()
     mock([apt('a1', { startTime: '10:00', endTime: '11:00' })])

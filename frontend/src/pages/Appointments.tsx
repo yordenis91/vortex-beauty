@@ -564,6 +564,7 @@ const Appointments: React.FC = () => {
           closedDates={closedDates}
           timezone={bookingSettings?.timezone ?? 'America/Havana'}
           salonName={bookingSettings?.name}
+          salonSlug={bookingSettings?.slug}
           selected={currentDate}
           onSelectedChange={(day) => {
             setCurrentDate(day);

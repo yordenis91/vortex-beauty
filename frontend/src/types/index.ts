@@ -253,6 +253,8 @@ export interface Appointment {
   professionalId?: string | null;
   resourceId?: string | null;
   cancelledBy?: 'CUSTOMER' | 'STAFF' | 'SYSTEM' | null;
+  // Secreto del enlace «mi cita» (ver y cambiar la cita sin cuenta)
+  cancelToken?: string | null;
   createdAt: string;
   updatedAt: string;
   client?: Client;

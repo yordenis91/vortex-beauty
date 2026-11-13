@@ -21,6 +21,8 @@ export interface MessageInput {
   /** Día de la cita, yyyy-MM-dd. */
   date: string;
   time: string;
+  /** Enlace para que el cliente vea, cambie o cancele su cita. */
+  manageUrl?: string | null;
 }
 
 const dayLabel = (date: string) => format(new Date(`${date}T00:00:00`), "EEEE d 'de' MMMM", { locale: es });
@@ -29,5 +31,10 @@ const dayLabel = (date: string) => format(new Date(`${date}T00:00:00`), "EEEE d 
 export function confirmationMessage(m: MessageInput): string {
   const first = (m.clientName ?? '').trim().split(/\s+/)[0];
   const where = m.salonName ? ` en ${m.salonName}` : '';
-  return `Hola${first ? ` ${first}` : ''}, te confirmo tu cita${where}: ${m.serviceName}, ${dayLabel(m.date)} a las ${m.time}. ¡Te esperamos!`;
+  return `Hola${first ? ` ${first}` : ''}, te confirmo tu cita${where}: ${m.serviceName}, ${dayLabel(m.date)} a las ${m.time}. ¡Te esperamos!${m.manageUrl ? `\n\nPuedes ver, cambiar o cancelar tu cita aquí: ${m.manageUrl}` : ''}`;
+}
+
+/** Enlace público «mi cita» de una cita (el que recibe quien reserva por su cuenta); null si no hay token. */
+export function appointmentLink(salonSlug: string | undefined, token: string | null | undefined, origin = window.location.origin): string | null {
+  return salonSlug && token ? `${origin}/${salonSlug}/mi-cita/${token}` : null;
 }
