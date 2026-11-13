@@ -1,7 +1,9 @@
+import { appointmentLink, confirmationMessage, whatsappLink } from '../lib/whatsapp';
+import { copyText } from '../lib/clipboard';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAppointments, useClients, useServices, useProfessionals, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useBookingSettings, useClosedDates, useFullyBookedDates, useAdminSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
-import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle, UserCog } from 'lucide-react';
+import { Plus, Trash2, Clock, User, Package, Calendar as CalendarIcon, Edit, AlertCircle, UserCog, MessageCircle, Link2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmModal from '../components/ConfirmModal';
 import { format, isBefore, startOfDay, startOfMonth, endOfMonth, eachDayOfInterval, addMonths } from 'date-fns';
@@ -837,7 +839,15 @@ const Appointments: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 2xl:grid-cols-2 gap-4">
-                {dailyAppointments.map((appointment) => (
+                {dailyAppointments.map((appointment) => {
+                  const vigente = appointment.status === 'SCHEDULED' || appointment.status === 'PENDING';
+                  // El enlace «mi cita» solo tiene sentido en una cita vigente.
+                  const link = vigente ? appointmentLink(bookingSettings?.slug, appointment.cancelToken) : null;
+                  const wa = whatsappLink(
+                    appointment.client?.phone,
+                    confirmationMessage({ clientName: appointment.client?.name, salonName: bookingSettings?.name, serviceName: appointment.serviceName, date: appointment.date.split('T')[0], time: appointment.startTime, manageUrl: link })
+                  );
+                  return (
                   <Card
                     key={appointment.id}
                     className="overflow-hidden border-l-4 shadow-sm hover:shadow-md transition"
@@ -909,16 +919,37 @@ const Appointments: React.FC = () => {
                             </>
                           )}
                         </div>
-                        <button
-                          onClick={() => openModal(appointment)}
-                          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          <Edit className="w-4 h-4" /> Editar {label('appointment')}
-                        </button>
+                        <div className="flex flex-wrap items-center gap-3">
+                          {wa && (
+                            <a
+                              href={wa}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 text-sm text-green-700 hover:text-green-900 font-medium"
+                            >
+                              <MessageCircle className="w-4 h-4" /> WhatsApp
+                            </a>
+                          )}
+                          {link && (
+                            <button
+                              onClick={() => void copyText(link, 'Enlace de la cita copiado')}
+                              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground font-medium"
+                            >
+                              <Link2 className="w-4 h-4" /> Copiar enlace
+                            </button>
+                          )}
+                          <button
+                            onClick={() => openModal(appointment)}
+                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            <Edit className="w-4 h-4" /> Editar {label('appointment')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
             </div>

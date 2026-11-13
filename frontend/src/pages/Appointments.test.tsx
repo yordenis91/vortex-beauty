@@ -202,6 +202,32 @@ describe('Agenda de citas', () => {
     expect(within(card).queryByRole('button', { name: 'Cancelar' })).not.toBeInTheDocument()
   })
 
+  it('en escritorio, una cita vigente ofrece WhatsApp con el enlace y «Copiar enlace»', async () => {
+    mockAgenda([apt('a1', { cancelToken: 'tok-abc', client: { id: 'c1', name: 'Carlos Méndez', phone: '+53 5 555 1234' } })])
+    const user = userEvent.setup()
+    const writes: string[] = []
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (t: string) => { writes.push(t) } }, configurable: true })
+    open()
+    const card = (await screen.findByText('Carlos Méndez')).closest('.p-5') as HTMLElement
+    const wa = within(card).getByRole('link', { name: /WhatsApp/ })
+    expect(wa).toHaveAttribute('href', expect.stringContaining('https://wa.me/5355551234?text='))
+    expect(decodeURIComponent(wa.getAttribute('href') ?? '')).toContain(`${window.location.origin}/barberia-demo/mi-cita/tok-abc`)
+    await user.click(within(card).getByRole('button', { name: /Copiar enlace/ }))
+    await waitFor(() => expect(writes).toEqual([`${window.location.origin}/barberia-demo/mi-cita/tok-abc`]))
+  })
+
+  it('en escritorio, sin teléfono no hay WhatsApp y una cita completada no lleva enlace', async () => {
+    mockAgenda([apt('a1', { cancelToken: 'tok-1' }), apt('a2', { status: 'COMPLETED', cancelToken: 'tok-2', startTime: '12:00', endTime: '12:30', client: { id: 'c2', name: 'Luis Pérez', phone: '+53 5 555 9999' } })])
+    open()
+    const sinTelefono = (await screen.findByText('Carlos Méndez')).closest('.p-5') as HTMLElement
+    expect(within(sinTelefono).queryByRole('link', { name: /WhatsApp/ })).not.toBeInTheDocument()
+    expect(within(sinTelefono).getByRole('button', { name: /Copiar enlace/ })).toBeInTheDocument()
+    const completada = (await screen.findByText('Luis Pérez')).closest('.p-5') as HTMLElement
+    expect(within(completada).getByRole('link', { name: /WhatsApp/ })).toBeInTheDocument()
+    expect(within(completada).queryByRole('button', { name: /Copiar enlace/ })).not.toBeInTheDocument()
+    expect(decodeURIComponent(within(completada).getByRole('link', { name: /WhatsApp/ }).getAttribute('href') ?? '')).not.toContain('mi-cita')
+  })
+
   it('el selector Día/Semana cambia a la agenda semanal y vuelve', async () => {
     mockAgenda([apt('a1')])
     const user = userEvent.setup()
