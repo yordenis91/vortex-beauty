@@ -118,14 +118,19 @@ export const useDeleteClient = (options?: MutationOptions) => {
   const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
   return useMutation({
     ...otherOptions,
-    mutationFn: async (id: string) => {
-      await api.delete(`/clients/${id}`);
+    // conCitas: borrado definitivo, junto con todas sus citas
+    mutationFn: async (vars: string | { id: string; conCitas?: boolean }) => {
+      const { id, conCitas } = typeof vars === 'string' ? { id: vars, conCitas: false } : vars;
+      await api.delete(`/clients/${id}`, { params: conCitas ? { conCitas: true } : undefined });
     },
     onError: (error: unknown) => {
+      // El 409 de «tiene citas» lo gestiona la pantalla (segunda confirmación): sin aviso genérico.
+      if ((error as { response?: { status?: number } })?.response?.status === 409) return;
       toast.error(getErrorMessage(error, 'Ocurrió un error en la operación.'));
     },
     onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
       if (customOnSuccess) customOnSuccess(data, variables, context);
     },
   });

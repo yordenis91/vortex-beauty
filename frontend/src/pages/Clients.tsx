@@ -33,6 +33,8 @@ const Clients: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  // Segunda confirmación: el cliente tiene citas y se pide borrarlas junto con él.
+  const [withAppointments, setWithAppointments] = useState<{ id: string; count: number } | null>(null);
   
   const [formData, setFormData] = useState<ClientFormData>({
     name: '',
@@ -143,9 +145,25 @@ const Clients: React.FC = () => {
     try {
       await deleteMutation.mutateAsync(itemToDelete);
     } catch (error) {
-      console.error('Error deleting record:', error);
+      const e = error as { response?: { status?: number; data?: { appointments?: number } } };
+      if (e.response?.status === 409 && typeof e.response.data?.appointments === 'number') {
+        setWithAppointments({ id: itemToDelete, count: e.response.data.appointments });
+      } else {
+        console.error('Error deleting record:', error);
+      }
     } finally {
       setItemToDelete(null);
+    }
+  };
+
+  const confirmDeleteWithAppointments = async () => {
+    if (!withAppointments) return;
+    try {
+      await deleteMutation.mutateAsync({ id: withAppointments.id, conCitas: true });
+    } catch (error) {
+      console.error('Error deleting record:', error);
+    } finally {
+      setWithAppointments(null);
     }
   };
 
@@ -385,6 +403,14 @@ const Clients: React.FC = () => {
         message={`¿Estás seguro de que quieres eliminar ${the('customer')}? Esta acción no se puede deshacer.`}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
+      />
+
+      <ConfirmModal
+        isOpen={withAppointments !== null}
+        title={`Eliminar ${label('customer')} y sus citas`}
+        message={`Hay ${withAppointments?.count} ${withAppointments?.count === 1 ? 'cita registrada' : 'citas registradas'} con ${the('customer')}. Si continúas se borrarán definitivamente, junto con su historial. Esta acción no se puede deshacer. Si prefieres conservar el historial, cancela y archívalo.`}
+        onConfirm={confirmDeleteWithAppointments}
+        onCancel={() => setWithAppointments(null)}
       />
     </div>
   );

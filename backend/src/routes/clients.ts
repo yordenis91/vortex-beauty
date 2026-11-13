@@ -203,15 +203,21 @@ router.delete('/:id', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Client not found' });
     }
 
-    // Un cliente con citas no se borra: el borrado arrastraría su historial. La condición va
+    // Borrado definitivo, a petición expresa (?conCitas=true): se lleva también sus citas (cascada en BD).
+    const conCitas = req.query.conCitas === 'true';
+    // Si no, un cliente con citas no se borra: el borrado arrastraría su historial. La condición va
     // dentro del propio borrado para que una cita creada justo ahora tampoco se pierda.
     const { count } = await prisma.client.deleteMany({
-      where: { id: req.params.id as string, tenantId: req.user!.tenantId, appointments: { none: {} } },
+      where: {
+        id: req.params.id as string,
+        tenantId: req.user!.tenantId,
+        ...(conCitas ? {} : { appointments: { none: {} } }),
+      },
     });
     if (count === 0) {
       const appointments = await prisma.appointment.count({ where: { clientId: existingClient.id, tenantId: req.user!.tenantId } });
       return res.status(409).json({
-        error: `Este cliente tiene ${appointments} ${appointments === 1 ? 'cita registrada' : 'citas registradas'}. Para no perder tu historial, no se puede eliminar: archívalo y dejará de aparecer en tus listas.`,
+        error: `Este cliente tiene ${appointments} ${appointments === 1 ? 'cita registrada' : 'citas registradas'}. Para no perder tu historial, no se puede eliminar sin borrarlas: archívalo y dejará de aparecer en tus listas.`,
         appointments,
       });
     }
