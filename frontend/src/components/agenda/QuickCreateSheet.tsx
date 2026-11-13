@@ -1,3 +1,4 @@
+import PhoneInput from '../PhoneInput';
 import React, { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Check, Loader2, UserPlus, X } from 'lucide-react';
@@ -136,12 +137,11 @@ const Form: React.FC<Omit<Props, 'preset'> & { preset: CreatePreset }> = ({ pres
                 </button>
               )}
               {creating && (
-                <input
+                <PhoneInput
                   aria-label="Teléfono del cliente nuevo"
                   value={newPhone}
-                  onChange={(e) => setNewPhone(e.target.value)}
-                  placeholder="Teléfono del cliente nuevo"
-                  inputMode="tel"
+                  onValueChange={setNewPhone}
+                  placeholder="Teléfono (+53 5555 5555)"
                   className="mt-2 h-12 w-full rounded-xl border border-border bg-card px-4 text-base"
                 />
               )}

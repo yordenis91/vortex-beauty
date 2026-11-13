@@ -1,3 +1,4 @@
+import PhoneInput from '../components/PhoneInput';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -333,7 +334,7 @@ const Professionals: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Teléfono</label>
-                <input className={inputClass} value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                <PhoneInput className={inputClass} value={formData.phone} onValueChange={(phone) => setFormData({ ...formData, phone })} />
               </div>
             </div>
 

@@ -108,7 +108,7 @@ describe('Reserva pública', () => {
       professionalId: 'p-yoel', // un solo profesional: se asigna sin preguntar
       date: iso,
       startTime: '09:30',
-      customer: { name: 'Marta Pérez', phone: '+53 5 555 1234' },
+      customer: { name: 'Marta Pérez', phone: '+5355551234' },
       website: '', // el campo trampa llega vacío
     })
   }, 15000)

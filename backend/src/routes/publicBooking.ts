@@ -4,7 +4,7 @@ import { z } from 'zod';
 import prisma, { basePrisma } from '../prismaClient';
 import { runInTransaction } from '../lib/db';
 import { runWithTenant } from '../lib/tenantContext';
-import { phoneKey } from '../lib/phone';
+import { normalizePhone, phoneKey } from '../lib/phone';
 import { addDaysToDateString, isValidDateString } from '../lib/time';
 import { validateBody } from '../middleware/validate';
 import { captchaSiteKey, verifyCaptcha } from '../services/captcha';
@@ -267,7 +267,7 @@ async function findOrCreateClient(tenantId: string, customer: { name: string; ph
     if (existing.archivedAt) patch.archivedAt = null;
     if (!existing.email && email) patch.email = email;
     if (!existing.phoneKey && key) {
-      patch.phone = customer.phone;
+      patch.phone = normalizePhone(customer.phone) ?? customer.phone;
       patch.phoneKey = key;
     }
     return Object.keys(patch).length ? prisma.client.update({ where: { id: existing.id }, data: patch }) : existing;
@@ -281,7 +281,7 @@ async function findOrCreateClient(tenantId: string, customer: { name: string; ph
   if (!owner) throw new Error('El salón no tiene un administrador');
 
   return prisma.client.create({
-    data: { tenantId, name: customer.name, email, phone: customer.phone || null, phoneKey: key, userId: owner.id },
+    data: { tenantId, name: customer.name, email, phone: normalizePhone(customer.phone) ?? (customer.phone || null), phoneKey: key, userId: owner.id },
   });
 }
 

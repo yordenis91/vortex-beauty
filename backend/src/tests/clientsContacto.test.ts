@@ -40,7 +40,17 @@ describeIfDb('clientes: contacto opcional', () => {
   it('crea un cliente solo con teléfono: sin correo y con el teléfono normalizado', async () => {
     const res = await create({ name: 'Marta', phone: '+53 5 555 1234' });
     expect(res.status).toBe(201);
-    expect(await keyOf(res.body.id)).toMatchObject({ email: null, phone: '+53 5 555 1234', phoneKey: '5355551234' });
+    expect(await keyOf(res.body.id)).toMatchObject({ email: null, phone: '+5355551234', phoneKey: '5355551234' });
+  });
+
+  it('el mismo número escrito de otra forma (con o sin +53, con espacios) es un duplicado', async () => {
+    const first = await create({ name: 'Rosa', phone: '5 5 5 5 7 7 7 7' });
+    expect(first.status).toBe(201);
+    expect(await keyOf(first.body.id)).toMatchObject({ phone: '+5355557777', phoneKey: '5355557777' });
+    for (const variant of ['+53 5555 7777', '(+53) 55557777', '5355557777', '0053 55557777']) {
+      const dup = await create({ name: 'Rosa otra vez', phone: variant });
+      expect(dup.status, variant).toBe(409);
+    }
   });
 
   it('un correo vacío cuenta como sin correo', async () => {

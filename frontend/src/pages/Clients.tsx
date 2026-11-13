@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useLabels } from '@/hooks/useLabels';
 import type { Client } from '../types';
 import { toastUndo } from '../lib/undoToast';
+import PhoneInput from '../components/PhoneInput';
 import ImportContactsDialog from '../components/ImportContactsDialog';
 import { canPickContacts, parseVcf, pickContacts, type ImportableContact } from '../lib/contacts';
 
@@ -382,13 +383,12 @@ const Clients: React.FC = () => {
                   <label className="block text-sm font-medium text-foreground mb-2">
                     Teléfono
                   </label>
-                  <input
-                    type="tel"
+                  <PhoneInput
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onValueChange={(phone) => setFormData({ ...formData, phone })}
                     className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="+53 5 555 1234"
                   />
+                  <p className="mt-1 text-xs text-muted-foreground">Con código de país (+53 para Cuba). Si lo omites, se añade solo.</p>
                 </div>
 
                 {/* Address */}

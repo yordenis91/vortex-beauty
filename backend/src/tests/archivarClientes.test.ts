@@ -133,17 +133,18 @@ describeIfDb('clientes archivados', () => {
           { name: 'Nueva Uno', phone: '+53 5 700 0001' },
           { name: 'Nueva Dos', email: 'Dos@Ejemplo.com' },
           { name: 'Repetida en el lote', phone: '5357000001' },
+          { name: 'Repetida sin código', phone: '57000001' },
           { name: 'Sin datos' },
           { name: 'Correo roto', email: 'no-es-correo' },
         ],
       });
     expect(res.status).toBe(201);
     expect(res.body.created).toBe(2);
-    expect(res.body.skipped.map((s: { name: string }) => s.name).sort()).toEqual(['Correo roto', 'Repetida en el lote', 'Sin datos']);
-    const rows = await adminPool.query('SELECT name, "phoneKey", email FROM "Client" WHERE "tenantId" = $1 AND name LIKE $2 ORDER BY name', [tenantId, 'Nueva%']);
+    expect(res.body.skipped.map((s: { name: string }) => s.name).sort()).toEqual(['Correo roto', 'Repetida en el lote', 'Repetida sin código', 'Sin datos']);
+    const rows = await adminPool.query('SELECT name, phone, "phoneKey", email FROM "Client" WHERE "tenantId" = $1 AND name LIKE $2 ORDER BY name', [tenantId, 'Nueva%']);
     expect(rows.rows).toEqual([
-      { name: 'Nueva Dos', phoneKey: null, email: 'dos@ejemplo.com' },
-      { name: 'Nueva Uno', phoneKey: '5357000001', email: null },
+      { name: 'Nueva Dos', phone: null, phoneKey: null, email: 'dos@ejemplo.com' },
+      { name: 'Nueva Uno', phone: '+5357000001', phoneKey: '5357000001', email: null },
     ]);
     // repetir el mismo lote no crea nada
     const again = await request(app).post('/api/clients/import').set(as(owner)).send({ contacts: [{ name: 'Nueva Uno', phone: '+53 5 700 0001' }] });

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import prisma from '../prismaClient';
 import { imageSchema } from '../lib/images';
-import { phoneKey } from '../lib/phone';
+import { normalizePhone, phoneKey } from '../lib/phone';
 import { runInTransaction } from '../lib/db';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { appointmentScope, requirePermission } from '../middleware/can';
@@ -49,7 +49,8 @@ function normalizeContact<T extends { email?: string; phone?: string }>(data: T)
   const out: Record<string, unknown> = { ...data };
   if ('email' in data) out.email = data.email || null;
   if ('phone' in data) {
-    out.phone = data.phone || null;
+    // Siempre con código de país (+53…); si no se puede interpretar se conserva lo escrito, sin clave.
+    out.phone = normalizePhone(data.phone) ?? (data.phone?.trim() || null);
     out.phoneKey = phoneKey(data.phone);
   }
   return out;
@@ -184,7 +185,7 @@ router.post('/import', requireAdmin, async (req, res) => {
       }
       if (key) usedPhones.add(key);
       if (email) usedEmails.add(email);
-      toCreate.push({ name: c.name, phone: key ? c.phone!.trim() : null, phoneKey: key, email });
+      toCreate.push({ name: c.name, phone: normalizePhone(c.phone), phoneKey: key, email });
     }
 
     const created = toCreate.length

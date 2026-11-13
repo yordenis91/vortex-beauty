@@ -1,3 +1,4 @@
+import PhoneInput from '../../components/PhoneInput';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -337,7 +338,7 @@ const Booking: React.FC = () => {
           </div>
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">Teléfono</label>
-            <input id="phone" type="tel" inputMode="tel" className={inputClass} autoComplete="tel" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
+            <PhoneInput id="phone" className={inputClass} value={customer.phone} onValueChange={(phone) => setCustomer({ ...customer, phone })} />
           </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">Correo (para enviarte la confirmación)</label>
