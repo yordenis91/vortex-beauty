@@ -28,7 +28,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install frontend dependencies
         working-directory: frontend
-        run: npm ci
+        # El lock del proyecto se genera con --legacy-peer-deps (igual que el Dockerfile y ci.yml).
+        run: npm ci --legacy-peer-deps
       - name: Build frontend
         working-directory: frontend
         run: npm run build
