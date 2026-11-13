@@ -112,4 +112,16 @@ describeIfDb('clientes archivados', () => {
     expect(await list('?search=Mar')).toEqual([]);
     await request(app).post(`/api/clients/${maria}/restore`).set(as(owner));
   });
+  it('con ?conCitas=true el dueño borra al cliente y todas sus citas; un profesional y otro salón no pueden', async () => {
+    const count = async () => (await adminPool.query('SELECT count(*)::int AS n FROM "Appointment" WHERE "clientId" = $1', [maria])).rows[0].n;
+    expect(await count()).toBe(1);
+    expect((await request(app).delete(`/api/clients/${maria}?conCitas=true`).set(as(staff))).status).toBe(403);
+    expect((await request(app).delete(`/api/clients/${ajeno}?conCitas=true`).set(as(owner))).status).toBe(404);
+    expect(await count()).toBe(1);
+
+    expect((await request(app).delete(`/api/clients/${maria}?conCitas=true`).set(as(owner))).status).toBe(200);
+    expect(await count()).toBe(0);
+    expect((await adminPool.query('SELECT 1 FROM "Client" WHERE id = $1', [maria])).rowCount).toBe(0);
+    expect((await adminPool.query('SELECT 1 FROM "Client" WHERE id = $1', [ajeno])).rowCount).toBe(1);
+  });
 });

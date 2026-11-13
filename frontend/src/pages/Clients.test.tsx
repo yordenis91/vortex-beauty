@@ -110,6 +110,26 @@ describe('Clientes', () => {
     expect(screen.getByText('Carlos Méndez')).toBeInTheDocument()
   })
 
+  it('si tiene citas, una segunda confirmación permite borrarlo junto con ellas', async () => {
+    mock([client()])
+    const urls: string[] = []
+    server.use(
+      http.delete(`${API}/clients/:id`, ({ request }) => {
+        urls.push(new URL(request.url).search)
+        if (!new URL(request.url).searchParams.get('conCitas')) return HttpResponse.json({ error: 'tiene citas', appointments: 2 }, { status: 409 })
+        return HttpResponse.json({ message: 'ok' })
+      }),
+    )
+    const user = userEvent.setup()
+    renderWithProviders(<Clients />)
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar' })[0])
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar' }).at(-1)!)
+    await screen.findByText(/Hay 2 citas registradas con el cliente/)
+    await user.click(screen.getAllByRole('button', { name: 'Eliminar' }).at(-1)!)
+    await waitFor(() => expect(urls).toEqual(['', '?conCitas=true']))
+  })
+
   it('archivar saca al cliente de la lista, avisa con «Deshacer» y deshacer lo restaura', async () => {
     const posts: string[] = []
     const archived: string[] = []
