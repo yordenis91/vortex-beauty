@@ -1,11 +1,11 @@
 import PhoneInput from '../../components/PhoneInput';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { addDays, endOfMonth, format, isBefore, startOfDay, startOfMonth } from 'date-fns';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { addDays, addMonths, endOfMonth, format, isBefore, startOfDay, startOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import toast from 'react-hot-toast';
-import { CalendarCheck, Check, ChevronLeft, Clock, Copy, User, Users } from 'lucide-react';
+import { CalendarCheck, Check, ChevronLeft, ChevronRight, Clock, Copy, User, Users } from 'lucide-react';
 import {
   apiErrorMessage,
   publicApi,
@@ -14,7 +14,8 @@ import {
   takePrefetchedCatalog,
   type PublicSlot,
 } from '../../lib/publicApi';
-import LazyCalendar from './LazyCalendar';
+import BookingCalendar from './BookingCalendar';
+import CategorySection from './CategorySection';
 import { loadCalendar } from './calendarLoader';
 import TelegramOptIn from './TelegramOptIn';
 import AddToCalendar from '../../components/AddToCalendar';
@@ -30,8 +31,41 @@ const cap = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
 const inputClass =
   'w-full px-4 py-3 border border-border rounded-xl bg-card text-foreground focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none';
 
+/** Ficha tocable (servicio, profesional): borde y sombra, relieve al pasar el cursor y «se hunde» al pulsarla. */
+const choiceCardClass =
+  'group w-full text-left bg-card rounded-2xl border border-border p-4 shadow-sm transition active:scale-[0.99] active:bg-muted/60 hover:border-blue-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 motion-reduce:transition-none motion-reduce:active:scale-100';
+
+const slotClass =
+  'min-h-12 rounded-xl border border-border bg-card text-base font-semibold text-foreground shadow-sm transition active:scale-95 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:hover:bg-blue-900/40 dark:hover:text-blue-200 motion-reduce:transition-none motion-reduce:active:scale-100';
+
+const PERIODS = [
+  { key: 'morning', label: 'Mañana', matches: (hour: number) => hour < 12 },
+  { key: 'afternoon', label: 'Tarde', matches: (hour: number) => hour >= 12 && hour < 18 },
+  { key: 'evening', label: 'Noche', matches: (hour: number) => hour >= 18 },
+];
+
+/** Rango de fechas que se pide al servidor para un mes: nunca antes de hoy. */
+function monthRange(month: Date, today: Date) {
+  const start = startOfMonth(month);
+  return { from: format(isBefore(start, today) ? today : start, 'yyyy-MM-dd'), to: format(endOfMonth(month), 'yyyy-MM-dd') };
+}
+
+/** Consulta de los días con huecos de un mes; la usan tanto la pantalla como la precarga, con la misma clave de caché. */
+function calendarQuery(tenantSlug: string, serviceId: string, professionalId: string, month: Date, today: Date) {
+  const { from, to } = monthRange(month, today);
+  return {
+    queryKey: ['public-calendar', tenantSlug, serviceId, professionalId, from, to],
+    queryFn: async () =>
+      (await publicApi.get<{ availableDates: string[] }>(`/${tenantSlug}/calendar`, { params: { serviceId, professionalId, from, to } })).data
+        .availableDates,
+    // Sin esto cada precarga y cada visita al mes volvería a pedir lo mismo (por defecto los datos nacen caducados).
+    staleTime: 60_000,
+  };
+}
+
 const Booking: React.FC = () => {
   const { tenantSlug = '' } = useParams<{ tenantSlug: string }>();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('service');
   const [serviceId, setServiceId] = useState('');
   const [professionalId, setProfessionalId] = useState<string>('any');
@@ -43,6 +77,7 @@ const Booking: React.FC = () => {
   const [website, setWebsite] = useState(''); // campo trampa para bots
   const [error, setError] = useState('');
   const [booked, setBooked] = useState<PublicAppointment | null>(null);
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   // Cada paso empieza arriba: con una lista larga de servicios u horas, el siguiente paso no debe quedar a media pantalla.
   useEffect(() => {
@@ -72,18 +107,29 @@ const Booking: React.FC = () => {
 
   const dateStr = date ? format(date, 'yyyy-MM-dd') : '';
   const today = startOfDay(new Date());
+  const maxDate = addDays(today, data?.maxAdvanceDays ?? 0);
 
   // Días del mes visible que tienen algún hueco
-  const monthStart = startOfMonth(month);
-  const from = format(isBefore(monthStart, today) ? today : monthStart, 'yyyy-MM-dd');
-  const to = format(endOfMonth(month), 'yyyy-MM-dd');
   const calendar = useQuery({
-    queryKey: ['public-calendar', tenantSlug, serviceId, professionalId, from, to],
-    queryFn: async () =>
-      (await publicApi.get<{ availableDates: string[] }>(`/${tenantSlug}/calendar`, { params: { serviceId, professionalId, from, to } })).data
-        .availableDates,
-    enabled: !!serviceId && step === 'date' && from <= to,
+    ...calendarQuery(tenantSlug, serviceId, professionalId, month, today),
+    enabled: !!serviceId && step === 'date',
   });
+
+  // Los días con huecos se piden en cuanto se sabe servicio y profesional (no al abrir el calendario), así que al llegar
+  // al paso del día los datos ya suelen estar. Se precargan también los meses vecinos para que cambiar de mes sea instantáneo.
+  const prefetchCalendar = (svc: string, pro: string, around: Date) => {
+    const months = [around, addMonths(around, 1)];
+    if (startOfMonth(around) > startOfMonth(today)) months.push(addMonths(around, -1));
+    for (const m of months) {
+      if (startOfMonth(m) <= maxDate) void queryClient.prefetchQuery(calendarQuery(tenantSlug, svc, pro, m, today));
+    }
+  };
+  const visibleMonthKey = format(month, 'yyyy-MM');
+  useEffect(() => {
+    if (step === 'date' && calendar.isSuccess) prefetchCalendar(serviceId, professionalId, month);
+    // Solo cuando cambia lo que se está mirando: prefetchCalendar se redefine en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, calendar.isSuccess, serviceId, professionalId, visibleMonthKey]);
 
   const slots = useQuery({
     queryKey: ['public-slots', tenantSlug, serviceId, professionalId, dateStr],
@@ -150,9 +196,19 @@ const Booking: React.FC = () => {
     setServiceId(id);
     setDate(undefined);
     setStartTime('');
+    setMonth(new Date());
     const pros = data.professionals.filter((p) => p.serviceIds.includes(id));
-    setProfessionalId(pros.length === 1 ? pros[0].id : 'any');
+    const proId = pros.length === 1 ? pros[0].id : 'any';
+    setProfessionalId(proId);
+    // Con varios profesionales todavía falta elegir; con uno solo (o ninguna elección posible) ya se puede pedir el calendario.
+    if (pros.length <= 1) prefetchCalendar(id, proId, new Date());
     setStep(pros.length > 1 ? 'professional' : 'date');
+  };
+
+  const chooseProfessional = (id: string) => {
+    setProfessionalId(id);
+    prefetchCalendar(serviceId, id, month);
+    setStep('date');
   };
 
   const submit = (e: React.FormEvent) => {
@@ -187,25 +243,48 @@ const Booking: React.FC = () => {
     }
   };
 
-  const maxDate = addDays(today, data.maxAdvanceDays);
-  const availableSet = new Set(calendar.data ?? []);
+  const availableDates = calendar.data ? new Set(calendar.data) : undefined;
+
+  // Horas agrupadas por parte del día; los rótulos solo aparecen si hay horarios en más de una.
+  const slotGroups = PERIODS.map((p) => ({ ...p, items: (slots.data ?? []).filter((s) => p.matches(Number(s.startTime.slice(0, 2)))) })).filter((g) => g.items.length > 0);
 
   return (
     <PublicShell title={data.name} salon={data} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
       {step !== 'service' && step !== 'done' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <button onClick={back} className="inline-flex items-center gap-1 py-1 text-sm text-muted-foreground hover:text-foreground">
+            <button
+              type="button"
+              onClick={back}
+              className="-ml-2 inline-flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-medium text-foreground/80 transition hover:bg-card hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
               <ChevronLeft className="h-4 w-4" /> Atrás
             </button>
-            <span className="text-xs text-muted-foreground">Paso {stepNumber} de {stepCount}</span>
+            <span className="text-xs font-medium text-muted-foreground">Paso {stepNumber} de {stepCount}</span>
+          </div>
+          <div
+            role="progressbar"
+            aria-label="Progreso de la reserva"
+            aria-valuemin={1}
+            aria-valuemax={stepCount}
+            aria-valuenow={stepNumber}
+            className="flex gap-1.5"
+          >
+            {Array.from({ length: stepCount }, (_, i) => (
+              <span key={i} className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${i < stepNumber ? 'bg-blue-600' : 'bg-border'}`} />
+            ))}
           </div>
           {service && step !== 'details' && (
-            <div className="rounded-xl border border-border bg-card px-3 py-2 text-sm">
-              <span className="font-medium text-foreground">{service.name}</span>
-              <span className="text-muted-foreground">
-                {' · '}{money(service.price, service.currency)}
-                {professionalName && step !== 'professional' ? ` · ${professionalName}` : ''}
+            <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5 text-sm shadow-sm">
+              <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40">
+                <Check className="h-3.5 w-3.5" />
+              </span>
+              <span className="min-w-0">
+                <span className="font-medium text-foreground">{service.name}</span>
+                <span className="text-muted-foreground">
+                  {' · '}{money(service.price, service.currency)}
+                  {professionalName && step !== 'professional' ? ` · ${professionalName}` : ''}
+                </span>
               </span>
             </div>
           )}
@@ -215,58 +294,64 @@ const Booking: React.FC = () => {
       {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200">{error}</div>}
 
       {step === 'service' && (
-        <section className="space-y-5">
+        <section className="space-y-4">
           <h2 className="text-lg font-semibold text-foreground">¿Qué {word('service', 'servicio')} quieres?</h2>
           {data.services.length === 0 && <p className="text-muted-foreground">Este negocio aún no tiene {word('services', 'servicios')} disponibles.</p>}
-          {Object.entries(grouped).map(([category, items]) => (
-            <div key={category} className="space-y-2">
-              <h3 className="text-xs uppercase tracking-wide text-muted-foreground">{category}</h3>
-              {items.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => chooseService(s.id)}
-                  className="w-full text-left bg-card rounded-2xl border border-border p-4 hover:border-blue-400 hover:shadow-sm transition"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="font-medium text-foreground">{s.name}</div>
-                      {s.description && <div className="text-sm text-muted-foreground mt-0.5">{s.description}</div>}
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
-                        <Clock className="h-3.5 w-3.5" /> {s.durationMinutes} min
+          <div className="space-y-1">
+            {Object.entries(grouped).map(([category, items]) => (
+              <CategorySection
+                key={category}
+                title={category}
+                count={items.length}
+                collapsible={Object.keys(grouped).length > 1}
+                open={!collapsedCategories[category]}
+                onToggle={() => setCollapsedCategories((prev) => ({ ...prev, [category]: !prev[category] }))}
+              >
+                {items.map((s) => (
+                  <button key={s.id} type="button" onClick={() => chooseService(s.id)} className={choiceCardClass}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 font-semibold text-foreground">{s.name}</div>
+                      <div className="shrink-0 whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-0.5 text-sm font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                        {money(s.price, s.currency)}
                       </div>
                     </div>
-                    <div className="font-semibold text-foreground whitespace-nowrap">{money(s.price, s.currency)}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ))}
+                    {s.description && <div className="mt-0.5 text-sm text-muted-foreground">{s.description}</div>}
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="h-3.5 w-3.5" /> {s.durationMinutes} min
+                      </div>
+                      <span aria-hidden="true" className="inline-flex items-center gap-0.5 text-sm font-semibold text-blue-600">
+                        Elegir <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                      </span>
+                    </div>
+                  </button>
+                ))}
+              </CategorySection>
+            ))}
+          </div>
         </section>
       )}
 
       {step === 'professional' && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">¿Con quién?</h2>
-          <button
-            onClick={() => { setProfessionalId('any'); setStep('date'); }}
-            className="w-full text-left bg-card rounded-2xl border border-border p-4 hover:border-blue-400 flex items-center gap-3"
-          >
-            <Users className="h-5 w-5 text-blue-600" />
-            <div>
-              <div className="font-medium text-foreground">Cualquiera disponible</div>
+          <button type="button" onClick={() => chooseProfessional('any')} className={`${choiceCardClass} flex items-center gap-3`}>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40">
+              <Users className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-foreground">Cualquiera disponible</div>
               <div className="text-sm text-muted-foreground">Te asignamos quien tenga hueco a esa hora</div>
             </div>
+            <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
           </button>
           {professionals.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => { setProfessionalId(p.id); setStep('date'); }}
-              className="w-full text-left bg-card rounded-2xl border border-border p-4 hover:border-blue-400 flex items-center gap-3"
-            >
-              <span className="h-9 w-9 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: p.color || '#3B82F6' }}>
+            <button key={p.id} type="button" onClick={() => chooseProfessional(p.id)} className={`${choiceCardClass} flex items-center gap-3`}>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white" style={{ backgroundColor: p.color || '#3B82F6' }}>
                 <User className="h-4 w-4" />
               </span>
-              <span className="font-medium text-foreground">{p.name}</span>
+              <span className="min-w-0 flex-1 font-semibold text-foreground">{p.name}</span>
+              <ChevronRight aria-hidden="true" className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
             </button>
           ))}
         </section>
@@ -274,46 +359,61 @@ const Booking: React.FC = () => {
 
       {step === 'date' && (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-foreground">Elige el día</h2>
-          <div className="bg-card rounded-2xl border border-border p-3 overflow-x-auto">
-            <LazyCalendar
-              mode="single"
-              locale={es}
-              month={month}
-              onMonthChange={(m) => { setMonth(m); setError(''); }}
-              selected={date}
-              onSelect={(d) => { if (d) { setDate(d); setStartTime(''); setStep('time'); } }}
-              disabled={(d) => isBefore(startOfDay(d), today) || d > maxDate || (calendar.isSuccess && !availableSet.has(format(d, 'yyyy-MM-dd')))}
-              className="w-full min-w-[17rem]"
-            />
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Elige el día</h2>
+            <p className="text-sm text-muted-foreground">Toca un día resaltado para ver sus horarios.</p>
           </div>
-          {calendar.isFetching && <p className="text-xs text-muted-foreground text-center">Buscando días con horarios…</p>}
-          {calendar.isSuccess && availableSet.size === 0 && (
-            <p className="text-sm text-muted-foreground text-center">No hay días disponibles este mes. Prueba con el siguiente.</p>
-          )}
+          <BookingCalendar
+            month={month}
+            onMonthChange={(m) => { setMonth(m); setError(''); }}
+            selected={date}
+            onSelect={(d) => { setDate(d); setStartTime(''); setStep('time'); }}
+            today={today}
+            maxDate={maxDate}
+            availableDates={availableDates}
+            error={calendar.isError}
+            onRetry={() => void calendar.refetch()}
+          />
         </section>
       )}
 
       {step === 'time' && date && (
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-foreground">{cap(format(date, "EEEE d 'de' MMMM", { locale: es }))}</h2>
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">{cap(format(date, "EEEE d 'de' MMMM", { locale: es }))}</h2>
+            <p className="text-sm text-muted-foreground">
+              Selecciona la hora de tu {word('appointment', 'cita')}{service ? ` · dura ${service.durationMinutes} min` : ''}
+            </p>
+          </div>
           {slots.isLoading ? (
-            <Spinner />
+            <div role="status" aria-label="Cargando horarios" className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {Array.from({ length: 8 }, (_, i) => (
+                <div key={i} aria-hidden="true" className="h-12 animate-pulse rounded-xl bg-card ring-1 ring-border motion-reduce:animate-none" style={{ animationDelay: `${i * 70}ms` }} />
+              ))}
+            </div>
           ) : (slots.data ?? []).length === 0 ? (
             <div className="bg-card rounded-2xl border border-border p-6 text-center text-muted-foreground">
               No quedan horarios este día.{' '}
               <button className="text-blue-600 underline" onClick={() => setStep('date')}>Elegir otro día</button>
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-              {slots.data!.map((s) => (
-                <button
-                  key={s.startTime}
-                  onClick={() => { setStartTime(s.startTime); setError(''); setStep('details'); }}
-                  className="py-3 rounded-xl border border-border bg-card text-foreground font-medium hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition"
-                >
-                  {s.startTime}
-                </button>
+            <div className="space-y-4">
+              {slotGroups.map((group) => (
+                <div key={group.key} className="space-y-2">
+                  {slotGroups.length > 1 && <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{group.label}</h3>}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {group.items.map((s) => (
+                      <button
+                        key={s.startTime}
+                        type="button"
+                        onClick={() => { setStartTime(s.startTime); setError(''); setStep('details'); }}
+                        className={slotClass}
+                      >
+                        {s.startTime}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
@@ -322,13 +422,24 @@ const Booking: React.FC = () => {
 
       {step === 'details' && service && date && (
         <form onSubmit={submit} className="space-y-4">
-          <div className="bg-card rounded-2xl border border-border p-4 space-y-1">
-            <div className="font-medium text-foreground">{service.name}</div>
-            <div className="text-sm text-muted-foreground">
-              {cap(format(date, "EEEE d 'de' MMMM", { locale: es }))} · {startTime}
-              {professionalName ? ` · ${professionalName}` : ''}
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-sm space-y-2.5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 font-semibold text-foreground">{service.name}</div>
+              <div className="shrink-0 whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-0.5 text-sm font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                {money(service.price, service.currency)}
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">{service.durationMinutes} min · {money(service.price, service.currency)}</div>
+            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CalendarCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                {cap(format(date, "EEEE d 'de' MMMM", { locale: es }))} · {startTime}
+                {professionalName ? ` · ${professionalName}` : ''}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <span>{service.durationMinutes} min</span>
+            </div>
           </div>
 
           <h2 className="text-lg font-semibold text-foreground">Tus datos</h2>
@@ -360,7 +471,7 @@ const Booking: React.FC = () => {
           <button
             type="submit"
             disabled={book.isPending}
-            className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50"
+            className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-semibold shadow-sm transition hover:bg-blue-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:opacity-50"
           >
             {book.isPending ? 'Reservando…' : `Confirmar ${word('appointment', 'cita')}`}
           </button>
