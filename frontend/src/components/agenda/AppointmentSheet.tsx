@@ -1,12 +1,14 @@
 import React from 'react';
-import { CalendarPlus, Check, Pencil, Phone, MessageCircle, UserX, X } from 'lucide-react';
+import { CalendarPlus, Check, Link2, Pencil, Phone, MessageCircle, UserX, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import type { Appointment, AppointmentStatus } from '../../types';
-import { confirmationMessage, whatsappLink } from '../../lib/whatsapp';
+import { appointmentLink, confirmationMessage, whatsappLink } from '../../lib/whatsapp';
+import { copyText } from '../../lib/clipboard';
 
 interface Props {
   appointment: Appointment | null;
   salonName?: string;
+  salonSlug?: string;
   onClose: () => void;
   onStatus: (appointment: Appointment, status: AppointmentStatus) => void;
   onEdit: (appointment: Appointment) => void;
@@ -25,12 +27,14 @@ const STATUS_LABEL: Record<AppointmentStatus, string> = {
 const action = 'flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-base font-medium hover:bg-muted active:bg-muted';
 
 /** Hoja que sube desde abajo al tocar una cita: contactar al cliente y cambiar su estado. */
-const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, onClose, onStatus, onEdit, onNext }) => {
+const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, salonSlug, onClose, onStatus, onEdit, onNext }) => {
   const a = appointment;
   const phone = a?.client?.phone ?? null;
   const date = a?.date.split('T')[0] ?? '';
-  const wa = a ? whatsappLink(phone, confirmationMessage({ clientName: a.client?.name, salonName, serviceName: a.serviceName, date, time: a.startTime })) : null;
   const active = a?.status === 'SCHEDULED' || a?.status === 'PENDING';
+  // Solo una cita vigente lleva enlace: el cliente lo usa para verla, cambiarla o cancelarla.
+  const link = a && active ? appointmentLink(salonSlug, a.cancelToken) : null;
+  const wa = a ? whatsappLink(phone, confirmationMessage({ clientName: a.client?.name, salonName, serviceName: a.serviceName, date, time: a.startTime, manageUrl: link })) : null;
 
   const run = (fn: () => void) => () => {
     fn();
@@ -59,6 +63,11 @@ const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, onClose, on
                 <a href={wa} target="_blank" rel="noreferrer" className={action}>
                   <MessageCircle className="h-5 w-5 text-green-600" /> Enviar confirmación por WhatsApp
                 </a>
+              )}
+              {link && (
+                <button type="button" className={action} onClick={() => void copyText(link, 'Enlace de la cita copiado')}>
+                  <Link2 className="h-5 w-5 text-muted-foreground" /> Copiar enlace de la cita
+                </button>
               )}
               {a.status === 'PENDING' && (
                 <button type="button" className={action} onClick={run(() => onStatus(a, 'SCHEDULED'))}>

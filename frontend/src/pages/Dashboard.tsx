@@ -45,7 +45,7 @@ const Dashboard: React.FC = () => {
         <p className="mt-1 text-sm text-muted-foreground">Resumen de tu agenda.</p>
       </div>
 
-      {next && <NextAppointmentCard next={next} today={today} salonName={settings?.name} appointmentWord={label('appointment')} />}
+      {next && <NextAppointmentCard next={next} today={today} salonName={settings?.name} salonSlug={settings?.slug} appointmentWord={label('appointment')} />}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => (

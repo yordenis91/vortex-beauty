@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { confirmationMessage, whatsappLink, whatsappPhone } from './whatsapp'
+import { appointmentLink, confirmationMessage, whatsappLink, whatsappPhone } from './whatsapp'
 
 describe('WhatsApp', () => {
   it('normaliza los números a solo dígitos con prefijo', () => {
@@ -18,5 +18,14 @@ describe('WhatsApp', () => {
       'Hola Yadira, te confirmo tu cita en Yumi Manicure: Uñas acrílicas, jueves 22 de octubre a las 13:00. ¡Te esperamos!',
     )
     expect(confirmationMessage({ serviceName: 'Corte', date: '2026-10-23', time: '09:30' })).toMatch(/^Hola, te confirmo tu cita: Corte, viernes 23 de octubre a las 09:30/)
+  })
+  it('con enlace, el mensaje invita a ver, cambiar o cancelar la cita', () => {
+    const url = 'https://afilaoapp.com/yumi/mi-cita/tok123'
+    expect(confirmationMessage({ serviceName: 'Corte', date: '2026-10-23', time: '09:30', manageUrl: url })).toMatch(/¡Te esperamos!\n\nPuedes ver, cambiar o cancelar tu cita aquí: https:\/\/afilaoapp\.com\/yumi\/mi-cita\/tok123$/)
+  })
+  it('appointmentLink arma la URL pública o devuelve null sin salón o sin token', () => {
+    expect(appointmentLink('yumi', 'tok', 'https://afilaoapp.com')).toBe('https://afilaoapp.com/yumi/mi-cita/tok')
+    expect(appointmentLink(undefined, 'tok', 'https://x')).toBeNull()
+    expect(appointmentLink('yumi', null, 'https://x')).toBeNull()
   })
 })

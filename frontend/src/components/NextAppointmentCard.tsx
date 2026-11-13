@@ -1,26 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Check, MessageCircle, Phone } from 'lucide-react';
+import { Check, Link2, MessageCircle, Phone } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 import { useAppointmentActions } from '../hooks/useAppointmentActions';
 import { untilText, type NextAppointment } from '../lib/agenda';
-import { confirmationMessage, whatsappLink } from '../lib/whatsapp';
+import { appointmentLink, confirmationMessage, whatsappLink } from '../lib/whatsapp';
+import { copyText } from '../lib/clipboard';
 
 interface Props {
   next: NextAppointment;
   today: string;
   salonName?: string;
+  salonSlug?: string;
   appointmentWord: string;
 }
 
 /** Lo que toca hacer ahora: la cita en curso o la siguiente, con contacto y «Completar» a un toque. */
-const NextAppointmentCard: React.FC<Props> = ({ next, today, salonName, appointmentWord }) => {
+const NextAppointmentCard: React.FC<Props> = ({ next, today, salonName, salonSlug, appointmentWord }) => {
   const { setStatus } = useAppointmentActions();
   const a = next.appointment;
   const day = a.date.split('T')[0];
   const phone = a.client?.phone ?? null;
-  const wa = whatsappLink(phone, confirmationMessage({ clientName: a.client?.name, salonName, serviceName: a.serviceName, date: day, time: a.startTime }));
+  const link = appointmentLink(salonSlug, a.cancelToken);
+  const wa = whatsappLink(phone, confirmationMessage({ clientName: a.client?.name, salonName, serviceName: a.serviceName, date: day, time: a.startTime, manageUrl: link }));
 
   const when =
     next.state === 'now'
@@ -48,6 +51,11 @@ const NextAppointmentCard: React.FC<Props> = ({ next, today, salonName, appointm
           <a href={wa} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium hover:bg-muted">
             <MessageCircle className="h-4 w-4 text-green-600" /> WhatsApp
           </a>
+        )}
+        {link && (
+          <button type="button" onClick={() => void copyText(link, 'Enlace de la cita copiado')} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium hover:bg-muted">
+            <Link2 className="h-4 w-4 text-muted-foreground" /> Copiar enlace
+          </button>
         )}
         {next.state === 'now' && (
           <button type="button" onClick={() => setStatus(a, 'COMPLETED')} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700">
