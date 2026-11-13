@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { ImportableContact } from '../lib/contacts';
+import { normalizePhone } from '../lib/phone';
 import { useImportClients } from '../hooks/useQueries';
 import toast from 'react-hot-toast';
 
@@ -80,7 +81,7 @@ export default function ImportContactsDialog({ contacts, onClose }: Props) {
                 <input type="checkbox" checked={selected.has(i)} onChange={() => toggle(i)} aria-label={c.name} />
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-medium text-foreground">{c.name}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{[c.phone, c.email].filter(Boolean).join(' · ')}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{[normalizePhone(c.phone) ?? c.phone, c.email].filter(Boolean).join(' · ')}</span>
                 </span>
               </label>
             </li>

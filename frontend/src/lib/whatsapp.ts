@@ -1,15 +1,12 @@
+import { normalizePhone } from './phone';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale/es';
 
 /**
- * Número listo para wa.me: solo dígitos y con prefijo de país. Un móvil cubano de 8 cifras
- * que empieza por 5 (5xxxxxxx) se completa con el 53; el resto se deja como viene.
+ * Número listo para wa.me: solo dígitos y con prefijo de país (+53 si no lo trae; ver lib/phone).
  */
 export function whatsappPhone(raw?: string | null): string | null {
-  const digits = (raw ?? '').replace(/\D/g, '');
-  if (digits.length < 8 || digits.length > 15) return null;
-  if (digits.length === 8 && digits.startsWith('5')) return `53${digits}`;
-  return digits;
+  return normalizePhone(raw)?.slice(1) ?? null;
 }
 
 export function whatsappLink(phone: string | null | undefined, text: string): string | null {

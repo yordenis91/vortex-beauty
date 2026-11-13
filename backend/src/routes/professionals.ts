@@ -1,3 +1,4 @@
+import { normalizePhone } from '../lib/phone';
 import { Router } from 'express';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
@@ -35,7 +36,8 @@ const quotaSlotItem = z.object({
 const professionalBody = z.object({
   name: z.string().min(1, 'El nombre es obligatorio'),
   email: z.string().email().optional().or(z.literal('')),
-  phone: z.string().optional(),
+  // Siempre con código de país (+53…); si no se puede interpretar se conserva lo escrito.
+  phone: z.string().optional().transform((v) => (v ? normalizePhone(v) ?? v.trim() : v)),
   color: z.string().optional(),
   isActive: z.boolean().optional(),
   acceptsOnlineBookings: z.boolean().optional(),

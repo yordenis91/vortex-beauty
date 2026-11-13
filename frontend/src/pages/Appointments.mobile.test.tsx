@@ -218,7 +218,7 @@ describe('Agenda del móvil', () => {
     await user.click(await within(sheet).findByRole('button', { name: '15:00' }))
     await user.click(within(sheet).getByRole('button', { name: 'Agendar' }))
     await waitFor(() => expect(posts.filter((p) => p.url === '/appointments')).toHaveLength(1))
-    expect(posts[0]).toEqual({ url: '/clients', body: { name: 'Marta Díaz', phone: '+53 5 555 7777' } })
+    expect(posts[0]).toEqual({ url: '/clients', body: { name: 'Marta Díaz', phone: '+5355557777' } })
     expect(posts[1].body).toMatchObject({ clientId: 'c-nuevo', startTime: '15:00' })
   })
 
