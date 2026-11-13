@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, onTestFinished } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
@@ -93,6 +93,26 @@ describe('Configuración por fichas', () => {
     await user.click(screen.getByRole('tab', { name: 'Cierres' }))
     expect(panel('cierres')).toBeVisible()
     expect(panel('horarios')).not.toBeVisible()
+  })
+
+  it('Cierres: «Días Configurados» muestra el mismo día que se eligió (no el anterior)', async () => {
+    // El fallo solo se ve al oeste de UTC (Cuba, UTC-5): se fija esa zona aunque el CI corra en UTC.
+    const previousTz = process.env.TZ
+    process.env.TZ = 'America/Havana'
+    onTestFinished(() => {
+      if (previousTz === undefined) delete process.env.TZ
+      else process.env.TZ = previousTz
+    })
+    mock()
+    server.use(http.get(`${API}/closed-dates`, () => HttpResponse.json([{ id: 'd1', date: '2026-11-20', reason: 'Feriado' }, { id: 'd2', date: '2026-01-01', reason: null }])))
+    const user = userEvent.setup()
+    renderWithProviders(<Settings />, { route: '/admin/settings' })
+    await screen.findByText('Tipo de negocio')
+    await user.click(screen.getByRole('tab', { name: 'Cierres' }))
+    expect(await screen.findByText('20/11/2026')).toBeVisible()
+    expect(screen.getByText('01/01/2026')).toBeVisible()
+    expect(screen.queryByText('19/11/2026')).not.toBeInTheDocument()
+    expect(screen.queryByText('31/12/2025')).not.toBeInTheDocument()
   })
 
   it('cada día de Horarios se muestra resumido y se despliega para editarlo', async () => {
