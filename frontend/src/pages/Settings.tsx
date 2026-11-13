@@ -1,3 +1,4 @@
+import { formatYmd } from '../lib/dates';
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -557,11 +558,7 @@ const Settings: React.FC = () => {
                   <div key={closedDate.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
                     <div>
                       <span className="text-sm font-medium text-foreground">
-                        {new Date(closedDate.date).toLocaleDateString('es-ES', {
-                          day: '2-digit',
-                          month: '2-digit',
-                          year: 'numeric',
-                        })}
+                        {formatYmd(closedDate.date)}
                       </span>
                       {closedDate.reason && (
                         <span className="text-sm text-muted-foreground ml-2">({closedDate.reason})</span>

@@ -1,3 +1,4 @@
+import { formatYmd } from '../lib/dates';
 import { appointmentLink, confirmationMessage, whatsappLink } from '../lib/whatsapp';
 import { copyText } from '../lib/clipboard';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -961,7 +962,7 @@ const Appointments: React.FC = () => {
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); }}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>{editingAppointment ? `Editar ${label('appointment')}` : `Crear ${label('appointment')}`} {selectedDate ? ` • ${format(new Date(selectedDate), 'dd/MM/yyyy', { locale: es })}` : ''}</DialogTitle>
+            <DialogTitle>{editingAppointment ? `Editar ${label('appointment')}` : `Crear ${label('appointment')}`} {selectedDate ? ` • ${formatYmd(selectedDate)}` : ''}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             <div className="border-b border-border pb-4">
