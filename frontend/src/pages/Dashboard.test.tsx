@@ -66,7 +66,8 @@ describe('Panel de control', () => {
   it('lista las próximas, ordenadas como llegan, solo las programadas', async () => {
     mockPanel({}, [apt('a1', {}), apt('a2', { client: { id: 'c2', name: 'Luis Pérez' }, startTime: '11:00' }), apt('a3', { status: 'CANCELLED', client: { id: 'c3', name: 'Cancelado' } })])
     renderWithProviders(<Dashboard />)
-    expect(await screen.findByText('Carlos Méndez')).toBeInTheDocument()
+    // Según la hora, Carlos también sale en «próxima cita»: basta con que aparezca en la lista.
+    expect((await screen.findAllByText('Carlos Méndez')).length).toBeGreaterThan(0)
     expect(screen.getByText('Luis Pérez')).toBeInTheDocument()
     expect(screen.queryByText('Cancelado')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: /Ver agenda/ })).toHaveAttribute('href', '/admin/appointments')
