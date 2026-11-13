@@ -41,7 +41,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
   try {
     decoded = jwt.verify(token, config.jwtSecret);
   } catch {
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
   if (!decoded.tenantId) {
