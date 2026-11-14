@@ -6,13 +6,14 @@ import { es } from 'date-fns/locale/es';
 import { CalendarDays, Search, User } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
-import { canManage, type Appointment, type Client } from '../types';
+import { canManage, type Appointment, type AppointmentStatus, type Client } from '../types';
+import { APPOINTMENT_STATUS } from '../lib/appointmentStatus';
 
 const MIN_CHARS = 2;
 
 type Result =
   | { kind: 'client'; id: string; title: string; detail: string; to: string }
-  | { kind: 'appointment'; id: string; title: string; detail: string; to: string };
+  | { kind: 'appointment'; id: string; title: string; detail: string; to: string; status: AppointmentStatus };
 
 /** Buscador de la barra superior: clientes (por nombre, teléfono o correo) y citas (por cliente o servicio). */
 const GlobalSearch: React.FC = () => {
@@ -81,6 +82,7 @@ const GlobalSearch: React.FC = () => {
         title: `${a.client?.name ?? 'Cliente'} · ${a.serviceName}`,
         detail: `${format(new Date(`${day}T00:00:00`), "EEE d 'de' MMM", { locale: es })}, ${a.startTime}`,
         to: `/admin/appointments?fecha=${day}&cita=${a.id}`,
+        status: a.status,
       });
     }
     return list;
@@ -118,6 +120,7 @@ const GlobalSearch: React.FC = () => {
         <div className="px-3 pb-1 pt-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
         {items.map((r) => {
           const index = results.indexOf(r);
+          const dimmed = r.kind === 'appointment' && (r.status === 'CANCELLED' || r.status === 'NO_SHOW'); // ya no cuentan: se atenúan
           return (
             <button
               key={`${r.kind}-${r.id}`}
@@ -129,9 +132,18 @@ const GlobalSearch: React.FC = () => {
               className={`flex w-full items-center gap-3 px-3 py-2.5 text-left ${index === active ? 'bg-muted' : ''}`}
             >
               {r.kind === 'client' ? <User className="h-4 w-4 shrink-0 text-muted-foreground" /> : <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />}
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-foreground">{r.title}</span>
-                <span className="block truncate text-xs text-muted-foreground">{r.detail}</span>
+              <span className="min-w-0 flex-1">
+                <span className={`block truncate text-sm font-medium ${dimmed ? 'text-muted-foreground' : 'text-foreground'} ${r.kind === 'appointment' && r.status === 'CANCELLED' ? 'line-through decoration-muted-foreground/60' : ''}`}>{r.title}</span>
+                {/* En las citas, el estado va junto a la fecha: así el título largo no pierde ancho. */}
+                <span className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">{r.detail}</span>
+                  {r.kind === 'appointment' && (
+                    <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none ${APPOINTMENT_STATUS[r.status].chip}`}>
+                      <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${APPOINTMENT_STATUS[r.status].dot}`} />
+                      {APPOINTMENT_STATUS[r.status].label}
+                    </span>
+                  )}
+                </span>
               </span>
             </button>
           );
