@@ -137,6 +137,7 @@ Frontend (servicio `frontend`): `VITE_API_BASE_URL=https://api.afilaoapp.com/api
 - SSL/TLS: **Full (strict)** y **Always Use HTTPS**. HSTS, cuando todo esté estable (es difícil de revertir).
 - Los nameservers del dominio (GoDaddy) apuntan a Cloudflare; los registros se gestionan allí, no en GoDaddy.
 - El service worker y el manifiesto salen con `Cache-Control: no-cache` desde nginx y Cloudflare no los cachea (`cf-cache-status: DYNAMIC`). Si algún día se añade una regla de caché, excluye `/sw.js`, `/registerSW.js`, `/workbox-*.js` y `/manifest.webmanifest`.
+- **Reserva instalable por salón.** El manifiesto y los iconos de cada salón los genera el API (`/api/public/booking/:slug/manifest` y `/icon/:file.png`, con `sharp`). El nginx del frontend los reenvía como `/<salón>/manifest.webmanifest` y `/<salón>/pwa-icon-*.png`, porque el navegador solo instala una página si el manifiesto sale de su mismo dominio. La dirección del API sale de `VITE_API_BASE_URL` y el Dockerfile la escribe en la configuración al construir (con `nginx -t`: si algo está mal, falla la construcción, no el contenedor). nginx guarda 5 minutos lo que reenvía; Cloudflare puede guardar los iconos hasta una hora. Tras cambiar el logo, el icono nuevo tarda como mucho ese tiempo en verse.
 - Subidas: el plan Free de Cloudflare limita el cuerpo de la petición a 100 MB.
 - Si Let's Encrypt no emite el certificado con el proxy activo, pon el registro en *DNS only* (nube gris) mientras se emite.
 

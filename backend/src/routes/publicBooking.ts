@@ -17,6 +17,7 @@ import {
   updateBooking,
 } from '../services/availability';
 import { appointmentInclude, toAppointmentDto } from '../services/availability/dto';
+import { isIconFile, logoBytes, renderIcon } from '../lib/pwaIcons';
 
 /**
  * Reserva pública, sin cuenta: /api/public/booking/:slug/...
@@ -94,6 +95,65 @@ router.get('/:slug/logo', async (req, res) => {
   } catch (error) {
     console.error('Error sirviendo el logo:', error);
     res.status(500).json({ error: 'Failed to load logo' });
+  }
+});
+
+// GET /api/public/booking/:slug/manifest — manifiesto PWA del salón: la clienta lo instala como un acceso directo a su reserva.
+// El frontend lo publica en /:slug/manifest.webmanifest (nginx reenvía), así que las rutas van relativas a su dominio.
+router.get('/:slug/manifest', async (req, res) => {
+  try {
+    const { slug, name } = req.publicTenant!;
+    const settings = await prisma.tenantSettings.findUnique({ where: { tenantId: req.publicTenant!.id }, select: { logoUrl: true, brandColor: true, bookingEnabled: true } });
+    if (settings && !settings.bookingEnabled) return res.status(404).json({ error: 'Este salón no acepta reservas en línea por ahora.' });
+    const hasLogo = !!logoBytes(settings?.logoUrl);
+    const icons = hasLogo
+      ? [
+          { src: `/${slug}/pwa-icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: `/${slug}/pwa-icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: `/${slug}/pwa-icon-maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ]
+      : [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ];
+    res.set({ 'Content-Type': 'application/manifest+json; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Content-Type-Options': 'nosniff' });
+    res.send(
+      JSON.stringify({
+        id: `/${slug}/reservar`,
+        name,
+        short_name: name.length > 12 ? `${name.slice(0, 11).trimEnd()}…` : name,
+        description: `Reserva tu cita en ${name}`,
+        lang: 'es',
+        start_url: `/${slug}/reservar?origen=app`,
+        scope: `/${slug}/`,
+        display: 'standalone',
+        orientation: 'portrait',
+        background_color: '#FFFFFF',
+        theme_color: settings?.brandColor ?? '#14264A',
+        icons,
+      }),
+    );
+  } catch (error) {
+    console.error('Error sirviendo el manifiesto:', error);
+    res.status(500).json({ error: 'Failed to load manifest' });
+  }
+});
+
+// GET /api/public/booking/:slug/icon/:file — icono PNG cuadrado hecho con el logo del salón (192, 512, maskable-512, apple-180).
+router.get('/:slug/icon/:file.png', async (req, res) => {
+  try {
+    const file = String(req.params.file);
+    if (!isIconFile(file)) return res.status(404).json({ error: 'Icono no encontrado' });
+    const settings = await prisma.tenantSettings.findUnique({ where: { tenantId: req.publicTenant!.id }, select: { logoUrl: true } });
+    const logo = logoBytes(settings?.logoUrl);
+    if (!logo) return res.status(404).json({ error: 'Sin logo' });
+    const png = await renderIcon(logo, file);
+    res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600', 'X-Content-Type-Options': 'nosniff', 'Cross-Origin-Resource-Policy': 'cross-origin' });
+    res.send(png);
+  } catch (error) {
+    console.error('Error generando el icono:', error);
+    res.status(500).json({ error: 'Failed to render icon' });
   }
 });
 

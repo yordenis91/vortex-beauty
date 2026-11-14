@@ -42,6 +42,15 @@
       <div class="boot-spin" role="status" aria-label="Cargando"></div>
     </div>
     <script>
+      // Reserva y «mi cita»: el manifiesto es el del salón (no el del panel) desde el primer momento, para que el navegador
+      // evalúe si se puede instalar con el correcto. Después, publicPwa.ts mantiene el resto (icono, nombre, color).
+      (function () {
+        var m = location.pathname.match(/^\/([a-z0-9-]+)\/(reservar|mi-cita\/)/);
+        var l = m && document.querySelector('link[rel="manifest"]');
+        if (l) l.setAttribute('href', '/' + m[1] + '/manifest.webmanifest');
+      })();
+    </script>
+    <script>
       // Reserva pública: pide el catálogo ya, en paralelo con la descarga del JS (Booking lo recoge en cuanto arranca).
       (function () {
         var m = location.pathname.match(/^\/([a-z0-9-]+)\/reservar\/?$/);
