@@ -50,3 +50,23 @@ export function actionScale(base: string): Record<50 | 100 | 200 | 300 | 400 | 5
     900: toward(BLACK, 0.45),
   };
 }
+
+/**
+ * Escala para el modo oscuro. El paso 600 (fondo de botones y barras, con texto blanco encima) se ajusta a una
+ * luminancia que cumple a la vez: ≥ 4,5 contra el blanco y ≥ 3 contra las superficies oscuras de la página.
+ * Un azul marino, que sobre negro desaparece, se aclara; un amarillo, que sobre negro ciega, se apaga.
+ */
+const DARK_600_LUMINANCE = 0.17;
+export function darkActionScale(base: string): ReturnType<typeof actionScale> {
+  const start = toRgb(base);
+  const target: Rgb = luminance(start) < DARK_600_LUMINANCE ? WHITE : BLACK;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    const reachedTarget = target === WHITE ? luminance(mix(start, WHITE, mid)) >= DARK_600_LUMINANCE : luminance(mix(start, BLACK, mid)) <= DARK_600_LUMINANCE;
+    if (reachedTarget) hi = mid;
+    else lo = mid;
+  }
+  return actionScale(toHex(mix(start, target, hi)));
+}

@@ -276,7 +276,7 @@ const Booking: React.FC = () => {
           </div>
           {service && step !== 'details' && (
             <div className="flex items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5 text-sm shadow-sm">
-              <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40">
+              <span aria-hidden="true" className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
                 <Check className="h-3.5 w-3.5" />
               </span>
               <span className="min-w-0">
@@ -291,7 +291,7 @@ const Booking: React.FC = () => {
         </div>
       )}
 
-      {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200">{error}</div>}
+      {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200 dark:bg-red-950/50 dark:text-red-200 dark:border-red-900">{error}</div>}
 
       {step === 'service' && (
         <section className="space-y-4">
@@ -320,7 +320,7 @@ const Booking: React.FC = () => {
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3.5 w-3.5" /> {s.durationMinutes} min
                       </div>
-                      <span aria-hidden="true" className="inline-flex items-center gap-0.5 text-sm font-semibold text-blue-600">
+                      <span aria-hidden="true" className="inline-flex items-center gap-0.5 text-sm font-semibold text-blue-600 dark:text-blue-300">
                         Elegir <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                       </span>
                     </div>
@@ -336,7 +336,7 @@ const Booking: React.FC = () => {
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-foreground">¿Con quién?</h2>
           <button type="button" onClick={() => chooseProfessional('any')} className={`${choiceCardClass} flex items-center gap-3`}>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300">
               <Users className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
@@ -394,7 +394,7 @@ const Booking: React.FC = () => {
           ) : (slots.data ?? []).length === 0 ? (
             <div className="bg-card rounded-2xl border border-border p-6 text-center text-muted-foreground">
               No quedan horarios este día.{' '}
-              <button className="text-blue-600 underline" onClick={() => setStep('date')}>Elegir otro día</button>
+              <button className="text-blue-600 underline dark:text-blue-300" onClick={() => setStep('date')}>Elegir otro día</button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -480,7 +480,7 @@ const Booking: React.FC = () => {
 
       {step === 'done' && booked && (
         <section className="bg-card rounded-2xl border border-border p-6 text-center space-y-4">
-          <div className="mx-auto h-14 w-14 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+          <div className="mx-auto h-14 w-14 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 flex items-center justify-center">
             <Check className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold text-foreground">¡Listo! Ya tienes tu {word('appointment', 'cita')}</h2>
@@ -497,7 +497,7 @@ const Booking: React.FC = () => {
           <TelegramOptIn telegram={booked.telegram} />
           {booked.manageUrl && (
             <div className="flex flex-col items-center gap-3">
-              <Link to={booked.manageUrl} className="inline-flex items-center gap-2 py-1 text-blue-600 font-medium">
+              <Link to={booked.manageUrl} className="inline-flex items-center gap-2 py-1 text-blue-600 font-medium dark:text-blue-300">
                 <CalendarCheck className="h-4 w-4" /> Cambiar o cancelar mi {word('appointment', 'cita')}
               </Link>
               <button

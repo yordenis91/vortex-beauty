@@ -196,7 +196,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ month, onMonthChange,
           {canNext && (
             <>
               {' '}
-              <button type="button" onClick={() => go(1)} className="font-medium text-blue-600 underline underline-offset-2">
+              <button type="button" onClick={() => go(1)} className="font-medium text-blue-600 underline underline-offset-2 dark:text-blue-300">
                 Ver {format(addMonths(month, 1), 'MMMM', { locale: es })}
               </button>
             </>
@@ -207,7 +207,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ month, onMonthChange,
       {availableDates && availableDates.size > 0 && (
         <div className="space-y-1 text-center text-xs text-muted-foreground">
           <p className="flex items-center justify-center gap-4">
-            <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-3 w-3 rounded bg-blue-100 ring-1 ring-blue-200" /> Con horarios</span>
+            <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-3 w-3 rounded bg-blue-100 ring-1 ring-blue-200 dark:bg-blue-900/60 dark:ring-blue-800" /> Con horarios</span>
             <span className="inline-flex items-center gap-1.5"><span aria-hidden="true" className="h-3 w-3 rounded bg-muted ring-1 ring-border" /> Sin horarios</span>
           </p>
           <p className="hidden pointer-coarse:block">Desliza hacia los lados para cambiar de mes</p>
