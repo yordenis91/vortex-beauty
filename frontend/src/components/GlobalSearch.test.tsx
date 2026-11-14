@@ -124,6 +124,36 @@ describe('Buscador de la barra superior', () => {
     expect(calls).toEqual(['appointments?yadi'])
   })
 
+  it('cada cita muestra su estado junto a la fecha; las canceladas y las no asistidas se atenúan', async () => {
+    open()
+    server.use(
+      http.get(`${API}/appointments`, () =>
+        HttpResponse.json([
+          apt('a1', { status: 'SCHEDULED' }),
+          apt('a2', { status: 'PENDING' }),
+          apt('a3', { status: 'COMPLETED' }),
+          apt('a4', { status: 'CANCELLED' }),
+          apt('a5', { status: 'NO_SHOW' }),
+        ]),
+      ),
+    )
+    const user = userEvent.setup()
+    await user.type(await screen.findByRole('combobox'), 'yadi')
+    const group = await screen.findByRole('group', { name: 'Citas' })
+    const options = within(group).getAllByRole('option')
+    expect(options.map((o) => ['Agendada', 'Pendiente', 'Completada', 'Cancelada', 'No asistió'].find((l) => within(o).queryByText(l)))).toEqual([
+      'Agendada', 'Pendiente', 'Completada', 'Cancelada', 'No asistió',
+    ])
+    const title = (o: HTMLElement) => within(o).getByText('Yadira Castillo · Uñas acrílicas')
+    expect(title(options[3])).toHaveClass('line-through')
+    expect(title(options[4])).toHaveClass('text-muted-foreground')
+    expect(title(options[0])).not.toHaveClass('line-through')
+    expect(title(options[2])).toHaveClass('text-foreground')
+    // los clientes no llevan estado
+    const clients = screen.getByRole('group', { name: 'Clientes' })
+    expect(within(clients).queryByText(/Agendada|Pendiente|Completada|Cancelada/)).not.toBeInTheDocument()
+  })
+
   it('sin resultados lo dice', async () => {
     open()
     server.use(http.get(`${API}/clients`, () => HttpResponse.json([])), http.get(`${API}/appointments`, () => HttpResponse.json([])))
