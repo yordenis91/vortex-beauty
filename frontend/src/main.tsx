@@ -7,8 +7,10 @@ import { applyBrand } from './brand/brand'
 import { queryClient } from './lib/queryClient'
 import { clearPersistedCache, trackLastSync } from './lib/persistCache'
 import { sessionMayBeAlive } from './lib/session'
+import { startCapturingInstallPrompt } from './lib/pwaInstall'
 
 applyBrand()
+startCapturingInstallPrompt()
 trackLastSync(queryClient)
 // Si la sesión terminó de verdad (no solo falta la red), los datos guardados en el dispositivo se borran.
 window.addEventListener('auth-error', () => {

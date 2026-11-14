@@ -20,6 +20,7 @@ import { loadCalendar } from './calendarLoader';
 import TelegramOptIn from './TelegramOptIn';
 import AddToCalendar from '../../components/AddToCalendar';
 import PublicShell from './PublicShell';
+import { InstallCard } from './InstallApp';
 import { money } from './format';
 import { Spinner } from './shared';
 import { useTurnstile } from './useTurnstile';
@@ -249,7 +250,7 @@ const Booking: React.FC = () => {
   const slotGroups = PERIODS.map((p) => ({ ...p, items: (slots.data ?? []).filter((s) => p.matches(Number(s.startTime.slice(0, 2)))) })).filter((g) => g.items.length > 0);
 
   return (
-    <PublicShell title={data.name} salon={data} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
+    <PublicShell title={data.name} salon={data} installLink={step !== 'done'} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
       {step !== 'service' && step !== 'done' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -512,6 +513,7 @@ const Booking: React.FC = () => {
           <p className="text-xs text-muted-foreground">Guarda este enlace: es la única forma de gestionar tu {word('appointment', 'cita')} sin cuenta.</p>
         </section>
       )}
+      {step === 'done' && booked && <InstallCard salonName={data.name} logoUrl={data.logoUrl} />}
     </PublicShell>
   );
 };
