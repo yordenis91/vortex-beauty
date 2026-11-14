@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { LogoMark } from '../../brand/Logo';
 import { brand } from '../../brand/brand';
-import { actionScale, isHexColor } from '../../lib/colors';
+import { actionScale, darkActionScale, isHexColor } from '../../lib/colors';
+import { usePublicTheme } from '../../lib/publicTheme';
 
 export interface SalonBrand {
   name?: string;
@@ -15,6 +16,8 @@ function salonStyle(color?: string | null): React.CSSProperties | undefined {
   const scale = actionScale(color);
   const vars: Record<string, string> = { '--primary': scale[600], '--primary-foreground': '#FFFFFF', '--salon-color': scale[600] };
   for (const [step, value] of Object.entries(scale)) vars[`--color-blue-${step}`] = value;
+  // Escala para el modo oscuro: global.css la usa bajo `html.dark [data-salon]` (los colores de la marca no se ven igual sobre negro).
+  for (const [step, value] of Object.entries(darkActionScale(color))) vars[`--dark-blue-${step}`] = value;
   return vars as React.CSSProperties;
 }
 
@@ -25,6 +28,7 @@ const EXPAND_BEFORE = 8;
 
 /** Marco común de las páginas públicas: sin menú, pensado para el móvil. Lleva la marca del salón si la tiene. */
 const PublicShell: React.FC<{ title: string; subtitle?: string; salon?: SalonBrand; children: React.ReactNode }> = ({ title, subtitle, salon, children }) => {
+  usePublicTheme();
   const [compact, setCompact] = useState(false);
 
   useEffect(() => {
@@ -34,7 +38,7 @@ const PublicShell: React.FC<{ title: string; subtitle?: string; salon?: SalonBra
   }, []);
 
   return (
-    <div className="min-h-screen bg-muted" style={salonStyle(salon?.brandColor)}>
+    <div className="min-h-screen bg-muted" style={salonStyle(salon?.brandColor)} data-salon={isHexColor(salon?.brandColor) ? '' : undefined}>
       {/* Cabecera fija: el nombre y el logo del negocio se quedan a la vista mientras se recorre la lista; al bajar, se compacta. */}
       <header
         data-compact={compact}

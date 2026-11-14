@@ -11,7 +11,7 @@ const TelegramOptIn: React.FC<{ telegram: TelegramInfo | null | undefined }> = (
 
   if (telegram.linked) {
     return (
-      <p className="inline-flex items-center gap-2 text-sm text-green-700">
+      <p className="inline-flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
         <Check className="h-4 w-4" /> Recibirás tus avisos por Telegram
       </p>
     );

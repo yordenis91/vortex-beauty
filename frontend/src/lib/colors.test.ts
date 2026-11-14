@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { actionScale, contrast, isHexColor } from './colors';
+import { actionScale, contrast, darkActionScale, isHexColor } from './colors';
 
 describe('colores de marca', () => {
   it('valida #RRGGBB', () => {
@@ -20,5 +20,13 @@ describe('colores de marca', () => {
     const s = actionScale('#1F8A70');
     expect(contrast(s[50], '#FFFFFF')).toBeLessThan(contrast(s[600], '#FFFFFF'));
     expect(contrast(s[600], '#FFFFFF')).toBeLessThan(contrast(s[900], '#FFFFFF'));
+  });
+});
+
+describe('escala para el modo oscuro', () => {
+  it.each(['#14264A', '#000000', '#FFE066', '#FFFFFF', '#D63B2D', '#1F8A70'])('el paso 600 de %s se lee con texto blanco y se distingue del fondo oscuro', (color) => {
+    const c600 = darkActionScale(color)[600];
+    expect(contrast(c600, '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c600, '#262626')).toBeGreaterThanOrEqual(3);
   });
 });

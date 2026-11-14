@@ -16,7 +16,7 @@
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  color-scheme: light;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -89,19 +89,6 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --bg: #16171d;
-    --border: #2e303a;
-    --accent: #c084fc;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
 .dark {
   color-scheme: dark;
   --text: #e2e8f0;
@@ -152,6 +139,29 @@
 
 body {
   margin: 0;
+}
+
+/* index.html fija el color del body para el esqueleto de carga (sin capa), y eso gana a los estilos base de
+   Tailwind: en modo oscuro dejaba texto oscuro sobre fondo oscuro. Con el tema oscuro mandan los tokens. */
+html.dark body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Color de marca del salón en modo oscuro: la escala clara que pone PublicShell en línea se sustituye por la oscura. */
+html.dark [data-salon] {
+  --primary: var(--dark-blue-600) !important;
+  --salon-color: var(--dark-blue-600) !important;
+  --color-blue-50: var(--dark-blue-50) !important;
+  --color-blue-100: var(--dark-blue-100) !important;
+  --color-blue-200: var(--dark-blue-200) !important;
+  --color-blue-300: var(--dark-blue-300) !important;
+  --color-blue-400: var(--dark-blue-400) !important;
+  --color-blue-500: var(--dark-blue-500) !important;
+  --color-blue-600: var(--dark-blue-600) !important;
+  --color-blue-700: var(--dark-blue-700) !important;
+  --color-blue-800: var(--dark-blue-800) !important;
+  --color-blue-900: var(--dark-blue-900) !important;
 }
 
 @theme inline {

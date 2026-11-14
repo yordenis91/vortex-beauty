@@ -79,7 +79,7 @@ const ManageBooking: React.FC = () => {
       <section className="bg-card rounded-2xl border border-border p-5 space-y-2">
         <span
           className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full ${
-            a.status === 'CANCELLED' ? 'bg-red-50 text-red-700' : active ? 'bg-green-50 text-green-700' : 'bg-muted text-muted-foreground'
+            a.status === 'CANCELLED' ? 'bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300' : active ? 'bg-green-50 text-green-700 dark:bg-green-950/60 dark:text-green-300' : 'bg-muted text-muted-foreground'
           }`}
         >
           {STATUS_LABEL[a.status]}
@@ -93,7 +93,7 @@ const ManageBooking: React.FC = () => {
       {active && <AddToCalendar event={{ title: `${a.serviceName} en ${salonName}`, startsAt: a.startsAt, endsAt: a.endsAt, location: salonName, details: a.professionalName ? `Con ${a.professionalName}` : undefined, uid: a.id }} />}
       {active && <TelegramOptIn telegram={telegram} />}
 
-      {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200">{error}</div>}
+      {error && <div role="alert" className="rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm border border-red-200 dark:bg-red-950/50 dark:text-red-200 dark:border-red-900">{error}</div>}
 
       {active && !canCancel && (
         <p className="text-sm text-muted-foreground bg-card rounded-xl border border-border p-4">
@@ -113,7 +113,7 @@ const ManageBooking: React.FC = () => {
           <button
             disabled={!canCancel}
             onClick={() => { setMode('confirmCancel'); setError(''); }}
-            className="py-3 rounded-xl border border-red-300 text-red-700 font-semibold hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="py-3 rounded-xl border border-red-300 text-red-700 font-semibold hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/50 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Cancelar reserva
           </button>
@@ -124,7 +124,7 @@ const ManageBooking: React.FC = () => {
         <section className="bg-card rounded-2xl border border-border p-5 space-y-3">
           <p className="text-foreground">¿Seguro que quieres cancelar esta reserva?</p>
           <div className="flex gap-3">
-            <button onClick={() => setMode('view')} className="flex-1 py-3 rounded-xl border border-border">No, mantenerla</button>
+            <button onClick={() => setMode('view')} className="flex-1 py-3 rounded-xl border border-border text-foreground">No, mantenerla</button>
             <button
               onClick={() => cancel.mutate()}
               disabled={cancel.isPending}
@@ -146,7 +146,7 @@ const ManageBooking: React.FC = () => {
               selected={date}
               onSelect={setDate}
               disabled={(d) => isBefore(startOfDay(d), today) || d > addDays(today, 120)}
-              className="w-full min-w-[17rem]"
+              className="w-full min-w-[17rem] bg-transparent text-foreground"
             />
           </div>
           {date && (
@@ -161,7 +161,7 @@ const ManageBooking: React.FC = () => {
                     key={s.startTime}
                     disabled={reschedule.isPending}
                     onClick={() => reschedule.mutate(s.startTime)}
-                    className="py-3 rounded-xl border border-border bg-card font-medium hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 disabled:opacity-50"
+                    className="py-3 rounded-xl border border-border bg-card font-medium text-foreground hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/40 disabled:opacity-50"
                   >
                     {s.startTime}
                   </button>
@@ -169,7 +169,7 @@ const ManageBooking: React.FC = () => {
               </div>
             )
           )}
-          <button onClick={() => setMode('view')} className="w-full py-3 rounded-xl border border-border">Volver</button>
+          <button onClick={() => setMode('view')} className="w-full py-3 rounded-xl border border-border text-foreground">Volver</button>
         </section>
       )}
     </PublicShell>

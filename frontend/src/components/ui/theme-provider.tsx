@@ -1,4 +1,5 @@
 import * as React from "react"
+import { PUBLIC_THEME_FLAG } from "@/lib/publicTheme"
 
 type Theme = "light" | "dark"
 
@@ -33,6 +34,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   React.useEffect(() => {
     const root = document.documentElement
+    if (root.dataset[PUBLIC_THEME_FLAG]) return // una página pública sigue al sistema
     const nextTheme = getPreferredTheme()
 
     if (root.classList.contains("dark") && nextTheme === "light") {
@@ -48,6 +50,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   React.useEffect(() => {
     const root = document.documentElement
+    if (root.dataset[PUBLIC_THEME_FLAG]) return
     root.classList.toggle("dark", theme === "dark")
     window.localStorage.setItem("theme", theme)
   }, [theme])
