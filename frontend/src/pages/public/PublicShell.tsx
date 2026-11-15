@@ -4,7 +4,6 @@ import { brand } from '../../brand/brand';
 import { actionScale, darkActionScale, isHexColor } from '../../lib/colors';
 import { usePublicTheme } from '../../lib/publicTheme';
 import { usePublicPwa } from '../../lib/publicPwa';
-import { InstallLink } from './InstallApp';
 
 export interface SalonBrand {
   slug?: string;
@@ -30,7 +29,7 @@ const COMPACT_AFTER = 48;
 const EXPAND_BEFORE = 8;
 
 /** Marco común de las páginas públicas: sin menú, pensado para el móvil. Lleva la marca del salón si la tiene. */
-const PublicShell: React.FC<{ title: string; subtitle?: string; salon?: SalonBrand; /** false donde ya hay una tarjeta de instalar (la confirmación) */ installLink?: boolean; children: React.ReactNode }> = ({ title, subtitle, salon, installLink = true, children }) => {
+const PublicShell: React.FC<{ title: string; subtitle?: string; salon?: SalonBrand; children: React.ReactNode }> = ({ title, subtitle, salon, children }) => {
   usePublicTheme();
   usePublicPwa(salon ?? {});
   const [compact, setCompact] = useState(false);
@@ -68,11 +67,8 @@ const PublicShell: React.FC<{ title: string; subtitle?: string; salon?: SalonBra
         </div>
       </header>
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">{children}</main>
-      <footer className="max-w-2xl mx-auto px-4 pb-8 flex flex-col items-center gap-5 text-xs text-muted-foreground">
-        {salon?.slug && installLink && <InstallLink />}
-        <p className="flex items-center justify-center gap-2">
-          <LogoMark size={18} /> Reservas con {brand.name}
-        </p>
+      <footer className="max-w-2xl mx-auto px-4 pb-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <LogoMark size={18} /> Reservas con {brand.name}
       </footer>
     </div>
   );

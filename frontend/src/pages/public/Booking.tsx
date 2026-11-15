@@ -250,7 +250,7 @@ const Booking: React.FC = () => {
   const slotGroups = PERIODS.map((p) => ({ ...p, items: (slots.data ?? []).filter((s) => p.matches(Number(s.startTime.slice(0, 2)))) })).filter((g) => g.items.length > 0);
 
   return (
-    <PublicShell title={data.name} salon={data} installLink={step !== 'done'} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
+    <PublicShell title={data.name} salon={data} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
       {step !== 'service' && step !== 'done' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">

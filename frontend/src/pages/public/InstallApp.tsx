@@ -31,7 +31,7 @@ const buttonClass =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 motion-reduce:transition-none motion-reduce:active:scale-100';
 
 /**
- * Botón de instalar: en Android abre el diálogo del navegador; en iPhone despliega los pasos.
+ * Botón de instalar (solo se usa en la tarjeta de la confirmación): en Android abre el diálogo del navegador; en iPhone despliega los pasos.
  * No se pinta si no hay nada que ofrecer (ya instalada, escritorio, navegador incrustado…).
  */
 const InstallButton: React.FC<{ className?: string }> = ({ className }) => {
@@ -53,17 +53,6 @@ const InstallButton: React.FC<{ className?: string }> = ({ className }) => {
       </button>
       {isIos && open && <IosSteps id={stepsId} />}
     </>
-  );
-};
-
-/** Pie de la reserva: discreto, una sola línea, sin competir con los botones principales. */
-export const InstallLink: React.FC = () => {
-  const option = useInstallOption();
-  if (option.kind === 'none') return null;
-  return (
-    <div className="flex w-full flex-col items-center gap-3">
-      <InstallButton />
-    </div>
   );
 };
 
