@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest'
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { InstallCard, InstallLink } from './InstallApp'
+import { InstallCard } from './InstallApp'
+import PublicShell from './PublicShell'
 import { resetInstallState, startCapturingInstallPrompt } from '../../lib/pwaInstall'
 
 const BUTTON = 'Añadir a mi pantalla de inicio'
@@ -31,13 +32,13 @@ afterEach(() => {
 
 describe('instalar la reserva en el celular', () => {
   it('sin nada que ofrecer (escritorio), no se pinta ningún botón', () => {
-    render(<><InstallLink /><InstallCard salonName="Yumi" /></>)
+    render(<InstallCard salonName="Yumi" />)
     expect(screen.queryByRole('button', { name: BUTTON })).toBeNull()
     expect(screen.queryByText(/Guarda Yumi/)).toBeNull()
   })
 
   it('en Android, el botón aparece cuando Chrome avisa y abre el diálogo de instalación', async () => {
-    render(<InstallLink />)
+    render(<InstallCard salonName="Yumi" />)
     expect(screen.queryByRole('button', { name: BUTTON })).toBeNull()
     const { prompt, event } = chromeOffersInstall()
     expect(event.defaultPrevented).toBe(true) // se guarda el aviso: ya no sale el cartel automático del navegador
@@ -48,13 +49,13 @@ describe('instalar la reserva en el celular', () => {
 
   it('si el aviso llegó antes de pintar la página, el botón sale igual', () => {
     chromeOffersInstall()
-    render(<InstallLink />)
+    render(<InstallCard salonName="Yumi" />)
     expect(screen.getByRole('button', { name: BUTTON })).toBeInTheDocument()
   })
 
   it('en el iPhone, el botón despliega los pasos de Safari y se pliega al pulsarlo otra vez', async () => {
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IPHONE)
-    render(<InstallLink />)
+    render(<InstallCard salonName="Yumi" />)
     const button = screen.getByRole('button', { name: BUTTON })
     expect(button).toHaveAttribute('aria-expanded', 'false')
     await userEvent.click(button)
@@ -67,18 +68,18 @@ describe('instalar la reserva en el celular', () => {
   it('ya instalada (abierta como app), no ofrece nada', () => {
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(IPHONE)
     standalone(true)
-    render(<InstallLink />)
+    render(<InstallCard salonName="Yumi" />)
     expect(screen.queryByRole('button', { name: BUTTON })).toBeNull()
   })
 
   it('en el navegador de Instagram o Facebook no se ofrece: ahí no se puede instalar', () => {
     vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(`${IPHONE} Instagram 300.0`)
-    render(<InstallLink />)
+    render(<InstallCard salonName="Yumi" />)
     expect(screen.queryByRole('button', { name: BUTTON })).toBeNull()
   })
 
   it('al instalarse desaparece el botón', async () => {
-    render(<InstallLink />)
+    render(<InstallCard salonName="Yumi" />)
     chromeOffersInstall()
     expect(await screen.findByRole('button', { name: BUTTON })).toBeInTheDocument()
     act(() => void window.dispatchEvent(new Event('appinstalled')))
@@ -90,6 +91,19 @@ describe('instalar la reserva en el celular', () => {
     render(<InstallCard salonName="Yumi Manicure" />)
     expect(screen.getByRole('heading', { name: 'Guarda Yumi Manicure en tu celular' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: BUTTON })).toBeInTheDocument()
+  })
+})
+
+describe('sin fricción durante la reserva', () => {
+  it('con la instalación disponible, el marco de la reserva no muestra ningún botón de instalar', () => {
+    chromeOffersInstall()
+    render(
+      <PublicShell title="Yumi" salon={{ slug: 'yumi', name: 'Yumi' }}>
+        <p>servicios</p>
+      </PublicShell>,
+    )
+    expect(screen.queryByRole('button', { name: BUTTON })).toBeNull()
+    expect(screen.queryByText(/pantalla de inicio/)).toBeNull()
   })
 })
 
