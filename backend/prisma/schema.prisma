@@ -80,6 +80,7 @@ model Tenant {
   professionalServices   ProfessionalService[]
   professionalSchedules  ProfessionalSchedule[]
   professionalQuotaSlots ProfessionalQuotaSlot[]
+  professionalQuotaExtras ProfessionalQuotaExtra[]
   timeOffs               TimeOff[]
   resources              Resource[]
   serviceResources       ServiceResource[]
@@ -314,6 +315,7 @@ model Professional {
   services     ProfessionalService[]
   schedules    ProfessionalSchedule[]
   quotaSlots   ProfessionalQuotaSlot[]
+  quotaExtras  ProfessionalQuotaExtra[]
   timeOffs     TimeOff[]
 
   createdAt DateTime @default(now())
@@ -366,6 +368,22 @@ model ProfessionalQuotaSlot {
 
   @@unique([professionalId, dayOfWeek, time])
   @@index([tenantId])
+}
+
+// Cupo extra de un profesional que reserva por cupos, solo para una fecha concreta. Se suma a sus
+// cupos semanales (ProfessionalQuotaSlot) sin tocarlos.
+model ProfessionalQuotaExtra {
+  id             String       @id @default(uuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  professionalId String
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  date           String // YYYY-MM-DD en la zona del salón
+  time           String // "HH:mm"
+  createdAt      DateTime     @default(now())
+
+  @@unique([professionalId, date, time])
+  @@index([tenantId, date])
 }
 
 // Ausencia de un profesional (vacaciones, enfermedad, descanso).
