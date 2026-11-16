@@ -202,7 +202,33 @@ describe('Agenda del móvil', () => {
     await user.click(await within(sheet).findByRole('button', { name: '16:30' }))
     await user.click(within(sheet).getByRole('button', { name: 'Agendar' }))
     await waitFor(() => expect(posts.filter((p) => p.url === '/appointments')).toHaveLength(1))
-    expect(posts.find((p) => p.url === '/appointments')!.body).toMatchObject({ clientId: 'c1', serviceId: 's1', startTime: '16:30', professionalId: 'any', status: 'SCHEDULED' })
+    const body = posts.find((p) => p.url === '/appointments')!.body
+    expect(body).toMatchObject({ clientId: 'c1', serviceId: 's1', startTime: '16:30', professionalId: 'any', status: 'SCHEDULED' })
+    expect(body).not.toHaveProperty('source') // una cita normal no lleva origen: el servidor la marca como del panel
+  })
+
+  it('«Viene del papel» agenda con origen PAPEL', async () => {
+    mock([])
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Nueva cita' }))
+    const sheet = await screen.findByRole('dialog')
+    await user.type(within(sheet).getByLabelText(/Buscar o escribir/), 'carl')
+    await user.click(await within(sheet).findByRole('button', { name: /Carlos Méndez/ }))
+    await user.click(within(sheet).getByRole('button', { name: 'Corte de cabello' }))
+    await user.click(await within(sheet).findByRole('button', { name: '16:30' }))
+    await user.click(within(sheet).getByRole('checkbox', { name: /Viene del papel/ }))
+    await user.click(within(sheet).getByRole('button', { name: 'Agendar' }))
+    await waitFor(() => expect(posts.filter((p) => p.url === '/appointments')).toHaveLength(1))
+    expect(posts.find((p) => p.url === '/appointments')!.body).toMatchObject({ clientId: 'c1', source: 'PAPEL' })
+  })
+
+  it('la cita del papel lleva la marca 📝 y las demás no', async () => {
+    mock([apt('a1', { source: 'PAPEL' }), apt('a2', { startTime: '12:00', endTime: '12:30', client: { id: 'c2', name: 'Luis Pérez' }, source: 'ADMIN' })])
+    open()
+    const nombre = await screen.findByText('Carlos Méndez')
+    expect(within(nombre.parentElement!).getByRole('img', { name: 'Anotada desde papel' })).toBeInTheDocument()
+    expect(within(screen.getByText('Luis Pérez').parentElement!).queryByRole('img', { name: 'Anotada desde papel' })).not.toBeInTheDocument()
   })
 
   it('un cliente nuevo se crea al vuelo con su teléfono y luego se agenda', async () => {

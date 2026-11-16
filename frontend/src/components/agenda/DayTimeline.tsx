@@ -1,3 +1,5 @@
+import PaperBadge from '../PaperBadge';
+import { isFromPaper } from '../../lib/paper';
 import React, { useEffect, useRef } from 'react';
 import { Lock, Plus } from 'lucide-react';
 import type { Appointment, AppointmentStatus } from '../../types';
@@ -118,7 +120,7 @@ const DayTimeline: React.FC<Props> = ({ items, showProfessional, onOpen, onGap, 
               >
                 <span className="w-1 shrink-0 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
                 <span className="min-w-0 flex-1">
-                  <span className={`block truncate text-base font-semibold text-foreground ${quiet ? 'line-through' : ''}`}>{a.client?.name ?? 'Cliente'}</span>
+                  <span className={`block truncate text-base font-semibold text-foreground ${quiet ? 'line-through' : ''}`}>{a.client?.name ?? 'Cliente'}{isFromPaper(a) && <PaperBadge className="ml-1.5 align-baseline" />}</span>
                   <span className="block truncate text-sm text-muted-foreground">
                     {a.serviceName} · {a.startTime}–{a.endTime}
                   </span>

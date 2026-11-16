@@ -48,6 +48,7 @@ const Form: React.FC<Omit<Props, 'preset'> & { preset: CreatePreset }> = ({ pres
   const [date, setDate] = useState(preset.date);
   const [time, setTime] = useState(preset.time ?? '');
   const [notes, setNotes] = useState('');
+  const [fromPaper, setFromPaper] = useState(false);
 
   const { data: slots = [], isLoading: slotsLoading } = useAdminSlots(date, serviceId, professionalId || 'any');
   const createClient = useCreateClient();
@@ -82,6 +83,7 @@ const Form: React.FC<Omit<Props, 'preset'> & { preset: CreatePreset }> = ({ pres
         professionalId: professionalId || 'any',
         notes,
         status: 'SCHEDULED',
+        ...(fromPaper ? { source: 'PAPEL' as const } : {}),
       });
       toast.success(`Se creó ${words.appointment === 'cita' ? 'la cita' : `el ${words.appointment}`}`);
       onClose();
@@ -202,6 +204,14 @@ const Form: React.FC<Omit<Props, 'preset'> & { preset: CreatePreset }> = ({ pres
           <label htmlFor="qc-notes" className={label}>Nota (opcional)</label>
           <input id="qc-notes" value={notes} onChange={(e) => setNotes(e.target.value)} className="h-12 w-full rounded-xl border border-border bg-card px-4 text-base" />
         </div>
+
+        <label htmlFor="qc-paper" className="flex min-h-12 cursor-pointer items-start gap-3 rounded-xl border border-border bg-card px-4 py-3">
+          <input id="qc-paper" type="checkbox" checked={fromPaper} onChange={(e) => setFromPaper(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0 accent-blue-600" />
+          <span>
+            <span className="block text-sm font-medium text-foreground">Viene del papel</span>
+            <span className="block text-xs text-muted-foreground">Ya la acordaron en persona: no se envía el aviso de agendada.</span>
+          </span>
+        </label>
       </div>
 
       <div className="border-t border-border bg-background px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>

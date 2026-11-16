@@ -239,4 +239,50 @@ describe('Agenda de citas', () => {
     await user.click(screen.getAllByRole('button', { name: 'Día' })[0])
     expect(await screen.findByText('Carlos Méndez')).toBeInTheDocument()
   })
+
+  it('la cita del papel lleva 📝 en el día y en la semana; en el formulario avisa de su origen', async () => {
+    mockAgenda([apt('a1', { source: 'PAPEL' }), apt('a2', { startTime: '12:00', endTime: '12:30', client: { id: 'c2', name: 'Luis Pérez' } })])
+    const user = userEvent.setup()
+    open()
+    const card = (await screen.findByText('Carlos Méndez')).closest('.p-5') as HTMLElement
+    expect(within(card).getByRole('img', { name: 'Anotada desde papel' })).toBeInTheDocument()
+    expect(within((await screen.findByText('Luis Pérez')).closest('.p-5') as HTMLElement).queryByRole('img', { name: 'Anotada desde papel' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Semana' }))
+    expect(await screen.findAllByRole('img', { name: 'Anotada desde papel' })).toHaveLength(1)
+  })
+
+  it('«Viene del papel» solo aparece al crear y se envía como origen PAPEL', async () => {
+    mockAgenda([])
+    const posts: Array<Record<string, unknown>> = []
+    server.use(
+      http.get(`${API}/services`, () => HttpResponse.json([{ id: 's1', name: 'Corte de cabello', status: 'ACTIVE', price: 500, currency: 'CUP', durationMinutes: 30 }])),
+      http.get(`${API}/appointments/available-slots`, () => HttpResponse.json([{ startTime: '15:00', professionalIds: ['p1'] }])),
+      http.post(`${API}/appointments`, async ({ request }) => {
+        posts.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json(apt('nuevo'), { status: 201 })
+      }),
+    )
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: /Nueva cita/ }))
+    const dialog = await screen.findByRole('dialog')
+    await user.selectOptions(within(dialog).getByLabelText(/Cliente/), 'c1')
+    await user.selectOptions(within(dialog).getByLabelText(/Servicio/), 's1')
+    await user.selectOptions(await within(dialog).findByLabelText(/Hora/), '15:00')
+    await user.click(within(dialog).getByRole('checkbox', { name: /Viene del papel/ }))
+    await user.click(within(dialog).getByRole('button', { name: /^Guardar cita$/ }))
+    await waitFor(() => expect(posts).toHaveLength(1))
+    expect(posts[0]).toMatchObject({ clientId: 'c1', serviceId: 's1', startTime: '15:00', source: 'PAPEL' })
+  })
+
+  it('al editar una cita normal no se ofrece «Viene del papel»', async () => {
+    mockAgenda([apt('a1')])
+    const user = userEvent.setup()
+    open()
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: /Editar cita/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).queryByRole('checkbox', { name: /Viene del papel/ })).not.toBeInTheDocument()
+  })
 })

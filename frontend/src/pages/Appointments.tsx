@@ -1,6 +1,8 @@
 import { formatYmd } from '../lib/dates';
 import { appointmentLink, confirmationMessage, whatsappLink } from '../lib/whatsapp';
 import { copyText } from '../lib/clipboard';
+import PaperBadge from '../components/PaperBadge';
+import { isFromPaper } from '../lib/paper';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAppointments, useClients, useServices, useProfessionals, useCreateAppointment, useUpdateAppointment, useDeleteAppointment, useBookingSettings, useClosedDates, useFullyBookedDates, useAdminSlots, useScheduleOverride, useUpsertScheduleOverride, useDeleteScheduleOverride } from '../hooks/useQueries';
@@ -46,6 +48,7 @@ interface FormData {
   startTime: string;
   notes: string;
   status: AppointmentStatus;
+  fromPaper: boolean;
 }
 
 interface ClosedDate {
@@ -139,6 +142,7 @@ const Appointments: React.FC = () => {
     startTime: '',
     notes: '',
     status: 'SCHEDULED',
+    fromPaper: false,
   });
 
   const { role } = useAuth();
@@ -328,6 +332,7 @@ const Appointments: React.FC = () => {
         startTime: appointment.startTime,
         notes: appointment.notes || '',
         status: appointment.status,
+        fromPaper: appointment.source === 'PAPEL',
       });
       setSelectedDate(appointment.date.split('T')[0]);
     } else {
@@ -353,6 +358,7 @@ const Appointments: React.FC = () => {
         startTime: preset?.startTime ?? '',
         notes: '',
         status: 'SCHEDULED',
+        fromPaper: false,
       });
     }
     setActiveTab('appointment');
@@ -447,7 +453,7 @@ const Appointments: React.FC = () => {
         appointmentData,
       });
     } else {
-      createMutation.mutate(appointmentData);
+      createMutation.mutate({ ...appointmentData, ...(formData.fromPaper ? { source: 'PAPEL' as const } : {}) });
     }
   };
 
@@ -875,6 +881,7 @@ const Appointments: React.FC = () => {
                         <div className="flex items-center gap-2 text-foreground">
                           <User className="w-4 h-4 text-muted-foreground" />
                           <span className="font-medium">{appointment.client?.name}</span>
+                          {isFromPaper(appointment) && <PaperBadge />}
                         </div>
                         <div className="flex items-center gap-2 text-foreground">
                           <Package className="w-4 h-4 text-muted-foreground" />
@@ -1096,6 +1103,28 @@ const Appointments: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {editingAppointment?.source === 'PAPEL' ? (
+                  <p className="flex items-center gap-2 border-b border-border pb-4 text-sm text-muted-foreground">
+                    <PaperBadge /> Esta cita se anotó primero en el papel.
+                  </p>
+                ) : !editingAppointment ? (
+                  <div className="border-b border-border pb-4">
+                    <label htmlFor="fromPaper" className="flex cursor-pointer items-start gap-3">
+                      <input
+                        id="fromPaper"
+                        type="checkbox"
+                        checked={formData.fromPaper}
+                        onChange={(e) => setFormData({ ...formData, fromPaper: e.target.checked })}
+                        className="mt-1 h-5 w-5 rounded border-border accent-blue-600"
+                      />
+                      <span>
+                        <span className="block text-sm font-medium text-foreground">Viene del papel</span>
+                        <span className="block text-xs text-muted-foreground">Ya la acordaron en persona: no se envía el aviso de agendada.</span>
+                      </span>
+                    </label>
+                  </div>
+                ) : null}
 
                 <div className="border-b border-border pb-4">
                   <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-1">

@@ -253,6 +253,8 @@ export interface Appointment {
   professionalId?: string | null;
   resourceId?: string | null;
   cancelledBy?: 'CUSTOMER' | 'STAFF' | 'SYSTEM' | null;
+  // Origen de la cita; PAPEL = anotada primero en el cuaderno
+  source?: 'ADMIN' | 'PORTAL' | 'PUBLIC' | 'PAPEL';
   // Secreto del enlace «mi cita» (ver y cambiar la cita sin cuenta)
   cancelToken?: string | null;
   createdAt: string;
@@ -272,6 +274,8 @@ export interface CreateAppointmentRequest {
   professionalId?: string | 'any' | null;
   status?: AppointmentStatus;
   notes?: string;
+  // PAPEL = la clienta la acordó en el cuaderno: no se le manda aviso de «cita agendada»
+  source?: 'ADMIN' | 'PAPEL';
 }
 
 export interface UpdateAppointmentRequest {
