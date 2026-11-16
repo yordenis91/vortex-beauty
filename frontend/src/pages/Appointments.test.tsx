@@ -285,4 +285,25 @@ describe('Agenda de citas', () => {
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).queryByRole('checkbox', { name: /Viene del papel/ })).not.toBeInTheDocument()
   })
+
+  it('«Gestionar horario» ofrece «Cupos extra» a quien reserva por cupos y avisa que la excepción general es para quien reserva por hora', async () => {
+    mockAgenda([])
+    localStorage.setItem('hasSession', '1')
+    server.use(
+      http.post(`${API}/auth/refresh`, () => HttpResponse.json({ user: { id: 'u1', email: 'dueno@demo.com', name: 'Yoel', role: 'OWNER', tenantId: 't1' }, token: 'tok' })),
+      http.get(`${API}/professionals`, () => HttpResponse.json([
+        { id: 'p1', name: 'Yoel', isActive: true, color: '#ec4899', bookingMode: 'TIMED' },
+        { id: 'p2', name: 'Yumi', isActive: true, color: '#0f766e', bookingMode: 'QUOTA', quotaSlots: [] },
+      ])),
+      http.get(`${API}/professionals/p2/quota-extras`, () => HttpResponse.json([])),
+      http.get(`${API}/overrides/:date`, () => HttpResponse.json({ error: 'Sin excepción' }, { status: 404 })),
+    )
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: /Gestionar Horario de este Día/ }))
+    const dialog = await screen.findByRole('dialog')
+    expect(await within(dialog).findByRole('region', { name: 'Cupos de Yumi' })).toBeInTheDocument()
+    expect(within(dialog).queryByRole('region', { name: 'Cupos de Yoel' })).not.toBeInTheDocument() // el de por hora no tiene cupos
+    expect(within(dialog).getByText(/Para quien reserva por cupos usa «Cupos extra»/)).toBeInTheDocument()
+  })
 })
