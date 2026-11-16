@@ -32,9 +32,12 @@ const createAppointmentSchema = z.object({
   professionalId: z.union([z.string().uuid(), z.literal('any')]).nullable().optional(),
   status: z.enum(['PENDING', 'SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).default('SCHEDULED'),
   notes: z.string().optional(),
+  // «PAPEL»: la cita se anotó primero en el cuaderno. Es solo una marca de origen.
+  source: z.enum(['ADMIN', 'PAPEL']).default('ADMIN'),
 });
 
-const updateAppointmentSchema = createAppointmentSchema.partial();
+// El origen se fija al crear; editar la cita no lo cambia (trazabilidad).
+const updateAppointmentSchema = createAppointmentSchema.omit({ source: true }).partial();
 
 const listQuerySchema = z.object({
   from: z.string().optional(), // YYYY-MM-DD
@@ -216,12 +219,15 @@ router.post('/', validateBody(createAppointmentSchema), async (req, res) => {
       professionalId: scope.professionalId ?? data.professionalId ?? 'any',
       notes: data.notes,
       status: data.status === 'PENDING' ? 'PENDING' : 'SCHEDULED',
-      source: 'ADMIN',
+      source: data.source,
     });
 
+    // Una cita de papel ya la acordó la clienta en persona: no se le manda «cita agendada».
     await notifyBestEffort(tenantId, [
-      { recipient: 'ADMIN', content: `Nueva cita agendada (panel): ${appointment.client.name} - ${appointment.serviceName}, ${dateOnly(appointment.date)} ${appointment.startTime}-${appointment.endTime}` },
-      { recipient: appointment.clientId, clientId: appointment.clientId, content: `Tu cita para ${appointment.serviceName} ha sido agendada para el ${dateOnly(appointment.date)} a las ${appointment.startTime}.` },
+      { recipient: 'ADMIN', content: `Nueva cita agendada (${data.source === 'PAPEL' ? 'del papel' : 'panel'}): ${appointment.client.name} - ${appointment.serviceName}, ${dateOnly(appointment.date)} ${appointment.startTime}-${appointment.endTime}` },
+      ...(data.source === 'PAPEL'
+        ? []
+        : [{ recipient: appointment.clientId, clientId: appointment.clientId, content: `Tu cita para ${appointment.serviceName} ha sido agendada para el ${dateOnly(appointment.date)} a las ${appointment.startTime}.` }]),
     ]);
 
     res.status(201).json(appointment);

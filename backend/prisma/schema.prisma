@@ -656,6 +656,8 @@ enum BookingSource {
   ADMIN
   PORTAL
   PUBLIC
+  // Anotada primero en el cuaderno y pasada después al panel.
+  PAPEL
 }
 
 enum Vertical {

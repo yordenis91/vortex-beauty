@@ -198,7 +198,8 @@ export async function processConfirmed(tenantId: string, appointmentId: string):
     const data = await load(tenantId, appointmentId);
     if (!data || !isActive(data.appointment.status)) return 'done';
     const key = `confirmed:${appointmentId}:${data.appointment.startsAt.getTime()}`;
-    const customer = await sendToCustomer(tenantId, data, key, confirmedMessage(data.ctx));
+    // Cita anotada del papel: la clienta ya la acordó en persona, no se le confirma de nuevo.
+    const customer = data.appointment.source === 'PAPEL' ? 'done' : await sendToCustomer(tenantId, data, key, confirmedMessage(data.ctx));
     const owner = await alertOwner(tenantId, data, 'created', key, data.appointment.source);
     const pro = await alertProfessional(tenantId, data, 'created', key);
     return [customer, owner, pro].includes('retry') ? 'retry' : 'done';
