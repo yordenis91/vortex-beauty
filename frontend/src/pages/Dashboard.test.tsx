@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { describe, it, expect, afterEach } from 'vitest'
+import { act, screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import Dashboard from './Dashboard'
 import { renderWithProviders } from '../test/render'
 import { server, API } from '../test/server'
+import { resetInstallState, startCapturingInstallPrompt } from '../lib/pwaInstall'
 
 // El panel usa el «hoy» del salón (America/Havana en estas pruebas), no el de UTC.
 const havana = (at: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Havana' }).format(at)
@@ -127,5 +128,29 @@ describe('Panel de control', () => {
     renderWithProviders(<Dashboard />)
     await screen.findByText('Citas de hoy')
     expect(screen.queryByRole('region', { name: 'Siguiente cita' })).not.toBeInTheDocument()
+  })
+})
+
+describe('Panel de control: instalar en el celular', () => {
+  afterEach(() => {
+    resetInstallState()
+    window.history.pushState({}, '', '/')
+  })
+
+  it('con la instalación disponible, invita arriba del todo', async () => {
+    resetInstallState()
+    window.history.pushState({}, '', '/admin/dashboard')
+    startCapturingInstallPrompt()
+    act(() => void window.dispatchEvent(Object.assign(new Event('beforeinstallprompt', { cancelable: true }), { prompt: async () => {}, userChoice: Promise.resolve({ outcome: 'accepted' }) })))
+    mockPanel({}, [])
+    renderWithProviders(<Dashboard />)
+    expect(await screen.findByRole('heading', { name: 'Instala tu Afilao en el celular' })).toBeInTheDocument()
+  })
+
+  it('en escritorio no estorba', async () => {
+    mockPanel({}, [])
+    renderWithProviders(<Dashboard />)
+    await screen.findByRole('heading', { name: 'Panel de control' })
+    expect(screen.queryByRole('heading', { name: 'Instala tu Afilao en el celular' })).toBeNull()
   })
 })
