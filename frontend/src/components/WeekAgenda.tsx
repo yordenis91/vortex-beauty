@@ -7,6 +7,8 @@ import type { Appointment } from '../types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import './week-agenda.css';
+import PaperBadge from './PaperBadge';
+import { isFromPaper } from '../lib/paper';
 import { useLabels } from '@/hooks/useLabels';
 
 const localizer = dateFnsLocalizer({
@@ -139,6 +141,14 @@ const WeekAgenda: React.FC<Props> = ({ appointments, date, view, hours, stepMinu
               textDecoration: a.status === 'NO_SHOW' ? 'line-through' : undefined,
             },
           };
+        }}
+        components={{
+          event: ({ event }) => (
+            <span>
+              {isFromPaper(event.appointment) && <PaperBadge className="mr-1" />}
+              {event.title}
+            </span>
+          ),
         }}
         tooltipAccessor={(e) =>
           `${e.appointment.startTime}–${e.appointment.endTime} · ${e.appointment.serviceName}${e.appointment.professional ? ` · ${e.appointment.professional.name}` : ''}`

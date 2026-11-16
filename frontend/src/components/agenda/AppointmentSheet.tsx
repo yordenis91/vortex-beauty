@@ -1,3 +1,5 @@
+import PaperBadge from '../PaperBadge';
+import { isFromPaper } from '../../lib/paper';
 import React from 'react';
 import { CalendarPlus, Check, Link2, Pencil, Phone, MessageCircle, UserX, X } from 'lucide-react';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
@@ -47,7 +49,7 @@ const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, salonSlug, 
         {a && (
           <>
             <DrawerHeader className="text-left">
-              <DrawerTitle className="text-xl">{a.client?.name ?? 'Cliente'}</DrawerTitle>
+              <DrawerTitle className="text-xl">{a.client?.name ?? 'Cliente'}{isFromPaper(a) && <PaperBadge className="ml-2" />}</DrawerTitle>
               <DrawerDescription>
                 {a.serviceName} · {a.startTime}–{a.endTime}
                 {a.professional ? ` · ${a.professional.name}` : ''} · {STATUS_LABEL[a.status]}
