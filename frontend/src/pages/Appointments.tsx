@@ -1,6 +1,7 @@
 import { formatYmd } from '../lib/dates';
 import { appointmentLink, confirmationMessage, whatsappLink } from '../lib/whatsapp';
 import { copyText } from '../lib/clipboard';
+import QuotaExtras from '../components/QuotaExtras';
 import PaperBadge from '../components/PaperBadge';
 import { isFromPaper } from '../lib/paper';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -174,6 +175,7 @@ const Appointments: React.FC = () => {
   const { data: clients = [], isLoading: clientsLoading } = useClients();
   const { data: services = [], isLoading: servicesLoading } = useServices();
   const { data: professionalList = [] } = useProfessionals(true);
+  const quotaProfessionals = useMemo(() => professionalList.filter((p) => p.isActive && p.bookingMode === 'QUOTA'), [professionalList]);
   const { data: businessHours = [], isLoading: businessHoursLoading } = useBusinessHours();
   const { data: bookingSettings } = useBookingSettings();
   const { data: closedDates = [], isLoading: closedDatesLoading } = useClosedDates();
@@ -1215,6 +1217,20 @@ const Appointments: React.FC = () => {
                       </div>
                     </div>
 
+                    {quotaProfessionals.length > 0 && (
+                      <div className="border-b border-border pb-4">
+                        <h4 className="text-sm font-semibold text-foreground">Cupos extra</h4>
+                        <p className="mt-1 mb-3 text-xs text-muted-foreground">
+                          ¿Quieres atender a alguien más este día? Agrega un cupo extra: vale solo para {selectedDate && format(parseDateString(selectedDate), "d 'de' MMMM", { locale: es })} y no cambia sus cupos de siempre.
+                        </p>
+                        <div className="space-y-3">
+                          {quotaProfessionals.map((p) => (
+                            <QuotaExtras key={p.id} professional={p} date={selectedDate} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="border-b border-border pb-4">
                       <label className="block text-sm font-medium text-foreground mb-2">Horarios disponibles para este día</label>
                       <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -1234,6 +1250,9 @@ const Appointments: React.FC = () => {
                         </button>
                       </div>
                       <p className="text-xs text-muted-foreground">Agrega horarios específicos para este día. Se ordenarán automáticamente.</p>
+                      {quotaProfessionals.length > 0 && (
+                        <p className="mt-1 text-xs text-muted-foreground">Estas horas son para quien reserva por hora. Para quien reserva por cupos usa «Cupos extra».</p>
+                      )}
 
                       <div className="flex flex-wrap gap-2 mt-3">
                         {sortTimeSlots(overrideTimeSlots).map((slot) => (

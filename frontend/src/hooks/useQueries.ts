@@ -671,6 +671,55 @@ export const useDeleteScheduleOverride = (options?: MutationOptions) => {
   });
 };
 
+// ==================== CUPOS EXTRA (por profesional y fecha) ====================
+
+export interface QuotaExtra {
+  id: string;
+  date: string;
+  time: string;
+}
+
+/** Cupos extra de un profesional por cupos en un día concreto. */
+export const useQuotaExtras = (professionalId: string, date: string) =>
+  useQuery({
+    queryKey: ['quota-extras', professionalId, date],
+    queryFn: async () => {
+      const response = await api.get<QuotaExtra[]>(`/professionals/${professionalId}/quota-extras`, { params: { from: date, to: date } });
+      return response.data;
+    },
+    enabled: !!professionalId && !!date,
+  });
+
+const refreshAvailability = (queryClient: ReturnType<typeof useQueryClient>) => {
+  queryClient.invalidateQueries({ queryKey: ['quota-extras'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-slots'] });
+  queryClient.invalidateQueries({ queryKey: ['available-slots'] });
+  queryClient.invalidateQueries({ queryKey: ['fully-booked-dates'] });
+};
+
+export const useAddQuotaExtra = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ professionalId, date, time }: { professionalId: string; date: string; time: string }) => {
+      const response = await api.post<QuotaExtra>(`/professionals/${professionalId}/quota-extras`, { date, time });
+      return response.data;
+    },
+    onError: (error: unknown) => toast.error(getErrorMessage(error, 'No se pudo agregar el cupo extra.')),
+    onSuccess: () => refreshAvailability(queryClient),
+  });
+};
+
+export const useRemoveQuotaExtra = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ professionalId, id }: { professionalId: string; id: string }) => {
+      await api.delete(`/professionals/${professionalId}/quota-extras/${id}`);
+    },
+    onError: (error: unknown) => toast.error(getErrorMessage(error, 'No se pudo quitar el cupo extra.')),
+    onSuccess: () => refreshAvailability(queryClient),
+  });
+};
+
 // ==================== FULLY BOOKED DATES HOOKS ====================
 
 /**

@@ -142,15 +142,19 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
 
   // ---- Calendario del salón: día cerrado, excepción, horario comercial ----
   const dayOfWeek = dayOfWeekFromDateString(q.dateStr);
-  const [closedDate, override, businessHour] = await Promise.all([
+  const [closedDate, override, businessHour, quotaExtras] = await Promise.all([
     tx.closedDate.findUnique({ where: { tenantId_date: { tenantId: q.tenantId, date: q.dateStr } } }),
     tx.scheduleOverride.findUnique({ where: { tenantId_date: { tenantId: q.tenantId, date: q.dateStr } } }),
     tx.businessHour.findUnique({ where: { tenantId_dayOfWeek: { tenantId: q.tenantId, dayOfWeek } } }),
+    // Cupos extra de ese día (solo cuentan para quien reserva por cupos).
+    tx.professionalQuotaExtra.findMany({ where: { tenantId: q.tenantId, date: q.dateStr } }),
   ]);
 
   if (closedDate) return empty('El salón está cerrado ese día');
   // Una excepción para la fecha abre el día aunque el horario habitual esté cerrado.
-  if (!override && (!businessHour || !businessHour.isOpen)) return empty('El salón está cerrado ese día');
+  // Un cupo extra también lo abre, pero solo para quien lo tiene (ver weeklyOpen).
+  const weeklyOpen = !!override || !!businessHour?.isOpen;
+  if (!weeklyOpen && quotaExtras.length === 0) return empty('El salón está cerrado ese día');
 
   const explicitStarts = override ? override.timeSlots : businessHour?.timeSlots ?? [];
   const useExplicit = explicitStarts.length > 0;
@@ -195,7 +199,7 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
 
   const timedPros = eligible.filter((p) => p.bookingMode === 'TIMED');
   const quotaPros = eligible.filter((p) => p.bookingMode === 'QUOTA');
-  const timedOpen = timedPros.length > 0 && !dayFull;
+  const timedOpen = timedPros.length > 0 && !dayFull && weeklyOpen;
 
   const resources = service.resources.map((sr) => sr.resource).filter((r) => r.isActive);
   if (timedOpen && service.resources.length > 0 && resources.length === 0 && quotaPros.length === 0) {
@@ -212,9 +216,9 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
     // Nadie reserva por hora este día: solo quedan los cupos.
   } else if (useExplicit) {
     candidates.push(...explicitStarts);
-  } else {
-    const open = timeToMinutes(businessHour!.startTime);
-    const close = timeToMinutes(businessHour!.endTime);
+  } else if (businessHour) {
+    const open = timeToMinutes(businessHour.startTime);
+    const close = timeToMinutes(businessHour.endTime);
     for (let m = open; m + duration <= close; m += settings.slotIntervalMin) {
       candidates.push(minutesToTime(m));
     }
@@ -273,7 +277,12 @@ export async function computeSlots(tx: Prisma.TransactionClient, q: SlotQuery): 
 
   // ---- Cupos: horas exactas definidas por cada profesional para ese día de la semana ----
   for (const p of quotaPros) {
-    for (const quota of p.quotaSlots.filter((slot) => slot.dayOfWeek === dayOfWeek)) {
+    // Cupos semanales (si el día está abierto) más los extras de esta fecha, sin repetir horas.
+    const times = new Set<string>();
+    if (weeklyOpen) for (const slot of p.quotaSlots) if (slot.dayOfWeek === dayOfWeek) times.add(slot.time);
+    for (const extra of quotaExtras) if (extra.professionalId === p.id) times.add(extra.time);
+    for (const time of times) {
+      const quota = { time };
       const startsAt = localToInstant(tz, q.dateStr, quota.time);
       const endsAt = new Date(startsAt.getTime() + duration * 60000);
       const blockEndsAt = new Date(startsAt.getTime() + QUOTA_BLOCK_MS);

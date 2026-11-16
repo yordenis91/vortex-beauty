@@ -160,15 +160,19 @@ router.get('/fully-booked-dates', async (req, res) => {
     const timeOffs = quotaPros.length
       ? await prisma.timeOff.findMany({ where: { tenantId, professionalId: { in: quotaPros.map((p) => p.id) }, endsAt: { gt: new Date() } } })
       : [];
+    const extras = await prisma.professionalQuotaExtra.findMany({
+      where: { tenantId, date: { in: capped }, professionalId: { in: quotaPros.map((p) => p.id) } },
+    });
     const taken = new Set(appointments.filter((a) => a.professionalId).map((a) => `${a.professionalId}|${a.startsAt.toISOString()}`));
     const hasFreeCupo = (dateStr: string) =>
       quotaPros.some((p) =>
-        p.quotaSlots
-          .filter((q) => q.dayOfWeek === dayOfWeekFromDateString(dateStr))
-          .some((q) => {
-            const at = localToInstant(timezone, dateStr, q.time);
-            return !taken.has(`${p.id}|${at.toISOString()}`) && !timeOffs.some((t) => t.professionalId === p.id && t.startsAt <= at && at < t.endsAt);
-          })
+        [
+          ...p.quotaSlots.filter((q) => q.dayOfWeek === dayOfWeekFromDateString(dateStr)),
+          ...extras.filter((x) => x.professionalId === p.id && x.date === dateStr), // cupos extra de esa fecha
+        ].some((q) => {
+          const at = localToInstant(timezone, dateStr, q.time);
+          return !taken.has(`${p.id}|${at.toISOString()}`) && !timeOffs.some((t) => t.professionalId === p.id && t.startsAt <= at && at < t.endsAt);
+        })
       );
     const fullyBooked = capped.filter((dateStr) => !hasFreeCupo(dateStr));
     res.json(fullyBooked);

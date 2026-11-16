@@ -8,7 +8,7 @@ import { runInTransaction } from '../lib/db';
 import { authenticateToken } from '../middleware/auth';
 import { hasPermission, requirePermission } from '../middleware/can';
 import { validateBody } from '../middleware/validate';
-import { dayOfWeekFromDateString, instantToLocal, timeToMinutes } from '../lib/time';
+import { dayOfWeekFromDateString, instantToLocal, isValidDateString, localToInstant, timeToMinutes } from '../lib/time';
 import { getTenantTimezone } from '../lib/tenantInfo';
 import { assertPlanAllows, PlanLimitError } from '../services/planLimits';
 import { revokeAllSessions } from '../services/sessions';
@@ -105,6 +105,7 @@ async function replaceQuotaSlots(
     const upcoming = await tx.appointment.findMany({
       where: { professionalId, tenantId, status: { in: ['SCHEDULED', 'PENDING'] }, startsAt: { gte: new Date() } },
       select: { startsAt: true },
+      orderBy: { startsAt: 'asc' }, // el aviso nombra la primera cita afectada
     });
     const removedKeys = new Set(removed.map(key));
     for (const a of upcoming) {
@@ -403,6 +404,84 @@ router.delete('/time-off/:timeOffId', requirePermission('catalog:manage'), async
   } catch (error) {
     console.error('Error deleting time off:', error);
     res.status(500).json({ error: 'Failed to delete time off' });
+  }
+});
+
+// ---- Cupos extra: una hora más, solo para una fecha, para quien reserva por cupos ----
+
+const quotaExtraSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato AAAA-MM-DD').refine(isValidDateString, 'Fecha inválida'),
+  time: z.string().regex(timeRegex, 'La hora debe tener formato HH:mm').refine((t) => timeToMinutes(t) < 24 * 60, 'Hora inválida'),
+});
+
+router.get('/:id/quota-extras', requirePermission('appointments:own'), async (req, res) => {
+  try {
+    const { from, to } = req.query as { from?: string; to?: string };
+    const validDay = (v?: string) => (v && isValidDateString(v) ? v : undefined);
+    const extras = await prisma.professionalQuotaExtra.findMany({
+      where: {
+        professionalId: req.params.id as string,
+        tenantId: req.user!.tenantId,
+        ...(validDay(from) || validDay(to) ? { date: { ...(validDay(from) ? { gte: validDay(from) } : {}), ...(validDay(to) ? { lte: validDay(to) } : {}) } } : {}),
+      },
+      orderBy: [{ date: 'asc' }, { time: 'asc' }],
+      select: { id: true, date: true, time: true },
+    });
+    res.json(extras);
+  } catch (error) {
+    console.error('Error fetching quota extras:', error);
+    res.status(500).json({ error: 'No se pudieron cargar los cupos extra' });
+  }
+});
+
+router.post('/:id/quota-extras', requirePermission('catalog:manage'), validateBody(quotaExtraSchema), async (req, res) => {
+  try {
+    const { tenantId } = req.user!;
+    const id = req.params.id as string;
+    const { date, time } = req.body as z.infer<typeof quotaExtraSchema>;
+
+    const professional = await prisma.professional.findFirst({ where: { id, tenantId }, include: { quotaSlots: true } });
+    if (!professional) return res.status(404).json({ error: 'Profesional no encontrado' });
+    if (professional.bookingMode !== 'QUOTA') return res.status(409).json({ error: 'Este profesional reserva por hora, no por cupos.' });
+
+    const timezone = await getTenantTimezone(tenantId);
+    if (date < instantToLocal(timezone, new Date()).dateStr) return res.status(409).json({ error: 'No se puede agregar un cupo en un día que ya pasó.' });
+    if (professional.quotaSlots.some((q) => q.dayOfWeek === dayOfWeekFromDateString(date) && q.time === time)) {
+      return res.status(409).json({ error: 'Esa hora ya es uno de sus cupos de ese día.' });
+    }
+    const closed = await prisma.closedDate.findUnique({ where: { tenantId_date: { tenantId, date } } });
+    if (closed) return res.status(409).json({ error: 'El salón está cerrado ese día.' });
+
+    const existing = await prisma.professionalQuotaExtra.findUnique({ where: { professionalId_date_time: { professionalId: id, date, time } } });
+    if (existing) return res.status(409).json({ error: 'Ese cupo extra ya existe.' });
+
+    const created = await prisma.professionalQuotaExtra.create({ data: { tenantId, professionalId: id, date, time }, select: { id: true, date: true, time: true } });
+    res.status(201).json(created);
+  } catch (error) {
+    console.error('Error creating quota extra:', error);
+    res.status(500).json({ error: 'No se pudo agregar el cupo extra' });
+  }
+});
+
+router.delete('/:id/quota-extras/:extraId', requirePermission('catalog:manage'), async (req, res) => {
+  try {
+    const { tenantId } = req.user!;
+    const id = req.params.id as string;
+    const extra = await prisma.professionalQuotaExtra.findFirst({ where: { id: req.params.extraId as string, professionalId: id, tenantId } });
+    if (!extra) return res.status(404).json({ error: 'Cupo extra no encontrado' });
+
+    const timezone = await getTenantTimezone(tenantId);
+    const at = localToInstant(timezone, extra.date, extra.time);
+    const booked = await prisma.appointment.count({
+      where: { tenantId, professionalId: id, status: { in: ['SCHEDULED', 'PENDING'] }, startsAt: at },
+    });
+    if (booked > 0) return res.status(409).json({ error: 'Ese cupo tiene una cita. Reprograma o cancela esa cita primero.' });
+
+    await prisma.professionalQuotaExtra.delete({ where: { id: extra.id } });
+    res.json({ message: 'Cupo extra eliminado' });
+  } catch (error) {
+    console.error('Error deleting quota extra:', error);
+    res.status(500).json({ error: 'No se pudo quitar el cupo extra' });
   }
 });
 
