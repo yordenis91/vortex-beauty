@@ -4,7 +4,7 @@ import prisma, { basePrisma } from '../prismaClient';
 import { createHash } from 'crypto';
 import { DateTime } from 'luxon';
 import { config } from '../config';
-import { isoWeekOf, renderWeekPdf, weekLabel, weekRange, type PrintDay } from '../services/weekPdf';
+import { isoWeekOf, parsePrintRange, renderWeekPdf, weekLabel, weekRange, type PrintDay } from '../services/weekPdf';
 import { authenticateToken } from '../middleware/auth';
 import { appointmentScope, requirePermission } from '../middleware/can';
 import { validateBody } from '../middleware/validate';
@@ -116,10 +116,21 @@ router.get('/print', async (req, res) => {
     if (!tenant) return res.status(404).json({ error: 'Salón no encontrado' });
 
     const today = instantToLocal(tenant.timezone, new Date()).dateStr;
-    const weekParam = typeof req.query.week === 'string' ? req.query.week : isoWeekOf(today);
-    const range = weekRange(weekParam);
-    if (!range) return res.status(400).json({ error: 'La semana debe tener formato AAAA-Www, por ejemplo 2026-W47.' });
-
+    // O una semana ISO (?week=2026-W47) o un rango (?from=AAAA-MM-DD&to=AAAA-MM-DD, hasta 92 días). Sin nada, la semana actual.
+    const { week, from, to } = req.query;
+    let first: string;
+    let last: string;
+    let fileTag: string;
+    if (typeof from === 'string' || typeof to === 'string') {
+      const parsed = parsePrintRange(typeof from === 'string' ? from : '', typeof to === 'string' ? to : '');
+      if ('error' in parsed) return res.status(400).json({ error: parsed.error });
+      [first, last, fileTag] = [parsed.from, parsed.to, `${parsed.from}_${parsed.to}`];
+    } else {
+      const weekParam = typeof week === 'string' ? week : isoWeekOf(today);
+      const range = weekRange(weekParam);
+      if (!range) return res.status(400).json({ error: 'La semana debe tener formato AAAA-Www, por ejemplo 2026-W47.' });
+      [first, last, fileTag] = [range.monday, range.sunday, weekParam];
+    }
     const scope = await appointmentScope(req);
     const rows = scope.none
       ? []
@@ -127,7 +138,7 @@ router.get('/print', async (req, res) => {
           where: {
             tenantId,
             status: { not: 'CANCELLED' },
-            startsAt: { gte: localDayRange(tenant.timezone, range.monday).start, lt: localDayRange(tenant.timezone, addDaysToDateString(range.sunday, 1)).start },
+            startsAt: { gte: localDayRange(tenant.timezone, first).start, lt: localDayRange(tenant.timezone, addDaysToDateString(last, 1)).start },
             professionalId: scope.professionalId,
           },
           select: {
@@ -141,13 +152,14 @@ router.get('/print', async (req, res) => {
 
     const qrUrl = `${config.appPublicUrl}/${tenant.slug}/login`;
     const fingerprint = createHash('sha1')
-      .update(JSON.stringify([tenant.name, qrUrl, range.monday, rows.map((r) => [r.id, r.updatedAt.getTime(), r.client.name, r.professional?.name])]))
+      .update(JSON.stringify([tenant.name, qrUrl, first, last, rows.map((r) => [r.id, r.updatedAt.getTime(), r.client.name, r.professional?.name])]))
       .digest('hex');
-    const key = `${tenantId}|${range.monday}|${scope.professionalId ?? 'todas'}|${fingerprint}`;
+    const key = `${tenantId}|${first}|${last}|${scope.professionalId ?? 'todas'}|${fingerprint}`;
 
     let hit = printCache.get(key);
     if (!hit || hit.expires <= Date.now()) {
-      const days: PrintDay[] = Array.from({ length: 7 }, (_, i) => ({ dateStr: addDaysToDateString(range.monday, i), rows: [] }));
+      const length = Math.round((Date.parse(last) - Date.parse(first)) / 86_400_000) + 1;
+      const days: PrintDay[] = Array.from({ length }, (_, i) => ({ dateStr: addDaysToDateString(first, i), rows: [] }));
       for (const a of rows) {
         const start = instantToLocal(tenant.timezone, a.startsAt);
         days.find((d) => d.dateStr === start.dateStr)?.rows.push({
@@ -162,7 +174,7 @@ router.get('/print', async (req, res) => {
         });
       }
       const generatedAt = DateTime.now().setZone(tenant.timezone).toFormat('dd/LL/yyyy HH:mm');
-      const pdf = await renderWeekPdf({ salonName: tenant.name, weekLabel: weekLabel(range.monday, range.sunday), days, qrUrl, generatedAt });
+      const pdf = await renderWeekPdf({ salonName: tenant.name, weekLabel: weekLabel(first, last), days, qrUrl, generatedAt, hideEmptyDays: length > 7 });
       if (printCache.size >= PRINT_MAX_ENTRIES) printCache.delete(printCache.keys().next().value!);
       hit = { pdf, expires: Date.now() + PRINT_TTL_MS };
       printCache.set(key, hit);
@@ -170,7 +182,7 @@ router.get('/print', async (req, res) => {
 
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="agenda-${weekParam}.pdf"`,
+      'Content-Disposition': `inline; filename="agenda-${fileTag}.pdf"`,
       'Cache-Control': 'private, no-store', // lleva datos de clientas: nada de cachés compartidas
       'X-Content-Type-Options': 'nosniff',
     });

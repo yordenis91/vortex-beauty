@@ -29,6 +29,21 @@ export interface WeekPdfInput {
   days: PrintDay[];
   qrUrl: string;
   generatedAt: string; // «16/11/2026 21:30»
+  /** En un rango largo no se pintan los días sin citas (la hoja de una semana sí los lleva, para anotar en ellos). */
+  hideEmptyDays?: boolean;
+}
+
+/** Tope del rango a imprimir: un trimestre. Más páginas ya no es una agenda para tener al lado. */
+export const MAX_PRINT_DAYS = 92;
+
+/** Valida un rango «desde–hasta» (YYYY-MM-DD, inclusive). Devuelve los extremos o el motivo del rechazo. */
+export function parsePrintRange(from: string, to: string): { from: string; to: string } | { error: string } {
+  const a = DateTime.fromISO(from, { zone: 'utc' });
+  const b = DateTime.fromISO(to, { zone: 'utc' });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || !a.isValid || !b.isValid) return { error: 'Las fechas deben tener formato AAAA-MM-DD.' };
+  if (b < a) return { error: 'La fecha final no puede ser anterior a la inicial.' };
+  if (b.diff(a, 'days').days + 1 > MAX_PRINT_DAYS) return { error: `Elige hasta ${MAX_PRINT_DAYS} días como máximo.` };
+  return { from, to };
 }
 
 /** Solo para pruebas: sin comprimir, el texto del PDF se puede leer y comprobar. */
@@ -128,7 +143,7 @@ export async function renderWeekPdf(input: WeekPdfInput): Promise<Buffer> {
   const widthPro = colEnd - colPro - 8;
 
   doc.font('Helvetica-Bold').fontSize(18).fillColor(INK).text(safe(input.salonName) || 'Agenda', MARGIN, MARGIN, { width, lineBreak: false });
-  doc.font('Helvetica').fontSize(11).fillColor(MUTED).text(`Agenda de la semana: ${input.weekLabel}`, MARGIN, doc.y + 2, { width });
+  doc.font('Helvetica').fontSize(11).fillColor(MUTED).text(`${input.hideEmptyDays ? 'Agenda' : 'Agenda de la semana'}: ${input.weekLabel}`, MARGIN, doc.y + 2, { width });
   if (anyPaper) {
     const y = doc.y + 4;
     pencil(doc, MARGIN + 1, y + 8);
@@ -141,7 +156,16 @@ export async function renderWeekPdf(input: WeekPdfInput): Promise<Buffer> {
     if (doc.y + needed > bottom()) doc.addPage();
   };
 
-  for (const day of input.days) {
+  const shown = input.hideEmptyDays ? input.days.filter((d) => d.rows.length > 0) : input.days;
+  if (shown.length === 0) {
+    doc.font('Helvetica-Oblique').fontSize(11).fillColor(MUTED).text('Sin citas en estas fechas.', MARGIN, doc.y + 6, { width, lineBreak: false });
+    doc.y += 24;
+  } else if (input.hideEmptyDays) {
+    doc.font('Helvetica').fontSize(9).fillColor(MUTED).text('Los días sin citas no aparecen.', MARGIN, doc.y, { width, lineBreak: false });
+    doc.y += 8;
+  }
+
+  for (const day of shown) {
     ensure(20 + 22); // el título del día no se queda solo al final de la página
     const y = doc.y + 6;
     doc.font('Helvetica-Bold').fontSize(12).fillColor(INK).text(dayLabel(day.dateStr), MARGIN, y, { width, lineBreak: false });
