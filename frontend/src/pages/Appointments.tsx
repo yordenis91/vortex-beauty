@@ -3,6 +3,7 @@ import { appointmentLink, confirmationMessage, whatsappLink } from '../lib/whats
 import { copyText } from '../lib/clipboard';
 import QuotaExtras from '../components/QuotaExtras';
 import PaperBadge from '../components/PaperBadge';
+import PrintWeekButton from '../components/PrintWeekButton';
 import { isFromPaper } from '../lib/paper';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -546,6 +547,7 @@ const Appointments: React.FC = () => {
               </button>
             ))}
           </div>
+          <PrintWeekButton date={currentDate} />
           <button
             onClick={() => {
               if (!validateDayForBooking(currentDate)) return;
