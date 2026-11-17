@@ -18,10 +18,21 @@ const NONE: InstallOption = { kind: 'none' };
 const PROMPT: InstallOption = { kind: 'prompt' };
 const IOS: InstallOption = { kind: 'ios' };
 
-/** Rutas de la clienta: /<salón>/reservar y /<salón>/mi-cita/<enlace>. En el panel no se toca nada. */
+/**
+ * Qué se instala según la página donde Chrome avisa:
+ *  - `public`: la reserva de un salón (/<salón>/reservar, /<salón>/mi-cita/<enlace>); su manifiesto es el del salón.
+ *  - `app`: el panel (/admin…) y sus pantallas de entrada (/login, /<salón>/login); su manifiesto es el de Afilao.
+ * Un aviso de un tipo no sirve para el otro: instalaría otra app. En el resto de páginas no se intercepta nada.
+ */
+export type InstallScope = 'public' | 'app';
+
 export const isPublicBookingPath = (path: string) => /^\/[a-z0-9-]+\/(reservar|mi-cita\/)/.test(path);
+export const isAppPath = (path: string) => /^\/(admin(\/|$)|login\/?$|(?!superadmin\/)[a-z0-9-]+\/login\/?$)/.test(path);
+
+const scopeOf = (path: string): InstallScope | null => (isPublicBookingPath(path) ? 'public' : isAppPath(path) ? 'app' : null);
 
 let deferred: BeforeInstallPromptEvent | null = null;
+let deferredScope: InstallScope | null = null;
 let installed = false;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((fn) => fn());
@@ -35,9 +46,9 @@ const isIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.p
 const isInAppBrowser = () => /FBAN|FBAV|FB_IAB|Instagram|Line\/|MicroMessenger|Snapchat|TikTok|Twitter/i.test(navigator.userAgent);
 
 /** Cuál es la opción de instalación en este dispositivo ahora mismo. */
-export function currentOption(): InstallOption {
+export function currentOption(scope: InstallScope = 'public'): InstallOption {
   if (installed || isStandalone() || isInAppBrowser()) return NONE;
-  if (deferred) return PROMPT;
+  if (deferred && deferredScope === scope) return PROMPT;
   return isIos() ? IOS : NONE;
 }
 
@@ -47,14 +58,17 @@ export function startCapturingInstallPrompt() {
   if (started || typeof window === 'undefined') return;
   started = true;
   window.addEventListener('beforeinstallprompt', (event) => {
-    if (!isPublicBookingPath(window.location.pathname)) return; // el panel conserva el comportamiento del navegador
+    const scope = scopeOf(window.location.pathname);
+    if (!scope) return; // el resto de páginas conserva el comportamiento del navegador
     event.preventDefault();
     deferred = event as BeforeInstallPromptEvent;
+    deferredScope = scope;
     emit();
   });
   window.addEventListener('appinstalled', () => {
     installed = true;
     deferred = null;
+    deferredScope = null;
     emit();
   });
 }
@@ -64,6 +78,7 @@ export async function promptInstall(): Promise<void> {
   const event = deferred;
   if (!event) return;
   deferred = null; // un aviso solo sirve una vez
+  deferredScope = null;
   emit();
   await event.prompt();
   await event.userChoice.catch(() => undefined);
@@ -74,13 +89,14 @@ const subscribe = (fn: () => void) => {
   return () => void listeners.delete(fn);
 };
 
-export function useInstallOption(): InstallOption {
-  return useSyncExternalStore(subscribe, currentOption, () => NONE);
+export function useInstallOption(scope: InstallScope = 'public'): InstallOption {
+  return useSyncExternalStore(subscribe, () => currentOption(scope), () => NONE);
 }
 
 /** Solo para pruebas. */
 export function resetInstallState() {
   deferred = null;
+  deferredScope = null;
   installed = false;
   started = false;
   listeners.clear();

@@ -4,6 +4,7 @@ import { Calendar, CheckCircle2, Clock, Users, ArrowRight } from 'lucide-react';
 import { useAppointments, useBookingSettings, useClients } from '../hooks/useQueries';
 import { useLabels } from '@/hooks/useLabels';
 import NextAppointmentCard from '../components/NextAppointmentCard';
+import AdminInstallCard from '../components/AdminInstallCard';
 import { localParts, nextAppointment } from '../lib/agenda';
 
 const Dashboard: React.FC = () => {
@@ -44,6 +45,8 @@ const Dashboard: React.FC = () => {
         <h1 className="text-2xl font-bold text-foreground">Panel de control</h1>
         <p className="mt-1 text-sm text-muted-foreground">Resumen de tu agenda.</p>
       </div>
+
+      <AdminInstallCard slug={settings?.slug} />
 
       {next && <NextAppointmentCard next={next} today={today} salonName={settings?.name} salonSlug={settings?.slug} appointmentWord={label('appointment')} />}
 

@@ -107,12 +107,26 @@ describe('sin fricción durante la reserva', () => {
   })
 })
 
-describe('el panel no cambia', () => {
-  it('fuera de la reserva pública, el aviso de Chrome no se intercepta', () => {
+describe('qué se intercepta según la página', () => {
+  const at = (path: string) => {
     resetInstallState()
-    window.history.pushState({}, '', '/admin/dashboard')
+    window.history.pushState({}, '', path)
     startCapturingInstallPrompt()
-    const { event } = chromeOffersInstall()
-    expect(event.defaultPrevented).toBe(false)
+    return chromeOffersInstall().event.defaultPrevented
+  }
+
+  it('en el panel y en las pantallas de entrada se guarda el aviso', () => {
+    for (const path of ['/admin/dashboard', '/admin', '/login', '/yumi/login']) expect(at(path), path).toBe(true)
+  })
+
+  it('en el resto (landing, superadmin) el navegador conserva su comportamiento', () => {
+    for (const path of ['/', '/superadmin/login', '/superadmin/dashboard', '/design-system']) expect(at(path), path).toBe(false)
+  })
+
+  it('el aviso del panel no sirve para la reserva de un salón, ni al revés', () => {
+    window.history.pushState({}, '', '/admin/dashboard')
+    chromeOffersInstall()
+    render(<InstallCard salonName="Yumi" />)
+    expect(screen.queryByRole('button', { name: BUTTON })).toBeNull()
   })
 })

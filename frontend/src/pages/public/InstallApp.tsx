@@ -1,9 +1,9 @@
 import React, { useId, useState } from 'react';
 import { Share, SquarePlus } from 'lucide-react';
-import { promptInstall, useInstallOption } from '../../lib/pwaInstall';
+import { promptInstall, useInstallOption, type InstallScope } from '../../lib/pwaInstall';
 
 /** Camino para añadir la página a la pantalla de inicio del iPhone (no tiene diálogo de instalación). */
-const IosSteps: React.FC<{ id: string }> = ({ id }) => (
+export const IosSteps: React.FC<{ id: string }> = ({ id }) => (
   <ol id={id} className="mx-auto max-w-xs space-y-2 rounded-xl bg-muted p-4 text-left text-sm text-foreground">
     <li className="flex items-start gap-2.5">
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-card text-xs font-semibold text-muted-foreground">1</span>
@@ -34,8 +34,8 @@ const buttonClass =
  * Botón de instalar (solo se usa en la tarjeta de la confirmación): en Android abre el diálogo del navegador; en iPhone despliega los pasos.
  * No se pinta si no hay nada que ofrecer (ya instalada, escritorio, navegador incrustado…).
  */
-const InstallButton: React.FC<{ className?: string }> = ({ className }) => {
-  const option = useInstallOption();
+export const InstallButton: React.FC<{ className?: string; scope?: InstallScope }> = ({ className, scope = 'public' }) => {
+  const option = useInstallOption(scope);
   const [open, setOpen] = useState(false);
   const stepsId = useId();
   if (option.kind === 'none') return null;
