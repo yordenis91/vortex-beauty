@@ -323,5 +323,7 @@ describe('Agenda del móvil', () => {
     await screen.findByText('Carlos Méndez')
     await user.click(screen.getByRole('button', { name: 'Más opciones del día' }))
     expect(await screen.findByRole('menuitem', { name: /Imprimir mi semana/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Imprimir este mes/ })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /Imprimir otras fechas/ })).toBeInTheDocument()
   })
 })

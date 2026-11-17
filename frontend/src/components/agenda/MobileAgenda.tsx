@@ -7,7 +7,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useTimeOff } from '../../hooks/useQueries';
 import type { Appointment, AppointmentStatus, Professional } from '../../types';
 import { blockOnDay, buildTimeline, localParts, marksByDate, parseYmd, toHHmm, toMin, ymd } from '../../lib/agenda';
-import { printWeek } from '../../lib/printWeek';
+import { monthRange, printRange, printWeek } from '../../lib/printWeek';
+import PrintRangeDialog from '../PrintRangeDialog';
 import AgendaCalendar, { type CalendarMode } from './AgendaCalendar';
 import DayTimeline from './DayTimeline';
 import AppointmentSheet from './AppointmentSheet';
@@ -63,6 +64,7 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
   const [openId, setOpenId] = useState<string | null>(null);
   const [create, setCreate] = useState<CreatePreset | null>(null);
   const [blockDay, setBlockDay] = useState<string | null>(null);
+  const [printRangeOpen, setPrintRangeOpen] = useState(false);
   const open = useMemo(() => appointments.find((a) => a.id === openId) ?? null, [appointments, openId]);
   const [tick, setTick] = useState(0);
 
@@ -192,6 +194,12 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
               <DropdownMenuItem onSelect={() => void printWeek(selected)}>
                 <Printer className="h-4 w-4" /> Imprimir mi semana
               </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => { const r = monthRange(selected); void printRange(r.from, r.to) }}>
+                <Printer className="h-4 w-4" /> Imprimir este mes
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setPrintRangeOpen(true)}>
+                <Printer className="h-4 w-4" /> Imprimir otras fechas…
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -230,6 +238,7 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
         onNext={(a, weeks) => setCreate({ date: ymd(addWeeks(parseYmd(a.date.split('T')[0]), weeks)), time: a.startTime, clientId: a.clientId, serviceId: a.serviceId, professionalId: a.professionalId ?? undefined })}
       />
       <QuickCreateSheet preset={create} professionals={professionals} words={words} onClose={() => setCreate(null)} />
+      <PrintRangeDialog open={printRangeOpen} onOpenChange={setPrintRangeOpen} date={selected} />
       <BlockHoursSheet date={blockDay} professionals={professionals} professionalId={professionalId || undefined} timezone={timezone} onClose={() => setBlockDay(null)} />
     </div>
   );
