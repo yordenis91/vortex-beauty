@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import { dbTestsEnabled, setupAppDb } from './dbHarness';
-import { isoWeekOf, renderWeekPdf, setPdfCompression, weekLabel, weekRange } from '../services/weekPdf';
+import { isoWeekOf, MAX_PRINT_DAYS, parsePrintRange, renderWeekPdf, setPdfCompression, weekLabel, weekRange } from '../services/weekPdf';
 import { localToInstant } from '../lib/time';
 
 /** Texto de un PDF sin comprimir: pdfkit escribe las cadenas en hexadecimal dentro de los operadores TJ. */
@@ -33,6 +33,26 @@ describe('semanas ISO', () => {
     expect(weekLabel('2026-11-30', '2026-12-06')).toBe('30 de noviembre – 6 de diciembre de 2026');
   });
 });
+
+describe('rango a imprimir', () => {
+  it('acepta un rango válido, de un día hasta el tope', () => {
+    expect(parsePrintRange('2026-11-01', '2026-11-30')).toEqual({ from: '2026-11-01', to: '2026-11-30' });
+    expect(parsePrintRange('2026-11-16', '2026-11-16')).toEqual({ from: '2026-11-16', to: '2026-11-16' });
+    expect(parsePrintRange('2026-01-01', '2026-04-02')).toEqual({ from: '2026-01-01', to: '2026-04-02' }); // 92 días justos
+  })
+
+  it('rechaza lo que se pasa del tope, va al revés o está mal escrito', () => {
+    expect(MAX_PRINT_DAYS).toBe(92)
+    for (const [a, b] of [['2026-01-01', '2026-04-03'], ['2026-11-30', '2026-11-01'], ['2026-13-01', '2026-13-02'], ['2026-02-30', '2026-03-01'], ['hoy', 'mañana'], ['', '2026-11-01'], ['2026-11-01', '']]) {
+      expect('error' in parsePrintRange(a, b), `${a}…${b}`).toBe(true)
+    }
+  })
+
+  it('el rótulo de un mes y de un rango que cruza meses', () => {
+    expect(weekLabel('2026-11-01', '2026-11-30')).toBe('1 – 30 de noviembre de 2026')
+    expect(weekLabel('2026-12-15', '2027-01-15')).toBe('15 de diciembre de 2026 – 15 de enero de 2027')
+  })
+})
 
 describe('dibujo de la hoja', () => {
   afterEach(() => setPdfCompression(true));
@@ -66,6 +86,22 @@ describe('dibujo de la hoja', () => {
     expect(two).toContain('Laura');
     expect(two).toContain('Pro Única');
   });
+
+  it('en un rango largo no pinta los días sin citas y lo avisa', async () => {
+    setPdfCompression(false)
+    const text = textOf(await renderWeekPdf({ ...base, hideEmptyDays: true, days: days([row()]) }))
+    expect(text).toContain('Martes 17 de noviembre')
+    expect(text).not.toContain('Miércoles 18 de noviembre')
+    expect(text).not.toContain('Sin citas')
+    expect(text).toContain('Los días sin citas no aparecen.')
+    expect(text).not.toContain('Agenda de la semana')
+  })
+
+  it('un rango sin ninguna cita lo dice en vez de salir vacío', async () => {
+    setPdfCompression(false)
+    const text = textOf(await renderWeekPdf({ ...base, hideEmptyDays: true, days: days() }))
+    expect(text).toContain('Sin citas en estas fechas.')
+  })
 
   it('quita lo que las fuentes del PDF no pueden pintar (emojis) y no se cae', async () => {
     setPdfCompression(false);
@@ -203,6 +239,51 @@ describeIfDb('GET /api/appointments/print', () => {
     expect(other.status).not.toBe(200); // sin usuarios en el otro salón: ni siquiera entra
     expect(textOf((await print('owner')).body)).not.toContain('Otro Salón');
   });
+
+  const range = (who: string, from: string, to: string) =>
+    request(app).get('/api/appointments/print').query({ from, to }).set(as(who)).buffer(true).parse((res, cb) => {
+      const chunks: Buffer[] = []
+      res.on('data', (c: Buffer) => chunks.push(c))
+      res.on('end', () => cb(null, Buffer.concat(chunks)))
+    })
+
+  it('un rango imprime las citas de varias semanas, sin los días vacíos', async () => {
+    const res = await range('owner', '2031-03-01', '2031-03-31')
+    expect(res.status).toBe(200)
+    expect(res.headers['content-disposition']).toContain('agenda-2031-03-01_2031-03-31.pdf')
+    const text = textOf(res.body)
+    expect(text).toContain('1 \u0096 31 de marzo de 2031')
+    expect(text).toContain('Marta Pérez')
+    expect(text).toContain('Luisa Gómez') // semana 10
+    expect(text).toContain('Lunes 10 de marzo') // la cita de la semana siguiente también entra
+    expect(text).not.toContain('Cancelada Cruz')
+    expect(text).not.toContain('Sin citas')
+    expect(text).not.toContain('Martes 4 de marzo') // día vacío
+  })
+
+  it('el rango respeta los extremos (inclusive) y el salón', async () => {
+    const only = textOf((await range('owner', '2031-03-05', '2031-03-05')).body)
+    expect(only).toContain('Luisa Gómez')
+    expect(only).not.toContain('Marta Pérez')
+    const empty = textOf((await range('owner', '2031-04-01', '2031-04-30')).body)
+    expect(empty).toContain('Sin citas en estas fechas.')
+  })
+
+  it('un STAFF también ve solo lo suyo en un rango', async () => {
+    const text = textOf((await range('staff', '2031-03-01', '2031-03-31')).body)
+    expect(text).toContain('Marta Pérez')
+    expect(text).not.toContain('Luisa Gómez')
+  })
+
+  it('rangos inválidos: 400 con el motivo', async () => {
+    for (const [a, b] of [['2031-01-01', '2031-04-30'], ['2031-03-31', '2031-03-01'], ['x', 'y'], ['2031-03-01', '']]) {
+      const res = await range('owner', a, b)
+      expect(res.status, `${a}…${b}`).toBe(400)
+    }
+    const onlyFrom = await request(app).get('/api/appointments/print').query({ from: '2031-03-01' }).set(as('owner'))
+    expect(onlyFrom.status).toBe(400)
+    expect(onlyFrom.body.error).toBeTruthy()
+  })
 
   it('semana mal escrita o inexistente: 400', async () => {
     for (const w of ['2031-W54', '2031-10', 'ayer', '2025-W53']) expect((await print('owner', w)).status, w).toBe(400);
