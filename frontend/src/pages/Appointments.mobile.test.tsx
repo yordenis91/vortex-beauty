@@ -314,4 +314,14 @@ describe('Agenda del móvil', () => {
     await waitFor(() => expect(writes).toHaveLength(1))
     expect(writes[0]).toMatch(/^Barbería Demo: horas libres el .+: .*\d\d:\d\d.*\. ¿Cuál te viene bien\?$/)
   })
+
+  it('el menú del día ofrece «Imprimir mi semana»', async () => {
+    atMidday()
+    mock([apt('a1', { startTime: '10:00', endTime: '11:00' })])
+    const user = userEvent.setup()
+    open()
+    await screen.findByText('Carlos Méndez')
+    await user.click(screen.getByRole('button', { name: 'Más opciones del día' }))
+    expect(await screen.findByRole('menuitem', { name: /Imprimir mi semana/ })).toBeInTheDocument()
+  })
 })

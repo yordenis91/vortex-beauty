@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import prisma from '../prismaClient';
+import prisma, { basePrisma } from '../prismaClient';
+import { createHash } from 'crypto';
+import { DateTime } from 'luxon';
+import { config } from '../config';
+import { isoWeekOf, renderWeekPdf, weekLabel, weekRange, type PrintDay } from '../services/weekPdf';
 import { authenticateToken } from '../middleware/auth';
 import { appointmentScope, requirePermission } from '../middleware/can';
 import { validateBody } from '../middleware/validate';
@@ -94,6 +98,86 @@ router.get('/', async (req, res) => {
     if (error?.name === 'ZodError') return res.status(400).json({ error: 'Validation error', details: error.issues });
     console.error('Error fetching appointments:', error);
     res.status(500).json({ error: 'Failed to fetch appointments' });
+  }
+});
+
+// Hojas ya dibujadas: reimprimir la misma semana (o recargar) no vuelve a pintar el PDF. La clave lleva una huella de
+// las citas, así que cualquier cambio en la agenda se ve en la hoja siguiente sin esperar a que caduque.
+const PRINT_TTL_MS = 5 * 60_000;
+const PRINT_MAX_ENTRIES = 200;
+const printCache = new Map<string, { pdf: Buffer; expires: number }>();
+
+// GET /api/appointments/print?week=YYYY-Www
+// La agenda de la semana en PDF (A4) con QR al login. ADMIN/OWNER: toda la agenda; STAFF: solo la suya.
+router.get('/print', async (req, res) => {
+  try {
+    const tenantId = req.user!.tenantId;
+    const tenant = await basePrisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true, slug: true, timezone: true } });
+    if (!tenant) return res.status(404).json({ error: 'Salón no encontrado' });
+
+    const today = instantToLocal(tenant.timezone, new Date()).dateStr;
+    const weekParam = typeof req.query.week === 'string' ? req.query.week : isoWeekOf(today);
+    const range = weekRange(weekParam);
+    if (!range) return res.status(400).json({ error: 'La semana debe tener formato AAAA-Www, por ejemplo 2026-W47.' });
+
+    const scope = await appointmentScope(req);
+    const rows = scope.none
+      ? []
+      : await prisma.appointment.findMany({
+          where: {
+            tenantId,
+            status: { not: 'CANCELLED' },
+            startsAt: { gte: localDayRange(tenant.timezone, range.monday).start, lt: localDayRange(tenant.timezone, addDaysToDateString(range.sunday, 1)).start },
+            professionalId: scope.professionalId,
+          },
+          select: {
+            id: true, updatedAt: true, startsAt: true, endsAt: true, serviceName: true, notes: true, source: true,
+            client: { select: { name: true, phone: true } },
+            professional: { select: { name: true } },
+          },
+          orderBy: { startsAt: 'asc' },
+          take: MAX_LIST_ROWS,
+        });
+
+    const qrUrl = `${config.appPublicUrl}/${tenant.slug}/login`;
+    const fingerprint = createHash('sha1')
+      .update(JSON.stringify([tenant.name, qrUrl, range.monday, rows.map((r) => [r.id, r.updatedAt.getTime(), r.client.name, r.professional?.name])]))
+      .digest('hex');
+    const key = `${tenantId}|${range.monday}|${scope.professionalId ?? 'todas'}|${fingerprint}`;
+
+    let hit = printCache.get(key);
+    if (!hit || hit.expires <= Date.now()) {
+      const days: PrintDay[] = Array.from({ length: 7 }, (_, i) => ({ dateStr: addDaysToDateString(range.monday, i), rows: [] }));
+      for (const a of rows) {
+        const start = instantToLocal(tenant.timezone, a.startsAt);
+        days.find((d) => d.dateStr === start.dateStr)?.rows.push({
+          startTime: start.time,
+          endTime: instantToLocal(tenant.timezone, a.endsAt).time,
+          clientName: a.client.name,
+          clientPhone: a.client.phone,
+          serviceName: a.serviceName,
+          professionalName: a.professional?.name ?? null,
+          notes: a.notes,
+          fromPaper: a.source === 'PAPEL',
+        });
+      }
+      const generatedAt = DateTime.now().setZone(tenant.timezone).toFormat('dd/LL/yyyy HH:mm');
+      const pdf = await renderWeekPdf({ salonName: tenant.name, weekLabel: weekLabel(range.monday, range.sunday), days, qrUrl, generatedAt });
+      if (printCache.size >= PRINT_MAX_ENTRIES) printCache.delete(printCache.keys().next().value!);
+      hit = { pdf, expires: Date.now() + PRINT_TTL_MS };
+      printCache.set(key, hit);
+    }
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="agenda-${weekParam}.pdf"`,
+      'Cache-Control': 'private, no-store', // lleva datos de clientas: nada de cachés compartidas
+      'X-Content-Type-Options': 'nosniff',
+    });
+    res.send(hit.pdf);
+  } catch (error) {
+    console.error('Error generating weekly PDF:', error);
+    res.status(500).json({ error: 'No se pudo preparar la hoja de la semana' });
   }
 });
 

@@ -84,6 +84,13 @@ describe('Agenda de citas', () => {
     expect(screen.getAllByText('Yoel').length).toBeGreaterThan(0)
   })
 
+  it('el encabezado ofrece «Imprimir mi semana»', async () => {
+    mockAgenda([apt('a1')])
+    open()
+    await screen.findByText('Carlos Méndez')
+    expect(screen.getByRole('button', { name: 'Imprimir mi semana' })).toBeEnabled()
+  })
+
   it('no mezcla citas de otros días', async () => {
     mockAgenda([apt('a1'), apt('a9', { date: '2031-01-01T00:00:00.000Z', client: { id: 'c9', name: 'Otro Día' } })])
     open()

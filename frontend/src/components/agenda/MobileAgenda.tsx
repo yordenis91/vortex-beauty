@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { addWeeks, format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { es } from 'date-fns/locale/es';
-import { CalendarCog, Copy, Lock, MoreVertical, Plus } from 'lucide-react';
+import { CalendarCog, Copy, Lock, MoreVertical, Plus, Printer } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTimeOff } from '../../hooks/useQueries';
 import type { Appointment, AppointmentStatus, Professional } from '../../types';
 import { blockOnDay, buildTimeline, localParts, marksByDate, parseYmd, toHHmm, toMin, ymd } from '../../lib/agenda';
+import { printWeek } from '../../lib/printWeek';
 import AgendaCalendar, { type CalendarMode } from './AgendaCalendar';
 import DayTimeline from './DayTimeline';
 import AppointmentSheet from './AppointmentSheet';
@@ -187,6 +188,9 @@ const MobileAgenda: React.FC<Props> = ({ appointments, professionals, businessHo
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => onManageDay(selectedKey)}>
                 <CalendarCog className="h-4 w-4" /> Gestionar horario de este día
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void printWeek(selected)}>
+                <Printer className="h-4 w-4" /> Imprimir mi semana
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
