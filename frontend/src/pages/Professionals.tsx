@@ -94,10 +94,16 @@ function TimeOffPanel({ professionalId }: { professionalId: string }) {
       <h4 className="text-sm font-semibold flex items-center gap-2">
         <CalendarOff className="h-4 w-4" /> Ausencias (vacaciones, descansos)
       </h4>
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
-        <input type="date" aria-label="Desde" className={inputClass} value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} />
-        <input type="date" aria-label="Hasta" className={inputClass} value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} />
-        <input type="text" placeholder="Motivo (opcional)" className={inputClass} value={range.reason} onChange={(e) => setRange({ ...range, reason: e.target.value })} />
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:items-end">
+        <div>
+          <label htmlFor={`${professionalId}-timeoff-from`} className="mb-1 block text-xs font-medium text-muted-foreground">Desde</label>
+          <input id={`${professionalId}-timeoff-from`} type="date" className={inputClass} value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} />
+        </div>
+        <div>
+          <label htmlFor={`${professionalId}-timeoff-to`} className="mb-1 block text-xs font-medium text-muted-foreground">Hasta</label>
+          <input id={`${professionalId}-timeoff-to`} type="date" className={inputClass} value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} />
+        </div>
+        <input type="text" aria-label="Motivo" placeholder="Motivo (opcional)" className={inputClass} value={range.reason} onChange={(e) => setRange({ ...range, reason: e.target.value })} />
         <button type="button" onClick={() => void submit()} className="px-3 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700">
           Añadir
         </button>

@@ -120,4 +120,19 @@ describe('Profesionales', () => {
     expect(body.quotaSlots).toContainEqual({ dayOfWeek: 0, time: '09:00' })
     expect(body.quotaSlots).not.toContainEqual({ dayOfWeek: 0, time: '11:00' })
   })
+
+  it('las ausencias llevan «Desde» y «Hasta» como rótulos visibles sobre cada fecha', async () => {
+    mock([professional()])
+    const user = userEvent.setup()
+    renderWithProviders(<AuthProvider><Professionals /></AuthProvider>)
+    await user.click(await screen.findByRole('button', { name: 'Editar' }))
+    const dialog = await screen.findByRole('dialog')
+    for (const text of ['Desde', 'Hasta']) {
+      const label = within(dialog).getByText(text)
+      expect(label.tagName).toBe('LABEL')
+      const input = within(dialog).getByLabelText(text) as HTMLInputElement
+      expect(input).toHaveAttribute('type', 'date')
+      expect(label.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy() // el rótulo va encima del campo
+    }
+  })
 })
