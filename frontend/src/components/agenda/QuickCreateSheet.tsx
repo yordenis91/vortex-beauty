@@ -95,13 +95,13 @@ const Form: React.FC<Omit<Props, 'preset'> & { preset: CreatePreset }> = ({ pres
   const label = 'mb-2 block text-sm font-semibold text-foreground';
 
   return (
-    <form onSubmit={submit} className="flex max-h-[85dvh] flex-col">
-      <DrawerHeader className="text-left">
+    <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+      <DrawerHeader className="shrink-0 text-left">
         <DrawerTitle className="text-xl">Nueva {words.appointment}</DrawerTitle>
         <DrawerDescription>{format(parseYmd(date), "EEEE d 'de' MMMM", { locale: es })}</DrawerDescription>
       </DrawerHeader>
 
-      <div className="flex-1 space-y-5 overflow-y-auto px-4 pb-4">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 pb-4">
         <div>
           <span className={label}>Cliente</span>
           {client ? (
@@ -214,7 +214,7 @@ const Form: React.FC<Omit<Props, 'preset'> & { preset: CreatePreset }> = ({ pres
         </label>
       </div>
 
-      <div className="border-t border-border bg-background px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+      <div className="shrink-0 border-t border-border bg-background px-4 py-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
         <button type="submit" disabled={!ready || busy} className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-600 text-base font-semibold text-white disabled:opacity-50">
           {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />} Agendar
         </button>

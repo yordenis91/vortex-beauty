@@ -48,14 +48,14 @@ const AppointmentSheet: React.FC<Props> = ({ appointment, salonName, salonSlug, 
       <DrawerContent>
         {a && (
           <>
-            <DrawerHeader className="text-left">
+            <DrawerHeader className="shrink-0 text-left">
               <DrawerTitle className="text-xl">{a.client?.name ?? 'Cliente'}{isFromPaper(a) && <PaperBadge className="ml-2" />}</DrawerTitle>
               <DrawerDescription>
                 {a.serviceName} · {a.startTime}–{a.endTime}
                 {a.professional ? ` · ${a.professional.name}` : ''} · {STATUS_LABEL[a.status]}
               </DrawerDescription>
             </DrawerHeader>
-            <div className="flex flex-col gap-1 px-4 pb-6">
+            <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto overscroll-contain px-4" style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}>
               {phone && (
                 <a href={`tel:${phone.replace(/[^\d+]/g, '')}`} className={action}>
                   <Phone className="h-5 w-5 text-muted-foreground" /> Llamar
