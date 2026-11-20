@@ -10,7 +10,6 @@ import type {
   ClosedDate,
   ScheduleOverride,
   Professional,
-  Notification,
   NotificationStatus,
   SendLogPage,
   UpdateClientProfileRequest,
@@ -566,45 +565,6 @@ export const useRetryNotification = () => {
     mutationFn: async (id: string) => (await api.post<{ result: RetryResult }>(`/notifications/${id}/retry`)).data.result,
     onError: (error: unknown) => toast.error(getErrorMessage(error, 'No se pudo reintentar el envío.')),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['send-log'] }),
-  });
-};
-
-/**
- * Hook para obtener las notificaciones del cliente autenticado
- * Usa endpoint /api/notifications/client
- * Incluye polling suave cada 30 segundos
- */
-export const useClientNotifications = () => {
-  return useQuery({
-    queryKey: ['client-notifications'],
-    queryFn: async () => {
-      const response = await api.get<Notification[]>('/notifications/client');
-      return response.data;
-    },
-    refetchInterval: 30000, // Polling cada 30 segundos
-  });
-};
-
-/**
- * Hook para marcar una notificación como leída
- * Usa endpoint PUT /api/notifications/:id/read
- */
-export const useMarkNotificationAsRead = (options?: MutationOptions) => {
-  const queryClient = useQueryClient();
-  const { onSuccess: customOnSuccess, ...otherOptions } = options || {};
-  return useMutation({
-    ...otherOptions,
-    mutationFn: async (notificationId: string) => {
-      const response = await api.put(`/notifications/${notificationId}/read`);
-      return response.data;
-    },
-    onError: (error: unknown) => {
-      toast.error(getErrorMessage(error, 'Ocurrió un error al actualizar la notificación.'));
-    },
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({ queryKey: ['client-notifications'] });
-      if (customOnSuccess) customOnSuccess(data, variables, context);
-    },
   });
 };
 
