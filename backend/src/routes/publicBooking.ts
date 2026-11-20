@@ -6,7 +6,7 @@ import { runInTransaction } from '../lib/db';
 import { cachedCalendar, clearCalendarCache } from '../lib/calendarCache';
 import { runWithTenant } from '../lib/tenantContext';
 import { normalizePhone, phoneKey } from '../lib/phone';
-import { addDaysToDateString, isValidDateString } from '../lib/time';
+import { addDaysToDateString, isValidDateString, localToInstant } from '../lib/time';
 import { validateBody } from '../middleware/validate';
 import { captchaSiteKey, verifyCaptcha } from '../services/captcha';
 import {
@@ -322,10 +322,11 @@ async function findOrCreateClient(tenantId: string, customer: { name: string; ph
   const email = customer.email || null;
   const key = phoneKey(customer.phone);
 
-  const existing =
+  const lookup = async () =>
     (email && (await prisma.client.findFirst({ where: { tenantId, email } }))) ||
     (key && (await prisma.client.findFirst({ where: { tenantId, phoneKey: key } }))) ||
     null;
+  const existing = await lookup();
 
   if (existing) {
     // Completa datos que faltaban, sin pisar los que el salón ya tiene. Si estaba archivado, vuelve a reservar: se restaura.
@@ -346,9 +347,18 @@ async function findOrCreateClient(tenantId: string, customer: { name: string; ph
   });
   if (!owner) throw new Error('El salón no tiene un administrador');
 
-  return prisma.client.create({
-    data: { tenantId, name: customer.name, email, phone: normalizePhone(customer.phone) ?? (customer.phone || null), phoneKey: key, userId: owner.id },
-  });
+  try {
+    return await prisma.client.create({
+      data: { tenantId, name: customer.name, email, phone: normalizePhone(customer.phone) ?? (customer.phone || null), phoneKey: key, userId: owner.id },
+    });
+  } catch (error) {
+    // Dos envíos iguales a la vez (doble toque, reintento): el otro creó a la clienta un instante antes; se usa esa.
+    if ((error as { code?: string }).code === 'P2002') {
+      const created = await lookup();
+      if (created) return created;
+    }
+    throw error;
+  }
 }
 
 interface PresentableAppointment {
@@ -399,6 +409,35 @@ const presentAppointment = (a: PresentableAppointment, slug: string) => ({
   manageUrl: a.cancelToken ? `/${slug}/mi-cita/${a.cancelToken}` : null,
 });
 
+/** Ventana en la que una reserva idéntica se toma por el reintento de la misma petición (conexión cortada, doble toque). */
+const RETRY_WINDOW_MS = 10 * 60 * 1000;
+
+const sameName = (a: string, b: string) => a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/**
+ * La reserva idéntica que esta misma persona acaba de hacer, si existe. Así un reintento tras un corte de conexión
+ * recibe su reserva en lugar de «ese hueco ya no está disponible» (que lo ocupó ella misma). Exige el mismo
+ * nombre, correo o teléfono, servicio, día y hora, y que se hiciera hace pocos minutos.
+ */
+async function findRecentDuplicate(tenant: { id: string; timezone: string }, client: { id: string; name: string }, body: z.infer<typeof bookingSchema>) {
+  // Otra persona no puede obtener la reserva (y su enlace) de alguien conociendo solo su correo o teléfono.
+  if (!sameName(client.name, body.customer.name)) return null;
+  return prisma.appointment.findFirst({
+    where: {
+      tenantId: tenant.id,
+      clientId: client.id,
+      serviceId: body.serviceId,
+      source: 'PUBLIC',
+      status: { in: ['SCHEDULED', 'PENDING'] },
+      startsAt: localToInstant(tenant.timezone, body.date, body.startTime),
+      createdAt: { gte: new Date(Date.now() - RETRY_WINDOW_MS) },
+      ...(body.professionalId && body.professionalId !== 'any' ? { professionalId: body.professionalId } : {}),
+    },
+    include: appointmentInclude,
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 // POST /api/public/booking/:slug/bookings
 router.post('/:slug/bookings', writeLimiter, requireBookingEnabled, validateBody(bookingSchema), async (req, res) => {
   try {
@@ -411,6 +450,16 @@ router.post('/:slug/bookings', writeLimiter, requireBookingEnabled, validateBody
 
     const client = await findOrCreateClient(tenant.id, body.customer);
 
+    // Respuesta para una reserva ya hecha por este mismo envío: no repite avisos ni vuelve a contar en el tope.
+    const respondWithExisting = async (existing: NonNullable<Awaited<ReturnType<typeof findRecentDuplicate>>>) =>
+      res.status(200).json({
+        ...presentAppointment(toAppointmentDto(existing, tenant.timezone), tenant.slug),
+        telegram: await telegramInfo(tenant.id, client.id, existing.cancelToken),
+      });
+
+    const already = await findRecentDuplicate(tenant, client, body);
+    if (already) return respondWithExisting(already);
+
     // Tope de citas futuras activas por cliente: frena reservas masivas o en broma.
     const settings = await prisma.tenantSettings.findUnique({ where: { tenantId: tenant.id }, select: { maxActivePerCustomer: true } });
     const limit = settings?.maxActivePerCustomer ?? 3;
@@ -421,18 +470,28 @@ router.post('/:slug/bookings', writeLimiter, requireBookingEnabled, validateBody
       return res.status(429).json({ error: `Ya tienes ${active} reservas pendientes. Cancela alguna o contacta al salón para reservar más.` });
     }
 
-    const appointment = await createBooking({
-      tenantId: tenant.id,
-      serviceId: body.serviceId,
-      clientId: client.id,
-      dateStr: body.date,
-      startTime: body.startTime,
-      professionalId: body.professionalId ?? 'any',
-      notes: body.notes,
-      source: 'PUBLIC',
-      forPublic: true,
-      enforceWindow: true,
-    });
+    let appointment;
+    try {
+      appointment = await createBooking({
+        tenantId: tenant.id,
+        serviceId: body.serviceId,
+        clientId: client.id,
+        dateStr: body.date,
+        startTime: body.startTime,
+        professionalId: body.professionalId ?? 'any',
+        notes: body.notes,
+        source: 'PUBLIC',
+        forPublic: true,
+        enforceWindow: true,
+      });
+    } catch (error) {
+      // Dos envíos iguales a la vez (doble toque): el segundo choca con el primero, que es suyo.
+      if (error instanceof AvailabilityError && error.status === 409) {
+        const mine = await findRecentDuplicate(tenant, client, body);
+        if (mine) return respondWithExisting(mine);
+      }
+      throw error;
+    }
     clearCalendarCache(tenant.id);
 
     res.status(201).json({

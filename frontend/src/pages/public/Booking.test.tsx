@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { addMonths, format, startOfMonth } from 'date-fns'
 import { es } from 'date-fns/locale/es'
@@ -618,5 +618,38 @@ describe('Reserva pública · conexión lenta o caída', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Puede que tu reserva sí se guardó')
     expect(await screen.findByRole('button', { name: '09:30' })).toBeInTheDocument()
+  }, 15000)
+
+  it('con verificación anti-bots, tras un envío fallido pide una nueva (vale una sola vez)', async () => {
+    const calls: string[] = []
+    let onToken: (token: string) => void = () => undefined
+    window.turnstile = {
+      render: (_el, options) => {
+        onToken = options.callback
+        calls.push('render')
+        return 'w1'
+      },
+      remove: () => undefined,
+      reset: () => void calls.push('reset'),
+    }
+    mockBooking({ catalog: catalog({ captchaSiteKey: 'site-key' }) })
+    server.use(http.post(`${BASE}/bookings`, () => HttpResponse.error()))
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: /Corte de cabello/ }))
+    await user.click(await firstEnabledDay())
+    await user.click(await screen.findByRole('button', { name: '09:00' }))
+    await user.type(screen.getByLabelText(/Nombre/), 'Marta Pérez')
+    await user.type(screen.getByLabelText('Teléfono'), '+53 5 555 1234')
+    await waitFor(() => expect(calls).toContain('render'))
+    act(() => onToken('token-1'))
+    await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos confirmar tu reserva por la conexión')
+    expect(calls).toContain('reset')
+
+    // Sin una verificación nueva no deja reintentar con el token gastado.
+    await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Completa la verificación de seguridad')
+    delete window.turnstile
   }, 15000)
 })

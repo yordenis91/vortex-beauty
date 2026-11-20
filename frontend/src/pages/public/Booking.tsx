@@ -118,7 +118,7 @@ const Booking: React.FC = () => {
   }, [notFound, tenantSlug]);
   const data = catalog.data;
   const word = (key: string, fallback: string) => data?.labels?.[key] || fallback;
-  const turnstile = useTurnstile(data?.captchaSiteKey);
+  const turnstile = useTurnstile(data?.captchaSiteKey, step === 'details');
 
   const service = data?.services.find((s) => s.id === serviceId);
   const professionals = useMemo(
@@ -185,6 +185,8 @@ const Booking: React.FC = () => {
       setError('');
     },
     onError: (err) => {
+      // La verificación anti-bots vale una sola vez, y el servidor pudo gastarla aunque la respuesta no llegara: se pide otra.
+      turnstile.reset();
       const status = (err as { response?: { status?: number } }).response?.status;
       const kind = errorKind(err);
       // Con la conexión cortada no se sabe si la reserva llegó a guardarse: se reintenta sin perder lo escrito.
