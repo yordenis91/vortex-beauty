@@ -12,3 +12,16 @@ export const logger = pino({
     censor: '[oculto]',
   },
 });
+
+/**
+ * Ruta sin query y sin las credenciales que viajan en ella: el enlace de «gestionar mi cita»
+ * (/manage/<token>) y el del calendario del celular (/api/calendar/<token>.ics). Quien lea el
+ * registro no debe poder abrirlos.
+ */
+export function safeLogUrl(url: string | undefined): string | undefined {
+  if (!url) return url;
+  return url
+    .split('?')[0]
+    .replace(/(\/manage\/)[^/]+/, '$1[oculto]')
+    .replace(/(\/api\/calendar\/)[^/]+(\.ics)$/, '$1[oculto]$2');
+}

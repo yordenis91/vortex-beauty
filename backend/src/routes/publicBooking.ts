@@ -3,6 +3,7 @@ import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import prisma, { basePrisma } from '../prismaClient';
 import { runInTransaction } from '../lib/db';
+import { cachedCalendar, clearCalendarCache } from '../lib/calendarCache';
 import { runWithTenant } from '../lib/tenantContext';
 import { normalizePhone, phoneKey } from '../lib/phone';
 import { addDaysToDateString, isValidDateString } from '../lib/time';
@@ -261,25 +262,30 @@ router.get('/:slug/calendar', requireBookingEnabled, async (req, res) => {
     const days: string[] = [];
     for (let date = q.from, i = 0; date <= q.to && i < 45; date = addDaysToDateString(date, 1), i++) days.push(date);
 
-    const availableDates: string[] = [];
-    await runInTransaction(async (tx) => {
-      for (const dateStr of days) {
-        try {
-          const result = await computeSlots(tx, {
-            tenantId: req.publicTenant!.id,
-            dateStr,
-            serviceId: q.serviceId,
-            professionalId: q.professionalId ?? 'any',
-            forPublic: true,
-            enforceWindow: true,
-          });
-          if (result.slots.length > 0) availableDates.push(dateStr);
-        } catch (error) {
-          if (!(error instanceof AvailabilityError)) throw error;
-          // Un servicio inválido falla igual todos los días: se corta.
-          if (error.status !== 409) throw error;
+    const tenantId = req.publicTenant!.id;
+    const key = [q.serviceId, q.professionalId ?? 'any', q.from, q.to].join('|');
+    const availableDates = await cachedCalendar(key, tenantId, async () => {
+      const found: string[] = [];
+      await runInTransaction(async (tx) => {
+        for (const dateStr of days) {
+          try {
+            const result = await computeSlots(tx, {
+              tenantId,
+              dateStr,
+              serviceId: q.serviceId,
+              professionalId: q.professionalId ?? 'any',
+              forPublic: true,
+              enforceWindow: true,
+            });
+            if (result.slots.length > 0) found.push(dateStr);
+          } catch (error) {
+            if (!(error instanceof AvailabilityError)) throw error;
+            // Un servicio inválido falla igual todos los días: se corta.
+            if (error.status !== 409) throw error;
+          }
         }
-      }
+      });
+      return found;
     });
     res.json({ availableDates });
   } catch (error: any) {
@@ -427,6 +433,7 @@ router.post('/:slug/bookings', writeLimiter, requireBookingEnabled, validateBody
       forPublic: true,
       enforceWindow: true,
     });
+    clearCalendarCache(tenant.id);
 
     res.status(201).json({
       ...presentAppointment(appointment, tenant.slug),
@@ -534,6 +541,7 @@ router.post('/:slug/manage/:token/cancel', writeLimiter, async (req, res) => {
     }
 
     await cancelBooking({ tenantId: tenant.id, id: appointment.id, by: 'CUSTOMER' });
+    clearCalendarCache(tenant.id);
     const fresh = await loadByToken(req);
     res.json(await presentManage(tenant.id, tenant, fresh!, tenant.timezone));
   } catch (error) {
@@ -568,6 +576,7 @@ router.post('/:slug/manage/:token/reschedule', writeLimiter, validateBody(resche
       professionalId: appointment.professionalId,
       enforceWindow: true,
     });
+    clearCalendarCache(tenant.id);
     const fresh = await loadByToken(req);
     res.json(await presentManage(tenant.id, tenant, fresh!, tenant.timezone));
   } catch (error) {
