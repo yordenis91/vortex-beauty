@@ -37,7 +37,7 @@ const AdminLayout: React.FC = () => {
               Estás viendo este salón como soporte de la plataforma. La sesión dura 1 hora y queda registrada.
             </div>
           )}
-          <div className="sticky top-0 z-10">
+          <div className="sticky top-0 z-40">
           <OfflineBanner />
           <header className="flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
             <SidebarTrigger />
