@@ -4,12 +4,25 @@ import axios from 'axios';
 // reacciona a 401, porque no hay sesión.
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://deploy-vortex-backend.wgteoi.easypanel.host/api';
 
+// Sin límite de espera, en una conexión muy lenta la página se queda cargando para siempre: pasado este tiempo
+// la petición falla y la clienta puede reintentar. Lo que escribe datos espera más, para no cortar uno que ya está en camino.
+export const READ_TIMEOUT_MS = 25_000;
+export const WRITE_TIMEOUT_MS = 45_000;
+
 export const publicApi = axios.create({
   baseURL: `${API_BASE_URL}/public/booking`,
   headers: { 'Content-Type': 'application/json' },
+  timeout: READ_TIMEOUT_MS,
+});
+publicApi.interceptors.request.use((config) => {
+  if (config.method && config.method !== 'get' && config.timeout === READ_TIMEOUT_MS) config.timeout = WRITE_TIMEOUT_MS;
+  return config;
 });
 
+export const CONNECTION_MESSAGE = 'No hay conexión o es muy lenta. Revisa tu internet e inténtalo de nuevo.';
+
 export function apiErrorMessage(error: unknown, fallback = 'Algo salió mal. Inténtalo de nuevo.'): string {
+  if (axios.isAxiosError(error) && !error.response) return CONNECTION_MESSAGE;
   const data = (error as { response?: { data?: { error?: string; details?: Array<{ message?: string }> } } })?.response?.data;
   return data?.details?.[0]?.message || data?.error || fallback;
 }

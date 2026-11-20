@@ -6,6 +6,7 @@ import ManageBooking from './ManageBooking'
 import { renderPage } from '../../test/render'
 import { server, API } from '../../test/server'
 import { manageView, SLUG } from '../../test/fixtures'
+import { fingerprint, readSaved, save } from '../../lib/publicCache'
 
 const BASE = `${API}/public/booking/${SLUG}/manage/tok`
 const open = () => renderPage(<ManageBooking />, { path: '/:tenantSlug/mi-cita/:token', route: `/${SLUG}/mi-cita/tok` })
@@ -133,5 +134,107 @@ describe('Gestionar mi reserva (enlace secreto)', () => {
     expect(await screen.findByText('Cancelada')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Telegram/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Cancelar reserva' })).not.toBeInTheDocument()
+  })
+})
+
+
+describe('Gestionar mi reserva · conexión lenta o caída', () => {
+  const key = `manage:${SLUG}:${fingerprint('tok')}`
+
+  it('sin conexión NO dice que el enlace es inválido: lo explica y deja reintentar', async () => {
+    server.use(http.get(BASE, () => HttpResponse.error()))
+    open()
+    expect(await screen.findByText('No pudimos conectar')).toBeInTheDocument()
+    expect(screen.queryByText(/no es válido o ya venció/)).not.toBeInTheDocument()
+
+    server.use(http.get(BASE, () => HttpResponse.json(manageView())))
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('Corte de cabello')).toBeInTheDocument()
+  })
+
+  it('un fallo del servidor tampoco es un enlace inválido', async () => {
+    server.use(http.get(BASE, () => HttpResponse.json({ error: 'x' }, { status: 502 })))
+    open()
+    expect(await screen.findByText('Estamos con problemas')).toBeInTheDocument()
+    expect(screen.queryByText(/no es válido o ya venció/)).not.toBeInTheDocument()
+  })
+
+  it('un 404 sí es un enlace inválido y no se reintenta', async () => {
+    let calls = 0
+    server.use(
+      http.get(BASE, () => {
+        calls++
+        return HttpResponse.json({ error: 'Enlace no válido o vencido' }, { status: 404 })
+      }),
+    )
+    open()
+    expect(await screen.findByText(/no es válido o ya venció/)).toBeInTheDocument()
+    expect(calls).toBe(1)
+  })
+
+  it('guarda la reserva sin el enlace secreto ni el vínculo de Telegram', async () => {
+    server.use(http.get(BASE, () => HttpResponse.json(manageView({ telegram: { botUsername: 'b_bot', linked: false, deepLink: 'https://t.me/b_bot?start=tok' } }))))
+    open()
+    await screen.findByText('Corte de cabello')
+    const saved = readSaved<ReturnType<typeof manageView>>(key)!.value
+    expect(saved.appointment.serviceName).toBe('Corte de cabello')
+    expect(saved.appointment.manageUrl).toBeNull()
+    expect(saved.telegram).toBeNull()
+    expect(JSON.stringify(localStorage)).not.toContain('start=tok')
+    expect(Object.keys(localStorage).join()).not.toContain('tok"')
+  })
+
+  it('sin conexión muestra la reserva guardada, avisa y no deja cambiarla ni cancelarla', async () => {
+    save(key, manageView())
+    server.use(http.get(BASE, () => HttpResponse.error()))
+    open()
+    expect(await screen.findByText('Corte de cabello')).toBeInTheDocument()
+    expect(await screen.findByText(/No pudimos actualizar tu reserva: ves la que guardamos/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Cambiar fecha u hora' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Cancelar reserva' })).toBeDisabled()
+    expect(screen.queryByText(/Los cambios y cancelaciones se hacen hasta/)).not.toBeInTheDocument()
+
+    server.use(http.get(BASE, () => HttpResponse.json(manageView())))
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Cancelar reserva' })).toBeEnabled())
+    expect(screen.queryByText(/No pudimos actualizar tu reserva: ves la que guardamos/)).not.toBeInTheDocument()
+  })
+
+  it('con el enlace ya vencido (404) olvida lo guardado y lo dice', async () => {
+    save(key, manageView())
+    server.use(http.get(BASE, () => HttpResponse.json({ error: 'x' }, { status: 404 })))
+    open()
+    expect(await screen.findByText(/no es válido o ya venció/)).toBeInTheDocument()
+  })
+
+  it('si cancelar se corta, avisa y vuelve a comprobar el estado real (que puede ya ser «Cancelada»)', async () => {
+    let cancelled = false
+    server.use(
+      http.get(BASE, () => HttpResponse.json(manageView({ status: cancelled ? 'CANCELLED' : 'SCHEDULED', canCancel: !cancelled }))),
+      http.post(`${BASE}/cancel`, () => {
+        cancelled = true // el servidor sí la canceló, pero la respuesta no llegó
+        return HttpResponse.error()
+      }),
+    )
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Cancelar reserva' }))
+    await user.click(screen.getByRole('button', { name: 'Sí, cancelar' }))
+    expect(await screen.findByText('Cancelada')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Sí, cancelar' })).not.toBeInTheDocument()
+  })
+
+  it('si fallan los horarios al cambiar la hora, lo dice y deja reintentar (no «no hay horarios»)', async () => {
+    server.use(
+      http.get(BASE, () => HttpResponse.json(manageView())),
+      http.get(`${BASE}/availability`, () => HttpResponse.error()),
+    )
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: 'Cambiar fecha u hora' }))
+    const day = (await screen.findAllByRole('gridcell')).map((c) => c.querySelector('button:not([disabled])')).find(Boolean) as HTMLButtonElement
+    await user.click(day)
+    expect(await screen.findByText('No pudimos cargar los horarios. Revisa tu conexión.')).toBeInTheDocument()
+    expect(screen.queryByText('No hay horarios ese día.')).not.toBeInTheDocument()
   })
 })
