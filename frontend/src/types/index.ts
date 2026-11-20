@@ -341,6 +341,20 @@ export interface Notification {
   updatedAt: string;
 }
 
+/** Un envío del registro (correo o Telegram). `retryable`: fallido y con aviso de origen, se puede reintentar. */
+export interface SendLogItem extends Notification {
+  retryable: boolean;
+}
+
+export interface SendLogPage {
+  items: SendLogItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+  /** Totales por estado (respetan canal y público, no el estado elegido). */
+  counts: Record<NotificationStatus, number>;
+}
+
 // Client portal profile types
 export interface ClientProfileResponse {
   id: string;

@@ -11,6 +11,8 @@ import type {
   ScheduleOverride,
   Professional,
   Notification,
+  NotificationStatus,
+  SendLogPage,
   UpdateClientProfileRequest,
   CreateGalleryItemRequest,
   CreateClientRequest,
@@ -536,17 +538,34 @@ export const useDeleteGalleryItem = (options?: MutationOptions) => {
 
 // ==================== NOTIFICATION HOOKS ====================
 
+export interface SendLogFilters {
+  page: number;
+  status?: NotificationStatus;
+  channel?: 'EMAIL' | 'TELEGRAM';
+  audience?: 'CLIENTS' | 'TEAM';
+}
+
 /**
- * Hook para obtener todas las notificaciones (Admin)
- * Usa endpoint /api/notifications
+ * Registro de envíos (correo y Telegram) del salón, paginado y con filtros.
+ * Usa endpoint /api/notifications/log
  */
-export const useNotifications = () => {
+export const useSendLog = (filters: SendLogFilters) => {
   return useQuery({
-    queryKey: ['notifications'],
-    queryFn: async () => {
-      const response = await api.get<Notification[]>('/notifications');
-      return response.data;
-    },
+    queryKey: ['send-log', filters],
+    queryFn: async () => (await api.get<SendLogPage>('/notifications/log', { params: { ...filters, pageSize: 25 } })).data,
+    placeholderData: (previous) => previous,
+  });
+};
+
+export type RetryResult = 'sent' | 'still-failed';
+
+/** Reintenta un envío fallido. Usa endpoint POST /api/notifications/:id/retry */
+export const useRetryNotification = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => (await api.post<{ result: RetryResult }>(`/notifications/${id}/retry`)).data.result,
+    onError: (error: unknown) => toast.error(getErrorMessage(error, 'No se pudo reintentar el envío.')),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['send-log'] }),
   });
 };
 

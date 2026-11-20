@@ -11,6 +11,8 @@ export interface MessageContext {
   serviceName: string;
   professionalName: string | null;
   startsAt: Date;
+  /** Hora anterior, solo en los avisos de cambio. */
+  previousStartsAt?: Date | null;
   price: string; // ya formateado, p. ej. "25.00 USD"
   manageUrl: string | null;
   cancelWindowHrs: number;
@@ -75,6 +77,18 @@ const cap = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 export const confirmedMessage = (ctx: MessageContext) =>
   render(`Confirmación de tu ${ctx.appointmentWord} en ${ctx.salonName}`, [`Hola ${ctx.customerName},`, `Confirmamos tu ${ctx.appointmentWord}.`], ctx);
 
+/** Aviso a la clienta cuando el salón cambia su cita (si cambia ella misma, no se le avisa). */
+export function rescheduledMessage(ctx: MessageContext) {
+  const moved = ctx.previousStartsAt && ctx.previousStartsAt.getTime() !== ctx.startsAt.getTime();
+  const lines = [
+    `Hola ${ctx.customerName},`,
+    moved
+      ? `Cambió la hora de tu ${ctx.appointmentWord}: antes era ${formatLocalDateTime(ctx.timezone, ctx.previousStartsAt!)}.`
+      : `Actualizamos los datos de tu ${ctx.appointmentWord}.`,
+  ];
+  return render(`Cambio en tu ${ctx.appointmentWord} en ${ctx.salonName}`, lines, ctx);
+}
+
 export const reminderMessage = (ctx: MessageContext, hoursBefore: number) =>
   render(
     `Recordatorio de tu ${ctx.appointmentWord} ${hoursBefore >= 24 ? 'mañana' : 'en unas horas'} en ${ctx.salonName}`,
@@ -89,26 +103,33 @@ export const cancelledMessage = (ctx: MessageContext, by: 'CUSTOMER' | 'STAFF' |
     { ...ctx, manageUrl: null }
   );
 
+export type AlertKind = 'created' | 'cancelled' | 'rescheduled';
+
+const ALERT_HEAD: Record<AlertKind, string> = { created: 'nueva reserva', cancelled: 'cancelación', rescheduled: 'cambio de horario' };
+
+/** Línea «Antes: …» de un aviso de cambio (vacía si la hora no cambió). */
+const beforeLine = (ctx: MessageContext) =>
+  ctx.previousStartsAt && ctx.previousStartsAt.getTime() !== ctx.startsAt.getTime() ? [`Antes: ${formatLocalDateTime(ctx.timezone, ctx.previousStartsAt)}`] : [];
+
 /** Aviso corto para el dueño (correo y Telegram). */
-export function ownerAlert(kind: 'created' | 'cancelled', ctx: MessageContext, source: string): string {
+export function ownerAlert(kind: AlertKind, ctx: MessageContext, source: string): string {
   const when = formatLocalDateTime(ctx.timezone, ctx.startsAt);
-  const head = `${cap(ctx.appointmentWord)}: ${kind === 'created' ? 'nueva reserva' : 'cancelación'}`;
+  const head = `${cap(ctx.appointmentWord)}: ${ALERT_HEAD[kind]}`;
   return [
     `${head} · ${ctx.salonName}`,
     `${ctx.customerName} — ${ctx.serviceName}`,
     `${when}${ctx.professionalName ? ` · ${ctx.professionalName}` : ''}`,
+    ...(kind === 'rescheduled' ? beforeLine(ctx) : []),
     ...(kind === 'created' ? [`Origen: ${source}`] : []),
   ].join('\n');
 }
 
 /** Aviso corto para el profesional: solo lo que le toca a él. */
-export function professionalAlert(kind: 'created' | 'cancelled', ctx: MessageContext): string {
+export function professionalAlert(kind: AlertKind, ctx: MessageContext): string {
   const when = formatLocalDateTime(ctx.timezone, ctx.startsAt);
-  return [
-    `${kind === 'created' ? `Nueva ${ctx.appointmentWord} para ti` : `${cap(ctx.appointmentWord)} cancelada`} · ${ctx.salonName}`,
-    `${ctx.customerName} — ${ctx.serviceName}`,
-    when,
-  ].join('\n');
+  const head =
+    kind === 'created' ? `Nueva ${ctx.appointmentWord} para ti` : kind === 'cancelled' ? `${cap(ctx.appointmentWord)} cancelada` : `${cap(ctx.appointmentWord)} cambiada`;
+  return [`${head} · ${ctx.salonName}`, `${ctx.customerName} — ${ctx.serviceName}`, when, ...(kind === 'rescheduled' ? beforeLine(ctx) : [])].join('\n');
 }
 
 // ---------- Resumen diario ----------

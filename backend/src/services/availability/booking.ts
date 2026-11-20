@@ -6,7 +6,7 @@ import { blockFor, computeSlots, Slot } from './engine';
 import { AvailabilityError } from './errors';
 import { appointmentInclude, toAppointmentDto } from './dto';
 import { assertPlanAllows } from '../planLimits';
-import { scheduleBookingJobs, scheduleCancelledJob } from '../notifications/lifecycle';
+import { scheduleBookingJobs, scheduleCancelledJob, scheduleRescheduledJob } from '../notifications/lifecycle';
 import { recordAppointmentEvent } from '../activity';
 import { randomBytes } from 'node:crypto';
 
@@ -223,7 +223,9 @@ export async function updateBooking(params: UpdateBookingParams) {
     await scheduleCancelledJob(updated.result, 'STAFF');
     await recordAppointmentEvent(updated.result, { kind: 'CANCELLED', actor, actorUserId: params.actorUserId });
   } else if (updated.rescheduled) {
-    await scheduleBookingJobs(updated.result, { announce: true });
+    // Reabrir una cancelada se confirma como nueva; mover una activa avisa del cambio (los recordatorios se reprograman igual).
+    await scheduleBookingJobs(updated.result, { announce: updated.reactivated });
+    if (!updated.reactivated) await scheduleRescheduledJob(updated.result, updated.previousStartsAt, actor === 'STAFF' ? 'STAFF' : 'CUSTOMER');
     // Reabrir una cita cancelada cuenta como reserva nueva; mover una activa, como cambio.
     await recordAppointmentEvent(
       updated.result,
