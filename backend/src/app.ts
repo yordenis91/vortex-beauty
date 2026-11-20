@@ -16,6 +16,7 @@ import categoryRoutes from './routes/categories';
 import appointmentRoutes from './routes/appointments';
 import { calendarFeedRouter, calendarPublicRouter } from './routes/calendarFeed';
 import notificationRoutes from './routes/notifications';
+import activityRoutes from './routes/activity';
 import portalRoutes from './routes/portal';
 import overridesRoutes from './routes/overrides';
 import settingsRoutes from './routes/settings';
@@ -114,6 +115,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/calendar-feed', calendarFeedRouter);
 app.use('/api/calendar', calendarPublicRouter);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/activity', activityRoutes);
 
 // Perfil propio (mi perfil)
 app.use('/api/portal', portalRoutes);

@@ -320,6 +320,7 @@ router.post('/', validateBody(createAppointmentSchema), async (req, res) => {
       notes: data.notes,
       status: data.status === 'PENDING' ? 'PENDING' : 'SCHEDULED',
       source: data.source,
+      actorUserId: req.user!.userId,
     });
 
     // Una cita de papel ya la acordó la clienta en persona: no se le manda «cita agendada».
@@ -362,6 +363,7 @@ router.put('/:id', validateBody(updateAppointmentSchema), async (req, res) => {
       clientId: data.clientId,
       status: data.status,
       notes: data.notes,
+      actorUserId: req.user!.userId,
     });
 
     if (data.status === 'CANCELLED' && existing.status !== 'CANCELLED') {
