@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import MyTelegramCard from '../components/MyTelegramCard';
 import CalendarFeedCard from '../components/CalendarFeedCard';
+import AppearanceCard from '../components/AppearanceCard';
 import api from '../lib/api';
 import { setAccessToken } from '../lib/session';
 import { getErrorMessage, useBookingSettings, useUpdateClientProfile } from '../hooks/useQueries';
@@ -107,6 +108,8 @@ const MyProfile: React.FC = () => {
           </button>
         </form>
       </section>
+
+      <AppearanceCard />
 
       <section className="bg-card rounded-lg shadow-md p-6">
         <h2 className="text-lg font-semibold text-foreground mb-1 flex items-center gap-2">
