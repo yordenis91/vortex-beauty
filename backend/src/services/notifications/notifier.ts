@@ -5,12 +5,14 @@ import { runWithTenant } from '../../lib/tenantContext';
 import { sendEmail } from '../channels/email';
 import { sendTelegram } from '../channels/telegram';
 import {
+  AlertKind,
   cancelledMessage,
   confirmedMessage,
   MessageContext,
   ownerAlert,
   professionalAlert,
   reminderMessage,
+  rescheduledMessage,
 } from './templates';
 
 /**
@@ -103,7 +105,7 @@ async function ownerEmails(tenantId: string): Promise<string[]> {
   return owners.map((o) => o.email);
 }
 
-async function alertOwner(tenantId: string, data: Loaded, kind: 'created' | 'cancelled', keyBase: string, source: string): Promise<'done' | 'retry'> {
+async function alertOwner(tenantId: string, data: Loaded, kind: AlertKind, keyBase: string, source: string): Promise<'done' | 'retry'> {
   if (!data.settings.ownerAlerts) return 'done';
   const text = ownerAlert(kind, data.ctx, source);
   const outcomes: Array<'done' | 'retry'> = [];
@@ -137,7 +139,7 @@ async function alertOwner(tenantId: string, data: Loaded, kind: 'created' | 'can
 }
 
 /** Avisa por Telegram al profesional dueño de la cita, si enlazó su chat. Nunca se repite con el chat del dueño. */
-async function alertProfessional(tenantId: string, data: Loaded, kind: 'created' | 'cancelled', keyBase: string): Promise<'done' | 'retry'> {
+async function alertProfessional(tenantId: string, data: Loaded, kind: AlertKind, keyBase: string): Promise<'done' | 'retry'> {
   const chat = data.appointment.professional?.telegramChatId;
   const { telegramBotToken, telegramChatId: ownerChat } = data.settings;
   if (!chat || !telegramBotToken || (data.settings.ownerAlerts && chat === ownerChat)) return 'done';
@@ -229,4 +231,50 @@ export async function processCancelled(tenantId: string, appointmentId: string, 
     const pro = await alertProfessional(tenantId, data, 'cancelled', key);
     return [customer, owner, pro].includes('retry') ? 'retry' : 'done';
   });
+}
+
+/**
+ * Cambio de hora o de datos de una cita activa. A la clienta se le avisa solo si lo cambió el salón
+ * (y no era una cita anotada del papel, que ella ya acordó en persona); al dueño y al profesional, siempre.
+ */
+export async function processRescheduled(tenantId: string, appointmentId: string, previousStartsAtMs: number, startsAtMs: number, by: 'CUSTOMER' | 'STAFF'): Promise<'done' | 'retry'> {
+  return runWithTenant(tenantId, async () => {
+    const data = await load(tenantId, appointmentId);
+    if (!data || !isActive(data.appointment.status)) return 'done';
+    // Se volvió a mover después: ese cambio tiene su propio aviso.
+    if (data.appointment.startsAt.getTime() !== startsAtMs) return 'done';
+    data.ctx.previousStartsAt = new Date(previousStartsAtMs);
+    const key = `rescheduled:${appointmentId}:${previousStartsAtMs}:${startsAtMs}`;
+    const customer = by === 'CUSTOMER' || data.appointment.source === 'PAPEL' ? 'done' : await sendToCustomer(tenantId, data, key, rescheduledMessage(data.ctx));
+    const owner = await alertOwner(tenantId, data, 'rescheduled', key, data.appointment.source);
+    const pro = await alertProfessional(tenantId, data, 'rescheduled', key);
+    return [customer, owner, pro].includes('retry') ? 'retry' : 'done';
+  });
+}
+
+export type RetryResult = 'sent' | 'still-failed' | 'not-retryable';
+
+/**
+ * Reintenta un envío fallido volviendo a ejecutar el aviso del que salió (la clave de deduplicación dice cuál).
+ * Los ya enviados no se repiten: solo se reenvía lo que sigue fallido.
+ */
+export async function retryNotification(tenantId: string, notificationId: string): Promise<RetryResult> {
+  const record = await prisma.notification.findFirst({ where: { id: notificationId, tenantId } });
+  if (!record || record.status !== 'FAILED' || !record.dedupeKey) return 'not-retryable';
+  const [kind, appointmentId, a, b] = record.dedupeKey.split(':');
+
+  if (kind === 'confirmed') await processConfirmed(tenantId, appointmentId);
+  else if (kind === 'cancelled') {
+    const appointment = await runWithTenant(tenantId, () => prisma.appointment.findFirst({ where: { id: appointmentId, tenantId }, select: { cancelledBy: true } }));
+    await processCancelled(tenantId, appointmentId, appointment?.cancelledBy ?? 'STAFF');
+  } else if (kind === 'reminder') await processReminder(tenantId, appointmentId, Number(b), Number(a));
+  else if (kind === 'rescheduled') {
+    // Quién lo cambió no se guarda: si ya hay un envío a la clienta para este cambio, lo hizo el salón; si no, ella no debe recibir uno nuevo.
+    const base = `rescheduled:${appointmentId}:${a}:${b}`;
+    const toCustomer = await prisma.notification.count({ where: { tenantId, dedupeKey: { startsWith: `${base}:customer:` } } });
+    await processRescheduled(tenantId, appointmentId, Number(a), Number(b), toCustomer > 0 ? 'STAFF' : 'CUSTOMER');
+  } else return 'not-retryable';
+
+  const after = await prisma.notification.findFirst({ where: { id: notificationId, tenantId }, select: { status: true } });
+  return after?.status === 'SENT' ? 'sent' : 'still-failed';
 }

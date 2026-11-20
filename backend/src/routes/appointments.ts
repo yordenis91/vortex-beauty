@@ -8,7 +8,6 @@ import { isoWeekOf, parsePrintRange, renderWeekPdf, weekLabel, weekRange, type P
 import { authenticateToken } from '../middleware/auth';
 import { appointmentScope, requirePermission } from '../middleware/can';
 import { validateBody } from '../middleware/validate';
-import notificationService from '../services/notificationService';
 import { createBooking, updateBooking, toBookingHttpErrorOrThrow } from '../services/availability';
 import { appointmentInclude, toAppointmentDto } from '../services/availability/dto';
 import { computeSlots } from '../services/availability/engine';
@@ -323,14 +322,6 @@ router.post('/', validateBody(createAppointmentSchema), async (req, res) => {
       actorUserId: req.user!.userId,
     });
 
-    // Una cita de papel ya la acordó la clienta en persona: no se le manda «cita agendada».
-    await notifyBestEffort(tenantId, [
-      { recipient: 'ADMIN', content: `Nueva cita agendada (${data.source === 'PAPEL' ? 'del papel' : 'panel'}): ${appointment.client.name} - ${appointment.serviceName}, ${dateOnly(appointment.date)} ${appointment.startTime}-${appointment.endTime}` },
-      ...(data.source === 'PAPEL'
-        ? []
-        : [{ recipient: appointment.clientId, clientId: appointment.clientId, content: `Tu cita para ${appointment.serviceName} ha sido agendada para el ${dateOnly(appointment.date)} a las ${appointment.startTime}.` }]),
-    ]);
-
     res.status(201).json(appointment);
   } catch (error) {
     const handled = toBookingHttpErrorOrThrow(error);
@@ -366,13 +357,6 @@ router.put('/:id', validateBody(updateAppointmentSchema), async (req, res) => {
       actorUserId: req.user!.userId,
     });
 
-    if (data.status === 'CANCELLED' && existing.status !== 'CANCELLED') {
-      await notifyBestEffort(tenantId, [
-        { recipient: appointment.clientId, clientId: appointment.clientId, content: `Tu cita para ${appointment.serviceName} el ${dateOnly(appointment.date)} a las ${appointment.startTime} ha sido cancelada.` },
-        { recipient: 'ADMIN', content: `La cita #${appointment.id} ha sido cancelada desde el panel.` },
-      ]);
-    }
-
     res.json(appointment);
   } catch (error) {
     const handled = toBookingHttpErrorOrThrow(error);
@@ -390,30 +374,11 @@ router.delete('/:id', requirePermission('appointments:all'), async (req, res) =>
 
     await prisma.appointment.delete({ where: { id } });
 
-    const timezone = await getTenantTimezone(tenantId);
-    const dto = toAppointmentDto(appointment, timezone);
-    await notifyBestEffort(tenantId, [
-      { recipient: appointment.clientId, clientId: appointment.clientId, content: `Tu cita programada para el ${dateOnly(dto.date)} a las ${dto.startTime} ha sido eliminada por el salón.` },
-    ]);
-
     res.json({ message: 'Appointment deleted successfully' });
   } catch (error) {
     console.error('Error deleting appointment:', error);
     res.status(500).json({ error: 'Failed to delete appointment' });
   }
 });
-
-async function notifyBestEffort(
-  tenantId: string,
-  items: Array<{ recipient: string; content: string; clientId?: string }>
-) {
-  try {
-    for (const item of items) {
-      await notificationService.createNotification({ type: 'SYSTEM', tenantId, ...item });
-    }
-  } catch (error) {
-    console.error('Error creating appointment notifications:', error);
-  }
-}
 
 export default router;

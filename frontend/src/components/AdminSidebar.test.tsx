@@ -27,14 +27,14 @@ describe('Menú del panel según el rol', () => {
     open('STAFF')
     expect(await screen.findByText('Panel de Control')).toBeInTheDocument()
     expect(screen.getByText('Citas')).toBeInTheDocument()
-    for (const hidden of ['Clientes', 'Servicios', 'Notificaciones', 'Facturación', 'Configuraciones']) {
+    for (const hidden of ['Clientes', 'Servicios', 'Registro de envíos', 'Facturación', 'Configuraciones']) {
       expect(screen.queryByText(hidden)).not.toBeInTheDocument()
     }
   })
 
   it('el administrador ve todo menos la facturación', async () => {
     open('ADMIN')
-    expect(await screen.findByText('Notificaciones')).toBeInTheDocument()
+    expect(await screen.findByText('Registro de envíos')).toBeInTheDocument()
     expect(screen.getByText('Configuraciones')).toBeInTheDocument()
     expect(screen.queryByText('Facturación')).not.toBeInTheDocument()
   })

@@ -79,20 +79,20 @@ describeIfDb('citas del papel', () => {
     queue.clearMemoryJobs();
   });
 
-  it('una cita normal del panel queda con origen ADMIN y avisa a la clienta', async () => {
+  it('una cita normal del panel queda con origen ADMIN, encola la confirmación y no deja filas de sistema', async () => {
     const before = await clientNotices();
     const res = await create();
     expect(res.status).toBe(201);
     expect(res.body.source).toBe('ADMIN');
-    expect(await clientNotices()).toBe(before + 1);
+    expect(queue.getMemoryJobs().some((j) => j.name === 'booking.confirmed')).toBe(true);
+    // El aviso real sale por correo/Telegram al procesar el trabajo; el panel ya no crea filas «SYSTEM» duplicadas.
+    expect(await clientNotices()).toBe(before);
   });
 
-  it('con source PAPEL se guarda con ese origen y no le avisa a la clienta', async () => {
-    const before = await clientNotices();
+  it('con source PAPEL se guarda con ese origen', async () => {
     const res = await create({ source: 'PAPEL' });
     expect(res.status).toBe(201);
     expect(res.body.source).toBe('PAPEL');
-    expect(await clientNotices()).toBe(before);
   });
 
   it('la confirmación encolada no le escribe a la clienta, pero los recordatorios siguen', async () => {

@@ -42,3 +42,20 @@ export async function scheduleCancelledJob(appointment: { id: string; tenantId: 
     console.error('[queue] no se pudo encolar el aviso de cancelación:', error);
   }
 }
+
+/** Avisos de un cambio de hora (o de datos) de una cita ya confirmada. `by` evita avisar a quien lo hizo. */
+export async function scheduleRescheduledJob(
+  appointment: { id: string; tenantId: string; startsAt: Date },
+  previousStartsAt: Date,
+  by: 'CUSTOMER' | 'STAFF'
+): Promise<void> {
+  try {
+    await enqueue(
+      QUEUES.rescheduled,
+      { tenantId: appointment.tenantId, appointmentId: appointment.id, previousStartsAt: previousStartsAt.getTime(), startsAt: appointment.startsAt.getTime(), by },
+      { singletonKey: `rescheduled:${appointment.id}:${previousStartsAt.getTime()}:${appointment.startsAt.getTime()}` }
+    );
+  } catch (error) {
+    console.error('[queue] no se pudo encolar el aviso de cambio:', error);
+  }
+}

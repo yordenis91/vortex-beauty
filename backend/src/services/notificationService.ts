@@ -1,80 +1,58 @@
 import prisma from '../prismaClient';
+import { runAsAdmin } from '../lib/tenantContext';
 import { NotificationType, NotificationStatus } from '@prisma/client';
 
-interface CreateNotificationData {
-  type: NotificationType;
-  recipient: string;
-  content: string;
-  clientId?: string;
-  errorLog?: string;
+/** Canales de envío reales. Las filas SYSTEM antiguas no son envíos y no salen en el registro. */
+const SEND_CHANNELS: NotificationType[] = ['EMAIL', 'TELEGRAM', 'WHATSAPP'];
+
+export interface LogQuery {
+  page: number;
+  pageSize: number;
   status?: NotificationStatus;
-  tenantId: string;
+  channel?: NotificationType;
+  /** 'CLIENTS' = avisos a clientas; 'TEAM' = avisos al dueño y al equipo. */
+  audience?: 'CLIENTS' | 'TEAM';
 }
 
 /**
- * Crea una notificación en la base de datos
- * @param data - Datos de la notificación
- * @returns La notificación creada
+ * Registro de envíos del salón, paginado y filtrable. Los totales por estado
+ * respetan el canal y el público elegidos, pero no el estado (así los filtros se pueden cambiar).
  */
-export async function createNotification(data: CreateNotificationData) {
-  try {
-    const notification = await prisma.notification.create({
-      data: {
-        type: data.type,
-        recipient: data.recipient,
-        content: data.content,
-        clientId: data.clientId,
-        errorLog: data.errorLog,
-        status: data.status || NotificationStatus.PENDING,
-        isRead: false,
-        tenantId: data.tenantId,
-      },
-      include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-    });
+export async function getSendLog(tenantId: string, query: LogQuery) {
+  const base = {
+    tenantId,
+    type: query.channel ? query.channel : { in: SEND_CHANNELS },
+    ...(query.audience === 'CLIENTS' ? { clientId: { not: null } } : query.audience === 'TEAM' ? { clientId: null } : {}),
+  };
+  const where = { ...base, ...(query.status ? { status: query.status } : {}) };
 
-    console.log(`[Notification Created] Type: ${data.type}, Recipient: ${data.recipient}, Status: ${notification.status}`);
-    return notification;
-  } catch (error) {
-    console.error('Error creating notification:', error);
-    throw error;
-  }
-}
-
-/**
- * Obtiene todas las notificaciones (para admin)
- * @returns Array de notificaciones ordenadas por fecha descendente
- */
-export async function getAllNotifications(tenantId: string) {
-  try {
-    const notifications = await prisma.notification.findMany({
-      where: { tenantId },
-      include: {
-        client: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
+  const [items, total, grouped] = await Promise.all([
+    prisma.notification.findMany({
+      where,
+      include: { client: { select: { id: true, name: true, email: true, phone: true } } },
       orderBy: { createdAt: 'desc' },
-      take: 300,
-    });
-    return notifications;
-  } catch (error) {
-    console.error('Error fetching all notifications:', error);
-    throw error;
-  }
+      skip: (query.page - 1) * query.pageSize,
+      take: query.pageSize,
+    }),
+    prisma.notification.count({ where }),
+    prisma.notification.groupBy({ by: ['status'], where: base, _count: { _all: true } }),
+  ]);
+
+  const counts = { PENDING: 0, SENT: 0, FAILED: 0 };
+  for (const row of grouped) counts[row.status] = row._count._all;
+  // Solo los envíos de avisos de citas se pueden reintentar (el resumen diario, por ejemplo, no).
+  const withRetry = items.map((n) => ({ ...n, retryable: n.status === 'FAILED' && /^(confirmed|cancelled|reminder|rescheduled):/.test(n.dedupeKey ?? '') }));
+  return { items: withRetry, total, page: query.page, pageSize: query.pageSize, counts };
+}
+
+/** Días que se conserva el registro de envíos. */
+export const NOTIFICATION_RETENTION_DAYS = 90;
+
+/** Borra los envíos con más de 90 días de todos los salones. Devuelve cuántos borró. */
+export async function pruneOldNotifications(now: Date = new Date()): Promise<number> {
+  const cutoff = new Date(now.getTime() - NOTIFICATION_RETENTION_DAYS * 24 * 3600 * 1000);
+  const result = await runAsAdmin(() => prisma.notification.deleteMany({ where: { createdAt: { lt: cutoff } } }));
+  return result.count;
 }
 
 /**
@@ -164,8 +142,7 @@ export async function updateNotificationStatus(
 }
 
 export default {
-  createNotification,
-  getAllNotifications,
+  getSendLog,
   getClientNotifications,
   markAsRead,
   updateNotificationStatus,

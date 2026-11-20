@@ -21,6 +21,7 @@ export const QUEUES = {
   confirmed: 'booking.confirmed',
   reminder: 'booking.reminder',
   cancelled: 'booking.cancelled',
+  rescheduled: 'booking.rescheduled',
   backup: 'system.backup',
   dailySummary: 'summary.daily',
 } as const;
