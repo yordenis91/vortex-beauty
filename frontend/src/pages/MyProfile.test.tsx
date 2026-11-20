@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import MyProfile from './MyProfile'
 import { AuthProvider, useAuth } from '../contexts/AuthContext'
+import { ThemeProvider } from '../components/ui/theme-provider'
 import { getAccessToken, setAccessToken } from '../lib/session'
 import { renderWithProviders } from '../test/render'
 import { server, API } from '../test/server'
@@ -25,9 +26,11 @@ function open(role = 'OWNER') {
     http.get(`${API}/settings/booking`, () => HttpResponse.json(panelSettings())),
   )
   return renderWithProviders(
-    <AuthProvider>
-      <Gate />
-    </AuthProvider>,
+    <ThemeProvider>
+      <AuthProvider>
+        <Gate />
+      </AuthProvider>
+    </ThemeProvider>,
   )
 }
 
@@ -165,5 +168,22 @@ describe('Mi perfil', () => {
       open('STAFF')
       expect(await screen.findByText(/Suscribe tus citas/)).toBeInTheDocument()
     })
+  })
+
+  it('el tema claro/oscuro se elige en Apariencia y se recuerda', async () => {
+    open()
+    const user = userEvent.setup()
+    const group = await screen.findByRole('radiogroup', { name: 'Tema del panel' })
+    expect(screen.getByRole('radio', { name: 'Claro' })).toBeChecked()
+    expect(group).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: 'Oscuro' }))
+    expect(screen.getByRole('radio', { name: 'Oscuro' })).toBeChecked()
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(localStorage.getItem('theme')).toBe('dark')
+
+    await user.click(screen.getByRole('radio', { name: 'Claro' }))
+    expect(document.documentElement.classList.contains('dark')).toBe(false)
+    setAccessToken(null)
   })
 })

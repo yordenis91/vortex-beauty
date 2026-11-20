@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import GlobalSearch from './GlobalSearch';
 import { User, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
+import ActivityBell from './ActivityBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,7 +48,7 @@ const AdminLayout: React.FC = () => {
 
             <div className="ml-4 flex shrink-0 items-center gap-4 md:ml-6">
               <div className="flex shrink-0 items-center gap-2">
-                <ThemeToggle />
+                <ActivityBell />
               </div>
 
               <DropdownMenu>
