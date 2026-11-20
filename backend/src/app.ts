@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import pinoHttp from 'pino-http';
 import { config } from './config';
-import { logger } from './lib/logger';
+import { logger, safeLogUrl } from './lib/logger';
 import { cloudflareClientIp } from './lib/clientIp';
 import { captureError } from './lib/monitoring';
 import { basePrisma } from './prismaClient';
@@ -66,7 +66,7 @@ app.use(
     customProps: (req) => ({ tenantId: (req as express.Request).user?.tenantId }),
     customLogLevel: (_req, res, error) => (error || res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info'),
     serializers: {
-      req: (req) => ({ id: req.id, method: req.method, url: req.url?.split('?')[0] }),
+      req: (req) => ({ id: req.id, method: req.method, url: safeLogUrl(req.url) }),
       res: (res) => ({ statusCode: res.statusCode }),
     },
   })
