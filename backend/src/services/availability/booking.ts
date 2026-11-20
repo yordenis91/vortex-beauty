@@ -7,6 +7,7 @@ import { AvailabilityError } from './errors';
 import { appointmentInclude, toAppointmentDto } from './dto';
 import { assertPlanAllows } from '../planLimits';
 import { scheduleBookingJobs, scheduleCancelledJob } from '../notifications/lifecycle';
+import { recordAppointmentEvent } from '../activity';
 import { randomBytes } from 'node:crypto';
 
 /**
@@ -42,6 +43,8 @@ export interface CreateBookingParams {
   forPublic?: boolean;
   /** Aplicar antelación mínima/máxima (clientes). El panel de administración no. */
   enforceWindow?: boolean;
+  /** Persona del salón que lo hace (para no avisarle de lo suyo en la campanita). Sin ella, lo hizo la clienta. */
+  actorUserId?: string;
 }
 
 function findSlot(slots: Slot[], startTime: string, professionalId: string | 'any' | null | undefined) {
@@ -105,6 +108,7 @@ export async function createBooking(params: CreateBookingParams) {
   });
 
   await scheduleBookingJobs(appointment, { announce: true });
+  await recordAppointmentEvent(appointment, { kind: 'CREATED', actor: params.actorUserId ? 'STAFF' : 'CUSTOMER', actorUserId: params.actorUserId });
   return toAppointmentDto(appointment, await getTenantTimezone(tenantId));
 }
 
@@ -120,6 +124,8 @@ export interface UpdateBookingParams {
   status?: AppointmentStatus;
   notes?: string | null;
   enforceWindow?: boolean;
+  /** Persona del salón que lo hace. Sin ella, lo hizo la clienta (enlace de gestión). */
+  actorUserId?: string;
 }
 
 export async function updateBooking(params: UpdateBookingParams) {
@@ -209,15 +215,27 @@ export async function updateBooking(params: UpdateBookingParams) {
     }
 
     const result = await tx.appointment.update({ where: { id }, data, include: appointmentInclude });
-    return { result, rescheduled: 'startsAt' in data, cancelledNow: data.status === 'CANCELLED' && wasActive };
+    return { result, rescheduled: 'startsAt' in data, reactivated, previousStartsAt: existing.startsAt, cancelledNow: data.status === 'CANCELLED' && wasActive };
   });
 
-  if (updated.cancelledNow) await scheduleCancelledJob(updated.result, 'STAFF');
-  else if (updated.rescheduled) await scheduleBookingJobs(updated.result, { announce: true });
+  const actor = params.actorUserId ? 'STAFF' : 'CUSTOMER';
+  if (updated.cancelledNow) {
+    await scheduleCancelledJob(updated.result, 'STAFF');
+    await recordAppointmentEvent(updated.result, { kind: 'CANCELLED', actor, actorUserId: params.actorUserId });
+  } else if (updated.rescheduled) {
+    await scheduleBookingJobs(updated.result, { announce: true });
+    // Reabrir una cita cancelada cuenta como reserva nueva; mover una activa, como cambio.
+    await recordAppointmentEvent(
+      updated.result,
+      updated.reactivated
+        ? { kind: 'CREATED', actor, actorUserId: params.actorUserId }
+        : { kind: 'RESCHEDULED', actor, actorUserId: params.actorUserId, previousStartsAt: updated.previousStartsAt }
+    );
+  }
   return toAppointmentDto(updated.result, timezone);
 }
 
-export async function cancelBooking(params: { tenantId: string; id: string; by: 'CUSTOMER' | 'STAFF' | 'SYSTEM' }) {
+export async function cancelBooking(params: { tenantId: string; id: string; by: 'CUSTOMER' | 'STAFF' | 'SYSTEM'; actorUserId?: string }) {
   const timezone = await getTenantTimezone(params.tenantId);
   const cancelled = await runInTransaction(async (tx) => {
     const existing = await tx.appointment.findFirst({ where: { id: params.id, tenantId: params.tenantId } });
@@ -229,5 +247,6 @@ export async function cancelBooking(params: { tenantId: string; id: string; by: 
     });
   });
   await scheduleCancelledJob(cancelled, params.by);
+  await recordAppointmentEvent(cancelled, { kind: 'CANCELLED', actor: params.by, actorUserId: params.actorUserId });
   return toAppointmentDto(cancelled, timezone);
 }

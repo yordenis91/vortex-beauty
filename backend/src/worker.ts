@@ -2,6 +2,7 @@ import { config } from './config';
 import { getBoss, QUEUES, stopBoss } from './lib/queue';
 import { pingHeartbeat, runBackup } from './services/backup';
 import { sendDailySummaries } from './services/notifications/dailySummary';
+import { pruneOldEvents } from './services/activity';
 import { processCancelled, processConfirmed, processReminder } from './services/notifications/notifier';
 
 /**
@@ -36,6 +37,8 @@ export async function startWorker() {
   // Resumen diario: cada hora en punto se revisa qué salones están en su hora de envío (las 8:00 locales).
   await boss.schedule(QUEUES.dailySummary, '0 * * * *', {}, { tz: 'UTC', retryLimit: 1, retryDelay: 120, expireInSeconds: 900 });
   await boss.work(QUEUES.dailySummary, async () => {
+    // Aprovecha el trabajo horario para borrar las novedades de la campanita con más de 60 días.
+    await pruneOldEvents().catch((error) => console.error('[activity] no se pudo limpiar:', error));
     const result = await sendDailySummaries();
     if (result.sent > 0) console.log(`[resumen] ${result.sent} resumen(es) enviados`);
     if (result.retry) throw new Error('Fallo transitorio al enviar un resumen; se reintentará');
