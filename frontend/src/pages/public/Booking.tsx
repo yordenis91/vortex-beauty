@@ -1,5 +1,5 @@
 import PhoneInput from '../../components/PhoneInput';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { addDays, addMonths, endOfMonth, format, isBefore, startOfDay, startOfMonth } from 'date-fns';
@@ -22,7 +22,9 @@ import AddToCalendar from '../../components/AddToCalendar';
 import PublicShell from './PublicShell';
 import { InstallCard } from './InstallApp';
 import { money } from './format';
-import { Spinner } from './shared';
+import { ConnectionProblem, LoadingPage, StaleNotice } from './shared';
+import { errorKind, publicRetry } from '../../lib/publicConnectivity';
+import { forget, readSaved, save } from '../../lib/publicCache';
 import { useTurnstile } from './useTurnstile';
 
 type Step = 'service' | 'professional' | 'date' | 'time' | 'details' | 'done';
@@ -61,6 +63,7 @@ function calendarQuery(tenantSlug: string, serviceId: string, professionalId: st
         .availableDates,
     // Sin esto cada precarga y cada visita al mes volvería a pedir lo mismo (por defecto los datos nacen caducados).
     staleTime: 60_000,
+    ...publicRetry,
   };
 }
 
@@ -78,6 +81,8 @@ const Booking: React.FC = () => {
   const [website, setWebsite] = useState(''); // campo trampa para bots
   const [error, setError] = useState('');
   const [booked, setBooked] = useState<PublicAppointment | null>(null);
+  // El último intento de reservar se cortó sin respuesta (no se sabe si se guardó).
+  const attemptLost = useRef(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 
   // Cada paso empieza arriba: con una lista larga de servicios u horas, el siguiente paso no debe quedar a media pantalla.
@@ -91,11 +96,26 @@ const Booking: React.FC = () => {
     return () => window.clearTimeout(id);
   }, []);
 
+  // Lo último que vio esta persona abre al instante y se refresca en segundo plano; si la conexión falla, sigue ahí.
+  const [saved] = useState(() => readSaved<PublicCatalog>(`catalog:${tenantSlug}`));
   const catalog = useQuery({
     queryKey: ['public-catalog', tenantSlug],
-    queryFn: async () => (await takePrefetchedCatalog(tenantSlug)) ?? (await publicApi.get<PublicCatalog>(`/${tenantSlug}`)).data,
-    retry: false,
+    queryFn: async () => {
+      const fresh = (await takePrefetchedCatalog(tenantSlug)) ?? (await publicApi.get<PublicCatalog>(`/${tenantSlug}`)).data;
+      save(`catalog:${tenantSlug}`, fresh);
+      return fresh;
+    },
+    initialData: saved?.value,
+    initialDataUpdatedAt: saved?.savedAt,
+    staleTime: 30_000,
+    ...publicRetry,
   });
+  // Solo un 404 (o un rechazo) dice que el negocio no existe; una conexión caída o un fallo del servidor, no.
+  const failureKind = catalog.isError ? errorKind(catalog.error) : null;
+  const notFound = failureKind === 'not-found' || failureKind === 'other';
+  useEffect(() => {
+    if (notFound) forget(`catalog:${tenantSlug}`);
+  }, [notFound, tenantSlug]);
   const data = catalog.data;
   const word = (key: string, fallback: string) => data?.labels?.[key] || fallback;
   const turnstile = useTurnstile(data?.captchaSiteKey);
@@ -137,6 +157,7 @@ const Booking: React.FC = () => {
     queryFn: async () =>
       (await publicApi.get<{ slots: PublicSlot[] }>(`/${tenantSlug}/availability`, { params: { serviceId, professionalId, date: dateStr } })).data.slots,
     enabled: !!serviceId && !!dateStr && step === 'time',
+    ...publicRetry,
   });
 
   const book = useMutation({
@@ -158,22 +179,41 @@ const Booking: React.FC = () => {
         })
       ).data,
     onSuccess: (appointment) => {
+      attemptLost.current = false;
       setBooked(appointment);
       setStep('done');
       setError('');
     },
     onError: (err) => {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      const kind = errorKind(err);
+      // Con la conexión cortada no se sabe si la reserva llegó a guardarse: se reintenta sin perder lo escrito.
+      if (kind === 'connection' || (kind === 'server' && status !== 429)) {
+        attemptLost.current = true;
+        setError('No pudimos confirmar tu reserva por la conexión. Tus datos siguen aquí: pulsa el botón de confirmar para reintentar. Si te llega el aviso de confirmación, ya quedó hecha.');
+        return;
+      }
+      // «Hueco ocupado» justo después de un intento sin respuesta: puede que el hueco lo ocupara ella misma.
+      if (status === 409 && attemptLost.current) {
+        setError('Puede que tu reserva sí se guardó en el intento anterior: revisa si te llegó el aviso de confirmación. Si no, elige otra hora.');
+        setStep('time');
+        return;
+      }
       setError(apiErrorMessage(err));
       // Si el hueco se ocupó justo antes, se vuelve a elegir hora
       if ((err as { response?: { status?: number } }).response?.status === 409) setStep('time');
     },
   });
 
-  if (catalog.isLoading) return <PublicShell title="Reservar"><Spinner /></PublicShell>;
-  if (catalog.isError || !data) {
+  if (catalog.isLoading) return <PublicShell title="Reservar"><LoadingPage retrying={catalog.failureCount > 0} /></PublicShell>;
+  if (notFound || !data) {
     return (
       <PublicShell title="Reservar">
-        <p className="text-center text-muted-foreground py-12">No encontramos este negocio. Revisa el enlace.</p>
+        {notFound || !failureKind ? (
+          <p className="text-center text-muted-foreground py-12">No encontramos este negocio. Revisa el enlace.</p>
+        ) : (
+          <ConnectionProblem kind={failureKind as 'connection' | 'server'} onRetry={() => void catalog.refetch()} retrying={catalog.isFetching} />
+        )}
       </PublicShell>
     );
   }
@@ -251,6 +291,11 @@ const Booking: React.FC = () => {
 
   return (
     <PublicShell title={data.name} salon={data} subtitle={`Reserva tu ${word('appointment', 'cita')} en línea`}>
+      {failureKind && (
+        <StaleNotice onRetry={() => void catalog.refetch()} retrying={catalog.isFetching}>
+          No pudimos actualizar los datos. Puede que algunos horarios ya no estén libres.
+        </StaleNotice>
+      )}
       {step !== 'service' && step !== 'done' && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">

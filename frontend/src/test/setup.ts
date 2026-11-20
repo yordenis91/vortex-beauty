@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom/vitest'
-import { afterAll, afterEach, beforeAll } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { cleanup, configure } from '@testing-library/react'
 import { server } from './server'
+import { setRetryDelays } from '../lib/publicConnectivity'
 
 // El calendario se carga bajo demanda (import dinámico): la primera vez tarda más que el 1 s por defecto.
 configure({ asyncUtilTimeout: 5000 })
@@ -9,6 +10,9 @@ configure({ asyncUtilTimeout: 5000 })
 // Una petición sin respuesta definida es un fallo de la prueba, no un silencio.
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
 afterAll(() => server.close())
+
+// Los reintentos automáticos de las páginas públicas no esperan segundos en las pruebas.
+beforeEach(() => setRetryDelays([0, 0, 0]))
 
 afterEach(() => {
   cleanup()

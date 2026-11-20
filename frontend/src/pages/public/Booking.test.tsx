@@ -8,6 +8,7 @@ import Booking from './Booking'
 import { renderPage } from '../../test/render'
 import { server, API } from '../../test/server'
 import { catalog, datesBetween, SLUG } from '../../test/fixtures'
+import { readSaved } from '../../lib/publicCache'
 
 const BASE = `${API}/public/booking/${SLUG}`
 const open = () => renderPage(<Booking />, { path: '/:tenantSlug/reservar', route: `/${SLUG}/reservar` })
@@ -510,4 +511,112 @@ describe('Reserva pública · fichas y pasos', () => {
     expect(header).toBeDisabled()
     expect(header).toHaveAttribute('aria-expanded', 'true')
   })
+})
+
+
+describe('Reserva pública · conexión lenta o caída', () => {
+  const failing = () => server.use(http.get(BASE, () => HttpResponse.error()))
+  // Visto hace un par de minutos: al abrir, la página intenta refrescarlo (lo de hace segundos se da por bueno).
+  const seenMinutesAgo = () => localStorage.setItem(`afilao:pub:v1:catalog:${SLUG}`, JSON.stringify({ value: catalog(), savedAt: Date.now() - 120_000 }))
+
+  it('sin conexión NO dice que el negocio no existe: lo explica y deja reintentar', async () => {
+    failing()
+    open()
+    expect(await screen.findByText('No pudimos conectar')).toBeInTheDocument()
+    expect(screen.queryByText(/No encontramos este negocio/)).not.toBeInTheDocument()
+
+    mockBooking()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar' }))
+    expect(await screen.findByText('Barbería Demo')).toBeInTheDocument()
+  })
+
+  it('un fallo del servidor (500) se dice distinto de una conexión caída', async () => {
+    server.use(http.get(BASE, () => HttpResponse.json({ error: 'boom' }, { status: 503 })))
+    open()
+    expect(await screen.findByText('Estamos con problemas')).toBeInTheDocument()
+    expect(screen.queryByText(/No encontramos este negocio/)).not.toBeInTheDocument()
+  })
+
+  it('reintenta solo si la conexión falla un par de veces', async () => {
+    let calls = 0
+    mockBooking()
+    server.use(
+      http.get(BASE, () => {
+        calls++
+        return calls < 3 ? HttpResponse.error() : HttpResponse.json(catalog())
+      }),
+    )
+    open()
+    expect(await screen.findByText('Barbería Demo')).toBeInTheDocument()
+    expect(calls).toBe(3)
+  })
+
+  it('un 404 no se reintenta: el negocio no existe', async () => {
+    let calls = 0
+    server.use(
+      http.get(BASE, () => {
+        calls++
+        return HttpResponse.json({ error: 'no' }, { status: 404 })
+      }),
+    )
+    open()
+    expect(await screen.findByText(/No encontramos este negocio/)).toBeInTheDocument()
+    expect(calls).toBe(1)
+  })
+
+  it('guarda el negocio para la próxima visita', async () => {
+    mockBooking()
+    open()
+    await screen.findByText('Barbería Demo')
+    expect(readSaved<{ name: string }>(`catalog:${SLUG}`)?.value.name).toBe('Barbería Demo')
+  })
+
+  it('si la conexión falla pero ya lo había visto, muestra lo guardado con un aviso y deja reintentar', async () => {
+    seenMinutesAgo()
+    failing()
+    open()
+    expect(await screen.findByText('Barbería Demo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Corte de cabello/ })).toBeInTheDocument()
+    expect(await screen.findByText(/No pudimos actualizar los datos/)).toBeInTheDocument()
+    expect(screen.queryByText('No pudimos conectar')).not.toBeInTheDocument()
+
+    mockBooking()
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Reintentar' }))
+    await waitFor(() => expect(screen.queryByText(/No pudimos actualizar los datos/)).not.toBeInTheDocument())
+  })
+
+  it('si lo guardado ya no existe (404), dice que no se encuentra y lo olvida', async () => {
+    seenMinutesAgo()
+    server.use(http.get(BASE, () => HttpResponse.json({ error: 'no' }, { status: 404 })))
+    open()
+    expect(await screen.findByText(/No encontramos este negocio/)).toBeInTheDocument()
+    await waitFor(() => expect(readSaved(`catalog:${SLUG}`)).toBeUndefined())
+  })
+
+  it('un envío que se corta no pierde los datos y avisa; si luego el hueco sale ocupado, sugiere que quizá ya se guardó', async () => {
+    mockBooking()
+    let attempt = 0
+    server.use(
+      http.post(`${BASE}/bookings`, () => {
+        attempt++
+        return attempt === 1 ? HttpResponse.error() : HttpResponse.json({ error: 'El horario seleccionado ya no está disponible. Elige otro.' }, { status: 409 })
+      }),
+    )
+    const user = userEvent.setup()
+    open()
+    await user.click(await screen.findByRole('button', { name: /Corte de cabello/ }))
+    await user.click(await firstEnabledDay())
+    await user.click(await screen.findByRole('button', { name: '09:00' }))
+    await user.type(screen.getByLabelText(/Nombre/), 'Marta Pérez')
+    await user.type(screen.getByLabelText('Teléfono'), '+53 5 555 1234')
+    await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos confirmar tu reserva por la conexión')
+    expect(screen.getByLabelText(/Nombre/)).toHaveValue('Marta Pérez') // nada se perdió
+    expect(screen.getByRole('button', { name: 'Confirmar turno' })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: 'Confirmar turno' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Puede que tu reserva sí se guardó')
+    expect(await screen.findByRole('button', { name: '09:30' })).toBeInTheDocument()
+  }, 15000)
 })
