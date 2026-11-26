@@ -1,7 +1,4 @@
 _manual_web.html
 _site/
 MOCKUPS.html
-Dockerfile
-nginx.conf
-.dockerignore
 README.md
