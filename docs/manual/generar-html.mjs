@@ -1,14 +1,27 @@
-// Genera la versión web del manual (una sola página HTML con las capturas incrustadas)
-// a partir de MANUAL_DE_USUARIO.md.
+// Genera la versión web del manual a partir de MANUAL_DE_USUARIO.md. Dos modos:
 //
-// Uso:  node docs/manual/generar-html.mjs [salida.html]
-// Sin argumento escribe docs/manual/_manual_web.html (no se sube al repositorio).
+//   node docs/manual/generar-html.mjs [salida.html]
+//     Una sola página con las capturas incrustadas (base64). Sin argumento escribe docs/manual/_manual_web.html
+//     (no se sube al repositorio). Es el formato que se publica como artefacto.
+//
+//   node docs/manual/generar-html.mjs --sitio <carpeta>
+//     Sitio estático para manual.afilaoapp.com: <carpeta>/index.html y las capturas como archivos aparte, con el
+//     hash del contenido en el nombre (caché larga sin riesgo de ver una captura vieja).
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
-const out = process.argv[2] ?? path.join(dir, '_manual_web.html');
+const args = process.argv.slice(2);
+const siteIndex = args.indexOf('--sitio');
+const siteDir = siteIndex >= 0 ? path.resolve(args[siteIndex + 1] ?? '') : null;
+if (siteIndex >= 0 && !args[siteIndex + 1]) {
+  console.error('Uso: node generar-html.mjs --sitio <carpeta>');
+  process.exit(1);
+}
+const out = siteDir ? path.join(siteDir, 'index.html') : (args[0] ?? path.join(dir, '_manual_web.html'));
+if (siteDir) fs.mkdirSync(path.join(siteDir, 'capturas'), { recursive: true });
 const md = fs.readFileSync(path.join(dir, 'MANUAL_DE_USUARIO.md'), 'utf8').replace(/\r/g, '').split('\n');
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -24,8 +37,17 @@ function image(alt, src) {
   const pxH = buf.readUInt32BE(20);
   const scale = PC.has(path.basename(src)) ? 1 : 2;
   const name = path.basename(src);
+  let url;
+  if (siteDir) {
+    const hash = crypto.createHash('sha256').update(buf).digest('hex').slice(0, 10);
+    const hashed = name.replace(/\.png$/, `.${hash}.png`);
+    fs.copyFileSync(file, path.join(siteDir, 'capturas', hashed));
+    url = `capturas/${hashed}`;
+  } else {
+    url = `data:image/png;base64,${buf.toString('base64')}`;
+  }
   // Ancho y alto reservados: sin ellos las imágenes empujan el contenido al cargar y los enlaces del índice caen en otro sitio.
-  return `<img src="data:image/png;base64,${buf.toString('base64')}" alt="${esc(alt)}" width="${Math.round(pxW / scale)}" height="${Math.round(pxH / scale)}" data-archivo="${name}">`;
+  return `<img src="${url}"${siteDir ? ' loading="lazy" decoding="async"' : ''} alt="${esc(alt)}" width="${Math.round(pxW / scale)}" height="${Math.round(pxH / scale)}" data-archivo="${name}">`;
 }
 
 function inline(text) {
@@ -131,11 +153,28 @@ while (i < md.length) {
   html.push(`<p class="${kindOf(body)}">${body}</p>`);
 }
 
+// Versión que sale en la barra: la «Versión del manual» de la portada (si no existe, la del sistema).
+const versionRow = (label) => md.map((l) => l.match(new RegExp(`^\\|\\s*\\*\\*${label}\\*\\*\\s*\\|\\s*([^|]+?)\\s*\\|`))).find(Boolean);
+const version = (versionRow('Versión del manual') ?? versionRow('Versión del sistema'))?.[1] ?? '';
+
 const navHtml = nav.map((n) => `<li><a href="#${n.id}">${esc(n.text)}</a></li>`).join('');
 
-const page = `<title>Manual de Afilao</title>
+// El artefacto añade su propio esqueleto HTML; el sitio estático necesita el suyo completo.
+const head = siteDir
+  ? `<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Manual de usuario de Afilao: agenda de citas para negocios de servicios.">
+<title>Manual de Afilao</title>
+</head>
+<body>
+`
+  : `<title>Manual de Afilao</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+`;
+const page = `${head}<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
 <style>
 /* Documento de consulta: columna de lectura estrecha, índice lateral en pantallas grandes y desplegable en el móvil. */
 :root {
@@ -212,13 +251,13 @@ strong { font-weight: 700; }
 @media print { .barra, .lateral, details.movil, body::before { display: none; } body { background: #fff; color: #000; } h1 { break-before: page; } figure, .tabla { break-inside: avoid; } }
 </style>
 <div class="pagina">
-  <div class="barra"><strong>Afilao</strong><span>Manual de usuario · Versión 1.0</span></div>
+  <div class="barra"><strong>Afilao</strong><span>Manual de usuario${version ? ` · Versión ${esc(version)}` : ''}</span></div>
   <aside class="lateral"><nav class="indice" aria-label="Capítulos"><h2>Capítulos</h2><ol>${navHtml}</ol></nav></aside>
   <main>
     <details class="movil"><summary>Ir a un capítulo</summary><nav class="indice" aria-label="Capítulos"><ol>${navHtml}</ol></nav></details>
     ${html.join('\n')}
   </main>
 </div>
-`;
+${siteDir ? '</body>\n</html>\n' : ''}`;
 fs.writeFileSync(out, page);
 console.log(`${out}: ${(page.length / 1048576).toFixed(1)} MB, ${nav.length} capítulos`);

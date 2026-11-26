@@ -1,0 +1,64 @@
+name: Manual (manual.afilaoapp.com)
+
+# Valida el manual cuando cambia y, al llegar a main, avisa a Easypanel para que lo redespliegue.
+# Easypanel redespliega todo servicio enlazado al repo en cada push: para que editar el manual no reconstruya nada más,
+# el servicio «manual» tiene el despliegue automático desactivado y se despliega solo desde aquí (webhook).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/manual/**'
+      - '.github/workflows/manual.yml'
+  pull_request:
+    paths:
+      - 'docs/manual/**'
+      - '.github/workflows/manual.yml'
+
+jobs:
+  build:
+    name: Construir y comprobar el manual
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Generar el sitio
+        run: node docs/manual/generar-html.mjs --sitio "$RUNNER_TEMP/site"
+      - name: Comprobar el resultado
+        env:
+          SITE: ${{ runner.temp }}/site
+        run: |
+          set -eu
+          test -s "$SITE/index.html"
+          # Las capturas van como archivos aparte, no incrustadas.
+          if grep -q 'data:image' "$SITE/index.html"; then echo 'Hay capturas incrustadas en el sitio'; exit 1; fi
+          # Toda captura referenciada existe.
+          missing=0
+          for f in $(grep -o 'src="capturas/[^"]*"' "$SITE/index.html" | sed 's/src="//;s/"//'); do
+            [ -f "$SITE/$f" ] || { echo "Falta $f"; missing=1; }
+          done
+          [ "$missing" -eq 0 ]
+          # Todo enlace interno (#capitulo) apunta a un título que existe.
+          for a in $(grep -o 'href="#[^"]*"' "$SITE/index.html" | sed 's/href="#//;s/"//' | sort -u); do
+            grep -q "id=\"$a\"" "$SITE/index.html" || { echo "Enlace roto: #$a"; missing=1; }
+          done
+          [ "$missing" -eq 0 ]
+          echo "Manual correcto: $(ls "$SITE/capturas" | wc -l) capturas"
+
+  deploy:
+    name: Desplegar en Easypanel
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avisar a Easypanel
+        env:
+          DEPLOY_URL: ${{ secrets.EASYPANEL_MANUAL_DEPLOY_URL }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::notice::Falta el secreto EASYPANEL_MANUAL_DEPLOY_URL: el manual se validó pero no se desplegó."
+            exit 0
+          fi
+          curl -fsS -X POST "$DEPLOY_URL" >/dev/null
+          echo "Despliegue solicitado."
