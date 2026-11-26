@@ -8,6 +8,7 @@
 |---|---|
 | **Sistema** | Afilao, agenda de citas para negocios de servicios |
 | **Versión del sistema** | 1.0 |
+| **Versión del manual** | 1.0 |
 | **Fecha del manual** | Octubre de 2026 |
 | **Idioma** | Español |
 | **Para quién es** | Dueños, gerentes y profesionales de un negocio |

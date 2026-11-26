@@ -250,3 +250,27 @@ Super Admin → Salones → **Nuevo salón** abre un asistente de 3 pasos:
 Al terminar muestra un mensaje listo para enviar al dueño (enlace de reservas, panel, correo y contraseña temporal, que solo se ve una vez), el QR con cartel imprimible y, si se indicó el bot, el comando `/vincular <código>` para que el dueño reciba los avisos. Si el bot falla, el salón se crea igual y se puede conectar luego en Ajustes. Los servicios nacen en la moneda del salón.
 
 API: `POST /api/platform/tenants` (acepta `timezone`, `currency`, `professionals`, `services`, `hours`, `telegramBotToken`), `GET /api/platform/tenants/templates` y `GET /api/platform/tenants/slug-available?slug=`.
+
+## Manual (manual.afilaoapp.com)
+
+El manual de usuario es un sitio estático (nginx) que se construye desde `docs/manual/` (ver `docs/manual/README.md`).
+
+**Puesta en marcha (una sola vez):**
+
+1. **Easypanel › proyecto › Crear servicio › App** llamado `manual`.
+   - Fuente: este repositorio (GitHub), rama `main`.
+   - Compilación: *Dockerfile*, **ruta de compilación `/docs/manual`**, archivo `Dockerfile`.
+   - Dominio: `manual.afilaoapp.com`, puerto `80`, HTTPS automático.
+   - **Desactiva el despliegue automático** del servicio: así solo se redespliega cuando cambia el manual (lo hace el workflow `manual.yml`).
+2. **Webhook de despliegue:** en el servicio `manual` copia la *URL de despliegue* (Deploy webhook) y guárdala en GitHub como secreto del repositorio `EASYPANEL_MANUAL_DEPLOY_URL` (Settings › Secrets and variables › Actions). Sin el secreto el workflow valida el manual pero no lo despliega.
+3. **Cloudflare** (zona `afilaoapp.com`): registro `manual` del mismo tipo y destino que el de `afilaoapp.com` (`A` a la IP del servidor o `CNAME` a su nombre), con el proxy activado. Si el SSL de Cloudflare está en *Full*, no hace falta nada más.
+
+**Comprobación:**
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://manual.afilaoapp.com/healthz   # 200
+curl -sI https://manual.afilaoapp.com/ | grep -i cache-control                   # no-cache
+```
+
+Las capturas (`/capturas/*.png`) llevan el hash del contenido en el nombre y se sirven con caché de un año: un manual nuevo
+nunca muestra una captura vieja. Mientras Cloudflare guarde la página, un cambio puede tardar en verse; *Caching › Purge* lo fuerza.
